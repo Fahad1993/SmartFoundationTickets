@@ -1,0 +1,34 @@
+name: Sync Plan to GitHub Project
+on:
+  push:
+    paths:
+      - 'plan.md'
+
+permissions:
+  contents: read
+
+jobs:
+  sync-tasks:
+    runs-on: ubuntu-latest
+    permissions:
+      repository-projects: write
+    contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Sync Tasks
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          PROJECT_ID: 1
+          OWNER: "Fahad1993"
+        run: |
+          existing_tasks=$(gh project item-list $PROJECT_ID --owner "$OWNER" --format json | jq -r '.items[].content.title' || echo "")
+          grep "\- \[ \]" plan.md | sed 's/- \[ \] //' | while read -r task_title; do
+            if echo "$existing_tasks" | grep -qxF "$task_title"; then
+              echo "Task already exists: $task_title (Skipping)"
+            else
+              echo "Adding new task: $task_title"
+              gh project item-add $PROJECT_ID --owner "$OWNER" --title "$task_title" --body "Automated task from plan.md"
+            fi
+          done

@@ -1,0 +1,123 @@
+name: Sync Plan to GitHub Project
+on:
+  push:
+    paths:
+      - 'plan.md'
+
+permissions:
+  contents: read
+
+jobs:
+  sync-tasks:
+    runs-on: ubuntu-latest
+    permissions:
+      repository-projects: write
+    contents: read
+    steps:
+      - name: Read plan and sync specs
+        uses: actions/checkout@v3
+      - name: Parse plan structure
+      - name: Extract specs from plan.md
+      - name: Create GitHub issues for each spec
+      - name: Extract spec tables and entities
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          PROJECT_ID: 1
+          OWNER: "Fahad1993"
+        run: |
+          specs=$(gh project item-list $PROJECT_ID --owner "$OWNER" --format json | jq -r '.items[].content.title' || echo "")
+
+          echo "--- Specs from plan.md ---"
+
+          # Extract Spec 01: Lookup Foundations
+          spec=$(echo "$specs" | jq -r 'select(.[].content | select(contains("Lookup Foundations")) | .content' || echo "")
+          if [ -n "$spec" ]; then
+            echo "**Spec 01: $(echo "$spec" | jq -r '.content.title')"
+            echo "- Tables: TicketStatus, TicketClass, Priority, RequesterType, PauseReason, ArbitrationReason, ClarificationReason, QualityReviewResult"
+          fi
+
+          # Extract Spec 02: Service Catalogue Foundations
+          spec=$(echo "$specs" | jq -r 'select(.[] | select(contains("Service Catalogue Foundations")) | .content' || echo "")
+          if [ -n "$spec" ]; then
+            echo "**Spec 02: $(echo "$spec" | jq -r '.content.title')"
+            echo "- Tables: Service, ServiceRoutingRule, ServiceSLAPolicy, ServiceCatalogSuggestion"
+          fi
+
+          # Extract Spec 03: Core Ticket Backbone
+          spec=$(echo "$specs" | jq -r 'select(.[] | select(contains("Core Ticket Backbone")) | .content' || echo "")
+          if [ -n "$spec" ]; then
+            echo "**Spec 03: $(echo "$spec" | jq -r '.content.title')"
+            echo "- Tables: Ticket, TicketHistory"
+          fi
+
+          # Extract Spec 04: Assignment and Work Start
+          spec=$(echo "$specs" | jq -r 'select(.[] | select(contains("Assignment and Work Start")) | .content' || echo "")
+          if [ -n "$spec" ]; then
+            echo "**Spec 04: $(echo "$spec" | jq -r '.content.title')"
+            echo "- SP Actions: ASSIGN_TICKET, MOVE_TO_IN_PROGRESS, REJECT_TO_SUPERVISOR"
+          fi
+          fi
+
+          # Extract Spec 05: Clarification Flow
+          spec=$(echo "$specs" | jq -r 'select(.[] | select(contains("Clarification Flow")) | .content' || echo "")
+          if [ -n "$spec" ]; then
+            echo "**Spec 05: $(echo "$spec" | jq -r '.content.title')"
+            echo "- Tables: ClarificationRequest"
+          fi
+
+          # Extract Spec 06: Arbitration Flow
+          spec=$(echo "$specs" | jq -r 'select(.[] | select(contains("Arbitration Flow")) | .content' || echo "")
+          if [n "$spec" ]; then
+            echo "**Spec 06: $(echo "$spec" | jq -r '.content.title')"
+            echo "- Tables: ArbitrationCase"
+          fi
+
+          # Extract Spec 07: Parent-Child Ticketing
+          spec=$(echo "$specs" | jq -r 'select(.[] | select(contains("Parent-Child Ticketing")) | .content' || echo "")
+          if [ -n "$spec" ]; then
+            echo "**Spec 07: $(echo "$spec" | jq -r '.content.title'"
+            echo "- Tables: TicketPauseSession"
+          fi
+
+          # Extract Spec 08: Blocking and Pause Sessions
+          spec=$(echo "$specs" | jq -r 'select(.[] | select(contains("Blocking and Pause Sessions")) | .content' || echo "")
+          if [n "$spec" ]; then
+            echo "**Spec 08: $(echo "$spec" | jq -r '.content.title'"
+            echo "- Tables: TicketPauseSession, TicketSLA"
+          fi
+
+          # Extract Spec 09: SLA Engine
+          spec=$(echo "$specs" | jq -r 'select(.[] | select(contains("SLA Engine")) | .content' || echo "")
+          if [ -n "$spec" ]; then
+            echo "**Spec 09: $(echo "$spec" | jq -r '.content.title'"
+            echo "- Tables: TicketSLA, TicketSLAHistory"
+          fi
+
+          # Extract Spec 10: Quality Review and Final Closure
+          spec=$(echo "$specs" | jq -r 'select(.[] | select(contains("Quality Review and Final Closure")) | .content' || echo "")
+          if [n "$spec" ]; then
+            echo "**Spec 10: $(echo "$spec" | jq -r '.content.title'"
+            echo "- Tables: QualityReview, TicketSLA"
+          fi
+
+          # Extract Spec 11: Catalogue Learning and Routing Correction
+          spec=$(echo "$specs" | jq -r 'select(.[] | select(contains("Catalogue Learning and Routing Correction")) | .content' || echo "")
+          if [n "$spec" ]; then
+            echo "**Spec 11: $(echo "$spec" | jq -r '.content.title'"
+            echo "- Tables: CatalogRoutingChangeLog"
+          fi
+
+          # Extract all tables and entities
+          echo "--- Tables and Entities from all specs"
+          table_list=$(echo "$specs" | jq -r '[.[].tables[] | select(.tables[]) | .name' | join(", ")' | echo "")
+          echo "$table_list"
+
+          # Extract tables and create issues
+          for table in $(echo "$table_list" | tr -d ',' | while read table; do
+            table_name=$(echo "$table" | xargs basename)
+            echo "--- Creating issue for table: $table_name"
+            gh issue create --repo "$PROJECT_ID" --owner "$OWNER" --title "$table_name (SQL tables from plan.md)" --body "Database structure task for \`\$table_name\`" database tables: \`[Tickets].[$table_name]\`\`\`\`- See \`Tables/$table_name.sql\` for table definitions."
+          fi
+          done
+
+  done
