@@ -7,7 +7,79 @@
 # Generated: 2026-04-01
 # ============================================================================
 
-set -e
+# Do NOT use set -e here — a single gh failure should not abort the whole run.
+# Individual item failures are tracked and reported in the summary at the end.
+
+# ---------------------------------------------------------------------------
+# Authentication
+# ---------------------------------------------------------------------------
+# This script requires a GitHub fine-grained personal access token (PAT) with
+# "Projects: Read and write" permission for the project owner.
+#
+# Classic PATs with only "repo" and "project" scopes will fail with:
+#   "your authentication token is missing required scopes [read:org read:discussion]"
+# Use a fine-grained PAT instead.
+#
+# How to provide the token (choose one):
+#   1. Export before running:
+#        export GH_TOKEN=github_pat_YOUR_TOKEN_HERE
+#        bash populate_kanban.sh
+#   2. Inline when running:
+#        GH_TOKEN=github_pat_YOUR_TOKEN_HERE bash populate_kanban.sh
+#   3. Store in .env and load it:
+#        echo 'GH_TOKEN=github_pat_YOUR_TOKEN_HERE' >> .env
+#        bash populate_kanban.sh  # script auto-loads .env
+#
+# Generate a fine-grained token at:
+#   https://github.com/settings/personal-access-tokens/new
+#   Required permissions:
+#   - Account permissions → Projects: Read and write
+# ---------------------------------------------------------------------------
+
+# Load .env if it exists and GH_TOKEN is not already set.
+# Uses a line-by-line approach to avoid executing arbitrary code.
+if [ -z "${GH_TOKEN}" ] && [ -f "$(dirname "$0")/.env" ]; then
+  while IFS='=' read -r key value; do
+    # Skip blank lines and comments
+    case "$key" in
+      ''|\#*) continue ;;
+    esac
+    if [ "$key" = "GH_TOKEN" ] && [ -n "$value" ]; then
+      export GH_TOKEN="$value"
+      break
+    fi
+  done < "$(dirname "$0")/.env"
+fi
+
+if [ -z "${GH_TOKEN}" ]; then
+  echo ""
+  echo "ERROR: GH_TOKEN is not set."
+  echo ""
+  echo "Please generate a fine-grained personal access token at:"
+  echo "  https://github.com/settings/personal-access-tokens/new"
+  echo ""
+  echo "Required permission:"
+  echo "  Account permissions → Projects: Read and write"
+  echo ""
+  echo "Then run:"
+  echo "  GH_TOKEN=github_pat_YOUR_TOKEN_HERE bash populate_kanban.sh"
+  echo ""
+  exit 1
+fi
+
+export GH_TOKEN
+
+# Failure tracking — records which items could not be created
+FAILED_ITEMS=0
+TOTAL_ITEMS=0
+
+# Wrapper that counts successes and failures
+run_item() {
+  TOTAL_ITEMS=$((TOTAL_ITEMS + 1))
+  if ! "$@"; then
+    FAILED_ITEMS=$((FAILED_ITEMS + 1))
+  fi
+}
 
 OWNER="Fahad1993"
 PROJECT=3
@@ -23,7 +95,7 @@ echo ""
 # ============================================================================
 echo ">>> SPEC 00: Project Setup & Schema"
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-00] Create [Tickets] schema in MSSQL" --body "**Spec:** 00 - Project Setup
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-00] Create [Tickets] schema in MSSQL" --body "**Spec:** 00 - Project Setup
 **Category:** DB-Structure
 **Dependencies:** None
 
@@ -39,7 +111,7 @@ Create the [Tickets] schema that will contain all ticketing system objects.
 - Schema [Tickets] exists in the database.
 - All subsequent CREATE TABLE statements referencing [Tickets].* will succeed."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-00] Create Database directory structure in repository" --body "**Spec:** 00 - Project Setup
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-00] Create Database directory structure in repository" --body "**Spec:** 00 - Project Setup
 **Category:** Docs
 **Dependencies:** None
 
@@ -67,7 +139,7 @@ Set up the directory structure in the repo for all SQL scripts.
 # ============================================================================
 echo ">>> SPEC 01: Lookup Foundations"
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Create [Tickets].[TicketStatus] lookup table" --body "**Spec:** 01 - Lookup Foundations
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Create [Tickets].[TicketStatus] lookup table" --body "**Spec:** 01 - Lookup Foundations
 **Category:** DB-Structure
 **Dependencies:** Spec-00 (schema)
 
@@ -86,7 +158,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Cr
 ## Acceptance Criteria
 - Table exists with UNIQUE constraint on StatusCode."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Create [Tickets].[TicketClass] lookup table" --body "**Spec:** 01 - Lookup Foundations
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Create [Tickets].[TicketClass] lookup table" --body "**Spec:** 01 - Lookup Foundations
 **Category:** DB-Structure
 **Dependencies:** Spec-00 (schema)
 
@@ -102,7 +174,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Cr
 ## Acceptance Criteria
 - Table exists. ClassCode uniqueness enforced."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Create [Tickets].[Priority] lookup table" --body "**Spec:** 01 - Lookup Foundations
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Create [Tickets].[Priority] lookup table" --body "**Spec:** 01 - Lookup Foundations
 **Category:** DB-Structure
 **Dependencies:** Spec-00 (schema)
 
@@ -118,7 +190,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Cr
 ## Acceptance Criteria
 - Table exists. PriorityCode uniqueness enforced."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Create [Tickets].[RequesterType] lookup table" --body "**Spec:** 01 - Lookup Foundations
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Create [Tickets].[RequesterType] lookup table" --body "**Spec:** 01 - Lookup Foundations
 **Category:** DB-Structure
 **Dependencies:** Spec-00 (schema)
 
@@ -134,7 +206,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Cr
 ## Acceptance Criteria
 - Table exists. Supports BR-01 mutual exclusivity on Ticket table."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Create [Tickets].[PauseReason] lookup table" --body "**Spec:** 01 - Lookup Foundations
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Create [Tickets].[PauseReason] lookup table" --body "**Spec:** 01 - Lookup Foundations
 **Category:** DB-Structure
 **Dependencies:** Spec-00 (schema)
 
@@ -150,7 +222,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Cr
 ## Acceptance Criteria
 - Table exists with UNIQUE constraint on ReasonCode."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Create [Tickets].[ArbitrationReason] lookup table" --body "**Spec:** 01 - Lookup Foundations
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Create [Tickets].[ArbitrationReason] lookup table" --body "**Spec:** 01 - Lookup Foundations
 **Category:** DB-Structure
 **Dependencies:** Spec-00 (schema)
 
@@ -166,7 +238,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Cr
 ## Acceptance Criteria
 - Table exists with UNIQUE constraint."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Create [Tickets].[ClarificationReason] lookup table" --body "**Spec:** 01 - Lookup Foundations
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Create [Tickets].[ClarificationReason] lookup table" --body "**Spec:** 01 - Lookup Foundations
 **Category:** DB-Structure
 **Dependencies:** Spec-00 (schema)
 
@@ -182,7 +254,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Cr
 ## Acceptance Criteria
 - Table exists with UNIQUE constraint."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Create [Tickets].[QualityReviewResult] lookup table" --body "**Spec:** 01 - Lookup Foundations
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Create [Tickets].[QualityReviewResult] lookup table" --body "**Spec:** 01 - Lookup Foundations
 **Category:** DB-Structure
 **Dependencies:** Spec-00 (schema)
 
@@ -198,7 +270,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Cr
 ## Acceptance Criteria
 - Table exists with UNIQUE constraint."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Seed all lookup tables with initial values" --body "**Spec:** 01 - Lookup Foundations
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Seed all lookup tables with initial values" --body "**Spec:** 01 - Lookup Foundations
 **Category:** DB-Structure
 **Dependencies:** All 8 lookup tables
 
@@ -217,7 +289,7 @@ All with Arabic and English names.
 ## Acceptance Criteria
 - All seed data inserted. SELECT COUNT(*) returns expected rows. No duplicate codes."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Test lookup uniqueness and seed integrity" --body "**Spec:** 01 - Lookup Foundations
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Test lookup uniqueness and seed integrity" --body "**Spec:** 01 - Lookup Foundations
 **Category:** Test
 **Dependencies:** Seed script
 
@@ -235,7 +307,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-01] Te
 # ============================================================================
 echo ">>> SPEC 02: Service Catalogue Foundations"
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Create [Tickets].[Service] master table" --body "**Spec:** 02 - Service Catalogue
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Create [Tickets].[Service] master table" --body "**Spec:** 02 - Service Catalogue
 **Category:** DB-Structure
 **Dependencies:** Spec-01 (TicketClass, Priority lookups)
 
@@ -256,7 +328,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Cr
 ## Acceptance Criteria
 - Table exists with FKs. Soft delete only (IsDeleted flag)."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Create [Tickets].[ServiceRoutingRule] master table" --body "**Spec:** 02 - Service Catalogue
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Create [Tickets].[ServiceRoutingRule] master table" --body "**Spec:** 02 - Service Catalogue
 **Category:** DB-Structure
 **Dependencies:** Spec-02 Service table
 
@@ -274,7 +346,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Cr
 ## Acceptance Criteria
 - Table exists. TargetDSDID_FK cannot be NULL. Effective dating supports historical rules."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Create [Tickets].[ServiceSLAPolicy] master table" --body "**Spec:** 02 - Service Catalogue
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Create [Tickets].[ServiceSLAPolicy] master table" --body "**Spec:** 02 - Service Catalogue
 **Category:** DB-Structure
 **Dependencies:** Spec-02 Service table, Spec-01 Priority
 
@@ -291,7 +363,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Cr
 ## Acceptance Criteria
 - Table exists. Four SLA target columns present. FKs to Service and Priority."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Create [Tickets].[ServiceCatalogSuggestion] master table" --body "**Spec:** 02 - Service Catalogue
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Create [Tickets].[ServiceCatalogSuggestion] master table" --body "**Spec:** 02 - Service Catalogue
 **Category:** DB-Structure
 **Dependencies:** Spec-02 Service table, Spec-01 Priority
 
@@ -310,7 +382,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Cr
 ## Acceptance Criteria
 - Table exists. ApprovalStatus defaults to PENDING."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Implement [Tickets].[ServiceSP] - service CRUD actions" --body "**Spec:** 02 - Service Catalogue
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Implement [Tickets].[ServiceSP] - service CRUD actions" --body "**Spec:** 02 - Service Catalogue
 **Category:** DB-SP
 **Dependencies:** Service table
 
@@ -328,7 +400,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Im
 ## Acceptance Criteria
 - Services created/updated/deleted only through this SP. Audit entries for every action."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Implement [Tickets].[ServiceSP] - routing rule actions" --body "**Spec:** 02 - Service Catalogue
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Implement [Tickets].[ServiceSP] - routing rule actions" --body "**Spec:** 02 - Service Catalogue
 **Category:** DB-SP
 **Dependencies:** ServiceRoutingRule table, CatalogRoutingChangeLog table
 
@@ -343,7 +415,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Im
 ## Acceptance Criteria
 - New rules auto-close old ones. NULL TargetDSDID rejected. Change logged to CatalogRoutingChangeLog."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Implement [Tickets].[ServiceSP] - SLA policy upsert action" --body "**Spec:** 02 - Service Catalogue
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Implement [Tickets].[ServiceSP] - SLA policy upsert action" --body "**Spec:** 02 - Service Catalogue
 **Category:** DB-SP
 **Dependencies:** ServiceSLAPolicy table
 
@@ -353,7 +425,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Im
 ## Acceptance Criteria
 - SLA policies retrievable per service+priority. Upsert logic correct."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Implement [Tickets].[ServiceSP] - suggestion approval/rejection" --body "**Spec:** 02 - Service Catalogue
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Implement [Tickets].[ServiceSP] - suggestion approval/rejection" --body "**Spec:** 02 - Service Catalogue
 **Category:** DB-SP
 **Dependencies:** ServiceCatalogSuggestion table
 
@@ -364,7 +436,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Im
 ## Acceptance Criteria
 - Suggestions can be approved or rejected. Audit trail maintained."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Create [Tickets].[V_ServiceFullDefinition] view" --body "**Spec:** 02 - Service Catalogue
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Create [Tickets].[V_ServiceFullDefinition] view" --body "**Spec:** 02 - Service Catalogue
 **Category:** DB-DL-View
 **Dependencies:** Service, TicketClass, Priority, ServiceRoutingRule tables
 
@@ -376,7 +448,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Cr
 ## Acceptance Criteria
 - View returns complete service definitions with active routing targets."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Create [Tickets].[ServiceDL] data layer procedure" --body "**Spec:** 02 - Service Catalogue
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Create [Tickets].[ServiceDL] data layer procedure" --body "**Spec:** 02 - Service Catalogue
 **Category:** DB-DL-View
 **Dependencies:** V_ServiceFullDefinition, all Spec-02 tables
 
@@ -391,7 +463,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Cr
 ## Acceptance Criteria
 - All read actions return correct data."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Test service catalogue foundation flows" --body "**Spec:** 02 - Service Catalogue
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Test service catalogue foundation flows" --body "**Spec:** 02 - Service Catalogue
 **Category:** Test
 **Dependencies:** All Spec-02 objects
 
@@ -407,7 +479,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-02] Te
 ## Acceptance Criteria
 - All CRUD and routing operations work. Historical changes preserved."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-02] Build service catalogue admin list screen" --body "**Spec:** 02 - Service Catalogue
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-02] Build service catalogue admin list screen" --body "**Spec:** 02 - Service Catalogue
 **Category:** UI
 **Dependencies:** ServiceDL GET_SERVICE_CATALOGUE
 
@@ -420,7 +492,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-02] B
 ## Acceptance Criteria
 - All active services listed. Filters work. Actions navigate correctly."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-02] Build service create/edit screen" --body "**Spec:** 02 - Service Catalogue
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-02] Build service create/edit screen" --body "**Spec:** 02 - Service Catalogue
 **Category:** UI
 **Dependencies:** ServiceSP INSERT_SERVICE/UPDATE_SERVICE
 
@@ -430,7 +502,7 @@ ServiceCode, ServiceNameAR, ServiceNameEN, DescriptionAR, DescriptionEN, TicketC
 ## Acceptance Criteria
 - New services created. Existing services edited. Validation works."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-02] Build routing rule maintenance screen" --body "**Spec:** 02 - Service Catalogue
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-02] Build routing rule maintenance screen" --body "**Spec:** 02 - Service Catalogue
 **Category:** UI
 **Dependencies:** ServiceDL GET_ROUTING_RULES, ServiceSP routing actions
 
@@ -443,7 +515,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-02] B
 ## Acceptance Criteria
 - Rules displayed historically. New rules auto-close old ones."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-02] Build SLA policy maintenance and suggestion review screens" --body "**Spec:** 02 - Service Catalogue
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-02] Build SLA policy maintenance and suggestion review screens" --body "**Spec:** 02 - Service Catalogue
 **Category:** UI
 **Dependencies:** ServiceSP UPSERT_SLA_POLICY, suggestion actions, ServiceDL
 
@@ -464,7 +536,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-02] B
 # ============================================================================
 echo ">>> SPEC 03: Core Ticket Backbone"
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Create [Tickets].[Ticket] transaction table" --body "**Spec:** 03 - Core Ticket Backbone
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Create [Tickets].[Ticket] transaction table" --body "**Spec:** 03 - Core Ticket Backbone
 **Category:** DB-Structure
 **Dependencies:** Spec-01 lookups, Spec-02 Service
 
@@ -488,7 +560,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Cr
 ## Acceptance Criteria
 - Table with all FKs and requester exclusivity CHECK constraint."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Create [Tickets].[TicketHistory] history table" --body "**Spec:** 03 - Core Ticket Backbone
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Create [Tickets].[TicketHistory] history table" --body "**Spec:** 03 - Core Ticket Backbone
 **Category:** DB-Structure
 **Dependencies:** Ticket table, TicketStatus lookup
 
@@ -509,7 +581,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Cr
 ## Acceptance Criteria
 - Table exists. No soft delete. Records are permanent audit trail."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Implement INSERT_TICKET action in [Tickets].[TicketSP]" --body "**Spec:** 03 - Core Ticket Backbone
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Implement INSERT_TICKET action in [Tickets].[TicketSP]" --body "**Spec:** 03 - Core Ticket Backbone
 **Category:** DB-SP
 **Dependencies:** Ticket, TicketHistory tables, ServiceRoutingRule
 
@@ -529,7 +601,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Im
 ## Acceptance Criteria
 - Known service tickets auto-routed. Other tickets work without ServiceID. History and audit logged. Root=self."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Implement requester type validation and root ticket initialization" --body "**Spec:** 03 - Core Ticket Backbone
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Implement requester type validation and root ticket initialization" --body "**Spec:** 03 - Core Ticket Backbone
 **Category:** DB-SP
 **Dependencies:** INSERT_TICKET action
 
@@ -544,7 +616,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Im
 ## Acceptance Criteria
 - Both IDs set = error. Root set correctly for top-level and child tickets."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Create [Tickets].[V_TicketFullDetails] and [V_TicketLastAction] views" --body "**Spec:** 03 - Core Ticket Backbone
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Create [Tickets].[V_TicketFullDetails] and [V_TicketLastAction] views" --body "**Spec:** 03 - Core Ticket Backbone
 **Category:** DB-DL-View
 **Dependencies:** Ticket, TicketHistory, all lookup tables
 
@@ -558,7 +630,7 @@ Subquery MAX(TicketHistoryID) per TicketID_FK, join back for latest action detai
 ## Acceptance Criteria
 - V_TicketFullDetails returns complete details. V_TicketLastAction returns one row per ticket."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Create [Tickets].[TicketDL] - basic detail and list actions" --body "**Spec:** 03 - Core Ticket Backbone
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Create [Tickets].[TicketDL] - basic detail and list actions" --body "**Spec:** 03 - Core Ticket Backbone
 **Category:** DB-DL-View
 **Dependencies:** Views, Ticket, TicketHistory
 
@@ -571,7 +643,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Cr
 ## Acceptance Criteria
 - All read actions return correct data."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Test core ticket creation flow" --body "**Spec:** 03 - Core Ticket Backbone
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Test core ticket creation flow" --body "**Spec:** 03 - Core Ticket Backbone
 **Category:** Test
 **Dependencies:** All Spec-03 objects
 
@@ -588,7 +660,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-03] Te
 ## Acceptance Criteria
 - All scenarios pass. Business rules enforced."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-03] Build ticket creation screen" --body "**Spec:** 03 - Core Ticket Backbone
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-03] Build ticket creation screen" --body "**Spec:** 03 - Core Ticket Backbone
 **Category:** UI
 **Dependencies:** TicketSP INSERT_TICKET, ServiceDL
 
@@ -600,7 +672,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-03] B
 ## Acceptance Criteria
 - Both requester types work. Other flow works. TicketNo displayed on success."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-03] Build ticket details screen" --body "**Spec:** 03 - Core Ticket Backbone
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-03] Build ticket details screen" --body "**Spec:** 03 - Core Ticket Backbone
 **Category:** UI
 **Dependencies:** TicketDL GET_TICKET_DETAILS, GET_TICKET_HISTORY
 
@@ -613,7 +685,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-03] B
 ## Acceptance Criteria
 - All ticket data accurate. History timeline chronological."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-03] Build basic ticket list screen" --body "**Spec:** 03 - Core Ticket Backbone
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-03] Build basic ticket list screen" --body "**Spec:** 03 - Core Ticket Backbone
 **Category:** UI
 **Dependencies:** TicketDL GET_TICKETS_BY_STATUS
 
@@ -632,7 +704,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-03] B
 # ============================================================================
 echo ">>> SPEC 04: Assignment and Work Start"
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-04] Implement ASSIGN_TICKET in TicketSP" --body "**Spec:** 04 - Assignment and Work Start
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-04] Implement ASSIGN_TICKET in TicketSP" --body "**Spec:** 04 - Assignment and Work Start
 **Category:** DB-SP
 **Dependencies:** Spec-03 TicketSP, dbo.UserDistributor
 
@@ -645,7 +717,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-04] Im
 ## Acceptance Criteria
 - Only eligible users assigned. Status=ASSIGNED. History logged."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-04] Implement MOVE_TO_IN_PROGRESS in TicketSP" --body "**Spec:** 04 - Assignment and Work Start
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-04] Implement MOVE_TO_IN_PROGRESS in TicketSP" --body "**Spec:** 04 - Assignment and Work Start
 **Category:** DB-SP
 **Dependencies:** ASSIGN_TICKET action
 
@@ -657,7 +729,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-04] Im
 ## Acceptance Criteria
 - Status changes. History entry created."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-04] Implement REJECT_TO_SUPERVISOR in TicketSP" --body "**Spec:** 04 - Assignment and Work Start
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-04] Implement REJECT_TO_SUPERVISOR in TicketSP" --body "**Spec:** 04 - Assignment and Work Start
 **Category:** DB-SP
 **Dependencies:** Spec-03 TicketSP
 
@@ -669,7 +741,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-04] Im
 ## Acceptance Criteria
 - Ticket unassigned. Status=REJECTED. No direct arbitration path."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-04] Implement assignment eligibility validation" --body "**Spec:** 04 - Assignment and Work Start
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-04] Implement assignment eligibility validation" --body "**Spec:** 04 - Assignment and Work Start
 **Category:** DB-SP
 **Dependencies:** dbo.UserDistributor
 
@@ -684,7 +756,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-04] Im
 ## Acceptance Criteria
 - BR-06 enforced. Ineligible users rejected with error 50020."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-04] Extend TicketDL for queue inbox reads" --body "**Spec:** 04 - Assignment and Work Start
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-04] Extend TicketDL for queue inbox reads" --body "**Spec:** 04 - Assignment and Work Start
 **Category:** DB-DL-View
 **Dependencies:** V_TicketInboxByScope (Spec-12 view, or inline query)
 
@@ -695,7 +767,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-04] Ex
 ## Acceptance Criteria
 - Inbox returns correct tickets for organizational scope."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-04] Test assignment and work start flow" --body "**Spec:** 04 - Assignment and Work Start
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-04] Test assignment and work start flow" --body "**Spec:** 04 - Assignment and Work Start
 **Category:** Test
 **Dependencies:** All Spec-04 actions
 
@@ -711,7 +783,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-04] Te
 ## Acceptance Criteria
 - Full cycle works. Eligibility enforced. History complete."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-04] Build scope-based queue inbox screen" --body "**Spec:** 04 - Assignment and Work Start
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-04] Build scope-based queue inbox screen" --body "**Spec:** 04 - Assignment and Work Start
 **Category:** UI
 **Dependencies:** TicketDL GET_INBOX_BY_SCOPE
 
@@ -724,7 +796,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-04] B
 ## Acceptance Criteria
 - Users see only in-scope tickets. Unassigned highlighted."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-04] Build assignment action UI" --body "**Spec:** 04 - Assignment and Work Start
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-04] Build assignment action UI" --body "**Spec:** 04 - Assignment and Work Start
 **Category:** UI
 **Dependencies:** TicketSP ASSIGN_TICKET, UserDistributor
 
@@ -736,7 +808,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-04] B
 ## Acceptance Criteria
 - Only eligible users shown. Assignment updates ticket. UI refreshes."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-04] Build start work action UI" --body "**Spec:** 04 - Assignment and Work Start
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-04] Build start work action UI" --body "**Spec:** 04 - Assignment and Work Start
 **Category:** UI
 **Dependencies:** TicketSP MOVE_TO_IN_PROGRESS
 
@@ -747,7 +819,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-04] B
 ## Acceptance Criteria
 - Button only for assigned user. Status updates to IN_PROGRESS."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-04] Build reject-to-supervisor action UI" --body "**Spec:** 04 - Assignment and Work Start
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-04] Build reject-to-supervisor action UI" --body "**Spec:** 04 - Assignment and Work Start
 **Category:** UI
 **Dependencies:** TicketSP REJECT_TO_SUPERVISOR
 
@@ -764,7 +836,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-04] B
 # ============================================================================
 echo ">>> SPEC 05: Clarification Flow"
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-05] Create [Tickets].[ClarificationRequest] transaction table" --body "**Spec:** 05 - Clarification Flow
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-05] Create [Tickets].[ClarificationRequest] transaction table" --body "**Spec:** 05 - Clarification Flow
 **Category:** DB-Structure
 **Dependencies:** Spec-03 Ticket table, Spec-01 ClarificationReason
 
@@ -782,7 +854,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-05] Cr
 ## Acceptance Criteria
 - Table exists. Separate from ArbitrationCase (BR-09)."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-05] Implement [Tickets].[ClarificationSP] - all actions" --body "**Spec:** 05 - Clarification Flow
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-05] Implement [Tickets].[ClarificationSP] - all actions" --body "**Spec:** 05 - Clarification Flow
 **Category:** DB-SP
 **Dependencies:** ClarificationRequest table
 
@@ -794,7 +866,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-05] Im
 ## Acceptance Criteria
 - Full lifecycle works independently of arbitration (BR-09). Status transitions correct."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-05] Link blocking clarification to pause sessions" --body "**Spec:** 05 - Clarification Flow
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-05] Link blocking clarification to pause sessions" --body "**Spec:** 05 - Clarification Flow
 **Category:** DB-SP
 **Dependencies:** TicketPauseSession (Spec-08), ClarificationSP
 
@@ -806,7 +878,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-05] Li
 ## Acceptance Criteria
 - Blocking clarification creates/closes pause session."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-05] Test clarification flow" --body "**Spec:** 05 - Clarification Flow
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-05] Test clarification flow" --body "**Spec:** 05 - Clarification Flow
 **Category:** Test
 
 ## Tests
@@ -820,7 +892,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-05] Te
 ## Acceptance Criteria
 - Full cycle passes. No arbitration mixing."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-05] Build clarification request form" --body "**Spec:** 05 - Clarification Flow
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-05] Build clarification request form" --body "**Spec:** 05 - Clarification Flow
 **Category:** UI
 **Dependencies:** ClarificationSP OPEN_CLARIFICATION_REQUEST
 
@@ -832,7 +904,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-05] B
 ## Acceptance Criteria
 - Reason required. Notes captured. Status updates."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-05] Build clarification response form" --body "**Spec:** 05 - Clarification Flow
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-05] Build clarification response form" --body "**Spec:** 05 - Clarification Flow
 **Category:** UI
 **Dependencies:** ClarificationSP RESPOND_TO_CLARIFICATION
 
@@ -844,7 +916,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-05] B
 ## Acceptance Criteria
 - Response captured. Status updated."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-05] Show clarification state in ticket details" --body "**Spec:** 05 - Clarification Flow
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-05] Show clarification state in ticket details" --body "**Spec:** 05 - Clarification Flow
 **Category:** UI
 
 ## Display
@@ -860,7 +932,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-05] S
 # ============================================================================
 echo ">>> SPEC 06: Arbitration Flow"
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-06] Create [Tickets].[ArbitrationCase] transaction table" --body "**Spec:** 06 - Arbitration Flow
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-06] Create [Tickets].[ArbitrationCase] transaction table" --body "**Spec:** 06 - Arbitration Flow
 **Category:** DB-Structure
 **Dependencies:** Spec-03 Ticket, Spec-01 ArbitrationReason
 
@@ -878,7 +950,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-06] Cr
 ## Acceptance Criteria
 - Table exists. Tracks decision type (REDIRECT/OVERRULE)."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-06] Implement [Tickets].[ArbitrationSP] - all actions" --body "**Spec:** 06 - Arbitration Flow
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-06] Implement [Tickets].[ArbitrationSP] - all actions" --body "**Spec:** 06 - Arbitration Flow
 **Category:** DB-SP
 **Dependencies:** ArbitrationCase table
 
@@ -891,7 +963,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-06] Im
 ## Acceptance Criteria
 - Redirect changes routing. Overrule keeps scope. All logged."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-06] Create [Tickets].[ArbitrationDL] data layer procedure" --body "**Spec:** 06 - Arbitration Flow
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-06] Create [Tickets].[ArbitrationDL] data layer procedure" --body "**Spec:** 06 - Arbitration Flow
 **Category:** DB-DL-View
 **Dependencies:** ArbitrationCase, V_TicketArbitrationInbox
 
@@ -903,7 +975,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-06] Cr
 ## Acceptance Criteria
 - All read actions return correct data."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-06] Test arbitration flow" --body "**Spec:** 06 - Arbitration Flow
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-06] Test arbitration flow" --body "**Spec:** 06 - Arbitration Flow
 **Category:** Test
 
 ## Tests
@@ -918,7 +990,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-06] Te
 ## Acceptance Criteria
 - Full lifecycle works. Separate from clarifications."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-06] Build arbitration inbox screen" --body "**Spec:** 06 - Arbitration Flow
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-06] Build arbitration inbox screen" --body "**Spec:** 06 - Arbitration Flow
 **Category:** UI
 **Dependencies:** ArbitrationDL GET_OPEN_DISPUTES
 
@@ -929,7 +1001,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-06] B
 ## Acceptance Criteria
 - Arbitrators see only their cases."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-06] Build arbitration decision screen" --body "**Spec:** 06 - Arbitration Flow
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-06] Build arbitration decision screen" --body "**Spec:** 06 - Arbitration Flow
 **Category:** UI
 **Dependencies:** ArbitrationSP all actions
 
@@ -941,7 +1013,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-06] B
 ## Acceptance Criteria
 - All three decisions work. Routing updates for redirects."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-06] Show arbitration status in ticket details" --body "**Spec:** 06 - Arbitration Flow
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-06] Show arbitration status in ticket details" --body "**Spec:** 06 - Arbitration Flow
 **Category:** UI
 
 ## Display
@@ -956,7 +1028,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-06] S
 # ============================================================================
 echo ">>> SPEC 07: Parent-Child Ticketing"
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-07] Implement CREATE_CHILD_TICKET in TicketSP" --body "**Spec:** 07 - Parent-Child Ticketing
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-07] Implement CREATE_CHILD_TICKET in TicketSP" --body "**Spec:** 07 - Parent-Child Ticketing
 **Category:** DB-SP
 **Dependencies:** Spec-03 TicketSP, Ticket table
 
@@ -971,7 +1043,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-07] Im
 ## Acceptance Criteria
 - Child created with correct parent/root. Both get history entries."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-07] Implement parent/root inheritance logic and extend TicketDL for tree" --body "**Spec:** 07 - Parent-Child Ticketing
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-07] Implement parent/root inheritance logic and extend TicketDL for tree" --body "**Spec:** 07 - Parent-Child Ticketing
 **Category:** DB-SP + DB-DL-View
 **Dependencies:** CREATE_CHILD_TICKET
 
@@ -986,7 +1058,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-07] Im
 ## Acceptance Criteria
 - Multi-level tree works. Tree query returns entire hierarchy."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-07] Test parent-child ticket flow" --body "**Spec:** 07 - Parent-Child Ticketing
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-07] Test parent-child ticket flow" --body "**Spec:** 07 - Parent-Child Ticketing
 **Category:** Test
 
 ## Tests
@@ -999,7 +1071,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-07] Te
 ## Acceptance Criteria
 - Multi-level tree correct. Root inheritance verified."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-07] Build child ticket creation UI" --body "**Spec:** 07 - Parent-Child Ticketing
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-07] Build child ticket creation UI" --body "**Spec:** 07 - Parent-Child Ticketing
 **Category:** UI
 **Dependencies:** TicketSP CREATE_CHILD_TICKET
 
@@ -1011,7 +1083,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-07] B
 ## Acceptance Criteria
 - Child linked to parent. New ticket navigable."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-07] Build parent-child tree visualization" --body "**Spec:** 07 - Parent-Child Ticketing
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-07] Build parent-child tree visualization" --body "**Spec:** 07 - Parent-Child Ticketing
 **Category:** UI
 **Dependencies:** TicketDL GET_TICKET_TREE
 
@@ -1028,7 +1100,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-07] B
 # ============================================================================
 echo ">>> SPEC 08: Blocking and Pause Sessions"
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-08] Create [Tickets].[TicketPauseSession] transaction table" --body "**Spec:** 08 - Blocking and Pause Sessions
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-08] Create [Tickets].[TicketPauseSession] transaction table" --body "**Spec:** 08 - Blocking and Pause Sessions
 **Category:** DB-Structure
 **Dependencies:** Spec-03 Ticket, Spec-06 ArbitrationCase, Spec-05 ClarificationRequest, Spec-01 PauseReason
 
@@ -1046,7 +1118,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-08] Cr
 ## Acceptance Criteria
 - Table exists with optional related references."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-08] Implement PAUSE_TICKET in TicketSP" --body "**Spec:** 08 - Blocking and Pause Sessions
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-08] Implement PAUSE_TICKET in TicketSP" --body "**Spec:** 08 - Blocking and Pause Sessions
 **Category:** DB-SP
 
 ## Logic
@@ -1057,7 +1129,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-08] Im
 ## Acceptance Criteria
 - Ticket paused with reason. Pause session recorded."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-08] Implement RESUME_TICKET in TicketSP" --body "**Spec:** 08 - Blocking and Pause Sessions
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-08] Implement RESUME_TICKET in TicketSP" --body "**Spec:** 08 - Blocking and Pause Sessions
 **Category:** DB-SP
 
 ## Logic
@@ -1068,7 +1140,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-08] Im
 ## Acceptance Criteria
 - All pauses closed. Status=IN_PROGRESS. IsParentBlocked cleared."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-08] Implement parent blocking rules" --body "**Spec:** 08 - Blocking and Pause Sessions
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-08] Implement parent blocking rules" --body "**Spec:** 08 - Blocking and Pause Sessions
 **Category:** DB-SP
 **Dependencies:** Spec-07 child tickets
 
@@ -1080,7 +1152,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-08] Im
 ## Acceptance Criteria
 - Parent auto-paused/resumed. BR-12 enforced."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-08] Test pause and resume flow" --body "**Spec:** 08 - Blocking and Pause Sessions
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-08] Test pause and resume flow" --body "**Spec:** 08 - Blocking and Pause Sessions
 **Category:** Test
 
 ## Tests
@@ -1094,7 +1166,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-08] Te
 ## Acceptance Criteria
 - Manual and child-blocking pause/resume work. BR-12 enforced."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-08] Build pause and resume action UI" --body "**Spec:** 08 - Blocking and Pause Sessions
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-08] Build pause and resume action UI" --body "**Spec:** 08 - Blocking and Pause Sessions
 **Category:** UI
 
 ## Pause
@@ -1108,7 +1180,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-08] B
 ## Acceptance Criteria
 - Pause reason required. Resume closes sessions."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-08] Display active blocking reason in ticket details" --body "**Spec:** 08 - Blocking and Pause Sessions
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-08] Display active blocking reason in ticket details" --body "**Spec:** 08 - Blocking and Pause Sessions
 **Category:** UI
 
 ## Display
@@ -1123,7 +1195,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-08] D
 # ============================================================================
 echo ">>> SPEC 09: SLA Engine"
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Create [Tickets].[TicketSLA] transaction table" --body "**Spec:** 09 - SLA Engine
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Create [Tickets].[TicketSLA] transaction table" --body "**Spec:** 09 - SLA Engine
 **Category:** DB-Structure
 **Dependencies:** Spec-03 Ticket
 
@@ -1140,7 +1212,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Cr
 ## Acceptance Criteria
 - One SLA record per type per ticket enforced."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Create [Tickets].[TicketSLAHistory] history table" --body "**Spec:** 09 - SLA Engine
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Create [Tickets].[TicketSLAHistory] history table" --body "**Spec:** 09 - SLA Engine
 **Category:** DB-Structure
 **Dependencies:** TicketSLA table
 
@@ -1155,7 +1227,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Cr
 ## Acceptance Criteria
 - Table exists. Events are insert-only."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Implement [Tickets].[TicketSLASP] - all actions" --body "**Spec:** 09 - SLA Engine
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Implement [Tickets].[TicketSLASP] - all actions" --body "**Spec:** 09 - SLA Engine
 **Category:** DB-SP
 **Dependencies:** TicketSLA, TicketSLAHistory tables
 
@@ -1169,7 +1241,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Im
 ## Acceptance Criteria
 - Full SLA lifecycle. History for every event."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Implement SLA initialization from ServiceSLAPolicy" --body "**Spec:** 09 - SLA Engine
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Implement SLA initialization from ServiceSLAPolicy" --body "**Spec:** 09 - SLA Engine
 **Category:** DB-SP
 **Dependencies:** TicketSLASP, ServiceSLAPolicy
 
@@ -1181,7 +1253,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Im
 ## Acceptance Criteria
 - SLA clocks auto-created. Targets match policy."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Implement SLA pause/resume integration with ticket pausing" --body "**Spec:** 09 - SLA Engine
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Implement SLA pause/resume integration with ticket pausing" --body "**Spec:** 09 - SLA Engine
 **Category:** DB-SP
 **Dependencies:** TicketSLASP, TicketSP PAUSE/RESUME
 
@@ -1192,7 +1264,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Im
 ## Acceptance Criteria
 - SLA pauses during blocking. Resumes correctly. Elapsed preserved."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Create [Tickets].[V_TicketCurrentSLA] view" --body "**Spec:** 09 - SLA Engine
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Create [Tickets].[V_TicketCurrentSLA] view" --body "**Spec:** 09 - SLA Engine
 **Category:** DB-DL-View
 
 ## Logic
@@ -1201,7 +1273,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Cr
 ## Acceptance Criteria
 - View returns SLA data joinable with tickets."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Test SLA engine" --body "**Spec:** 09 - SLA Engine
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Test SLA engine" --body "**Spec:** 09 - SLA Engine
 **Category:** Test
 
 ## Tests
@@ -1216,7 +1288,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-09] Te
 ## Acceptance Criteria
 - Full lifecycle. Pause/resume preserves elapsed. Breaches detected."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-09] Show SLA timers and breach markers in ticket UI" --body "**Spec:** 09 - SLA Engine
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-09] Show SLA timers and breach markers in ticket UI" --body "**Spec:** 09 - SLA Engine
 **Category:** UI
 
 ## Display
@@ -1228,7 +1300,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-09] S
 ## Acceptance Criteria
 - SLA timers accurate and visual. Breaches prominently shown."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-09] Show SLA state in queue list screens" --body "**Spec:** 09 - SLA Engine
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-09] Show SLA state in queue list screens" --body "**Spec:** 09 - SLA Engine
 **Category:** UI
 
 ## Display
@@ -1244,7 +1316,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-09] S
 # ============================================================================
 echo ">>> SPEC 10: Quality Review and Final Closure"
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-10] Create [Tickets].[QualityReview] transaction table" --body "**Spec:** 10 - Quality Review
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-10] Create [Tickets].[QualityReview] transaction table" --body "**Spec:** 10 - Quality Review
 **Category:** DB-Structure
 **Dependencies:** Spec-03 Ticket, Spec-01 QualityReviewResult
 
@@ -1262,7 +1334,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-10] Cr
 ## Acceptance Criteria
 - Table exists. IsFinalized defaults to 0. Result nullable until decision."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-10] Implement RESOLVE_OPERATIONALLY in TicketSP" --body "**Spec:** 10 - Quality Review
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-10] Implement RESOLVE_OPERATIONALLY in TicketSP" --body "**Spec:** 10 - Quality Review
 **Category:** DB-SP
 **Dependencies:** Spec-03 TicketSP
 
@@ -1274,7 +1346,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-10] Im
 ## Acceptance Criteria
 - Resolution blocked if open children exist. Status=RESOLVED. Dates set."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-10] Implement [Tickets].[QualityReviewSP] - all actions" --body "**Spec:** 10 - Quality Review
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-10] Implement [Tickets].[QualityReviewSP] - all actions" --body "**Spec:** 10 - Quality Review
 **Category:** DB-SP
 **Dependencies:** QualityReview table, QualityReviewResult lookup
 
@@ -1291,7 +1363,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-10] Im
 ## Acceptance Criteria
 - All 3 outcomes work. Two-stage closure enforced."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-10] Implement CLOSE_TICKET and REOPEN_TICKET in TicketSP" --body "**Spec:** 10 - Quality Review
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-10] Implement CLOSE_TICKET and REOPEN_TICKET in TicketSP" --body "**Spec:** 10 - Quality Review
 **Category:** DB-SP
 
 ## CLOSE_TICKET (direct path for non-QR tickets)
@@ -1304,7 +1376,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-10] Im
 ## Acceptance Criteria
 - Non-QR tickets close directly after resolution. Reopen clears dates."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-10] Implement final closure validation logic" --body "**Spec:** 10 - Quality Review
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-10] Implement final closure validation logic" --body "**Spec:** 10 - Quality Review
 **Category:** DB-SP
 
 ## Logic
@@ -1315,7 +1387,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-10] Im
 ## Acceptance Criteria
 - QR-required tickets must pass review. Non-QR tickets close directly."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-10] Test quality review and final closure flow" --body "**Spec:** 10 - Quality Review
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-10] Test quality review and final closure flow" --body "**Spec:** 10 - Quality Review
 **Category:** Test
 
 ## Tests
@@ -1330,7 +1402,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-10] Te
 ## Acceptance Criteria
 - All 3 QR outcomes work. BR-13/BR-14 enforced. Both closure paths tested."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-10] Build quality review inbox screen" --body "**Spec:** 10 - Quality Review
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-10] Build quality review inbox screen" --body "**Spec:** 10 - Quality Review
 **Category:** UI
 **Dependencies:** V_TicketQualityInbox
 
@@ -1342,7 +1414,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-10] B
 ## Acceptance Criteria
 - Pending reviews listed correctly."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-10] Build final closure approval and return-for-correction UI" --body "**Spec:** 10 - Quality Review
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-10] Build final closure approval and return-for-correction UI" --body "**Spec:** 10 - Quality Review
 **Category:** UI
 **Dependencies:** QualityReviewSP all actions
 
@@ -1355,7 +1427,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-10] B
 ## Acceptance Criteria
 - All three decisions work. Notes captured. Status updates."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-10] Display two-stage closure state in ticket details" --body "**Spec:** 10 - Quality Review
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-10] Display two-stage closure state in ticket details" --body "**Spec:** 10 - Quality Review
 **Category:** UI
 
 ## Display
@@ -1372,7 +1444,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-10] D
 # ============================================================================
 echo ">>> SPEC 11: Catalogue Learning and Routing Correction"
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-11] Create [Tickets].[CatalogRoutingChangeLog] history table" --body "**Spec:** 11 - Catalogue Learning
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-11] Create [Tickets].[CatalogRoutingChangeLog] history table" --body "**Spec:** 11 - Catalogue Learning
 **Category:** DB-Structure
 **Dependencies:** Spec-02 Service, ServiceRoutingRule, Spec-06 ArbitrationCase
 
@@ -1390,7 +1462,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-11] Cr
 ## Acceptance Criteria
 - Table exists. Links old/new rules and optional arbitration source."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-11] Implement suggestion-to-service creation flow" --body "**Spec:** 11 - Catalogue Learning
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-11] Implement suggestion-to-service creation flow" --body "**Spec:** 11 - Catalogue Learning
 **Category:** DB-SP
 **Dependencies:** ServiceSP APPROVE_SERVICE_SUGGESTION
 
@@ -1402,7 +1474,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-11] Im
 ## Acceptance Criteria
 - Approved suggestions produce real services. Link maintained."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-11] Log routing corrections from arbitration historically" --body "**Spec:** 11 - Catalogue Learning
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-11] Log routing corrections from arbitration historically" --body "**Spec:** 11 - Catalogue Learning
 **Category:** DB-SP
 **Dependencies:** ServiceSP INSERT_ROUTING_RULE, CatalogRoutingChangeLog
 
@@ -1414,7 +1486,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-11] Lo
 ## Acceptance Criteria
 - Corrections traceable to originating arbitration cases."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-11] Test catalogue learning and routing correction" --body "**Spec:** 11 - Catalogue Learning
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-11] Test catalogue learning and routing correction" --body "**Spec:** 11 - Catalogue Learning
 **Category:** Test
 
 ## Tests
@@ -1428,7 +1500,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-11] Te
 ## Acceptance Criteria
 - Full learning cycle works. Historical routing preserved."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-11] Build service suggestion approval UI" --body "**Spec:** 11 - Catalogue Learning
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-11] Build service suggestion approval UI" --body "**Spec:** 11 - Catalogue Learning
 **Category:** UI
 
 ## Flow
@@ -1439,7 +1511,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-11] B
 ## Acceptance Criteria
 - Suggestions approved (creating services) or rejected with reasons."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-11] Build routing correction review UI" --body "**Spec:** 11 - Catalogue Learning
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-11] Build routing correction review UI" --body "**Spec:** 11 - Catalogue Learning
 **Category:** UI
 **Dependencies:** ArbitrationDL GET_ROUTING_CORRECTION_CANDIDATES
 
@@ -1450,7 +1522,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-11] B
 ## Acceptance Criteria
 - Corrections reviewable and applicable. Audit maintained."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-11] Show routing change history for a service" --body "**Spec:** 11 - Catalogue Learning
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-11] Show routing change history for a service" --body "**Spec:** 11 - Catalogue Learning
 **Category:** UI
 
 ## Display
@@ -1465,7 +1537,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-11] S
 # ============================================================================
 echo ">>> SPEC 12: Reporting and Dashboards"
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-12] Create [Tickets].[V_TicketInboxByScope] view" --body "**Spec:** 12 - Reporting
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-12] Create [Tickets].[V_TicketInboxByScope] view" --body "**Spec:** 12 - Reporting
 **Category:** DB-DL-View
 **Dependencies:** Ticket, TicketStatus, Priority, Service
 
@@ -1477,7 +1549,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-12] Cr
 ## Acceptance Criteria
 - Returns open tickets filterable by org scope."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-12] Create [Tickets].[V_TicketArbitrationInbox] and [V_TicketQualityInbox] views" --body "**Spec:** 12 - Reporting
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-12] Create [Tickets].[V_TicketArbitrationInbox] and [V_TicketQualityInbox] views" --body "**Spec:** 12 - Reporting
 **Category:** DB-DL-View
 
 ## V_TicketArbitrationInbox
@@ -1491,7 +1563,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-12] Cr
 ## Acceptance Criteria
 - Arbitration inbox shows only open cases. QR inbox shows only pending reviews."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-12] Create [Tickets].[DashboardDL] data layer procedure" --body "**Spec:** 12 - Reporting
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-12] Create [Tickets].[DashboardDL] data layer procedure" --body "**Spec:** 12 - Reporting
 **Category:** DB-DL-View
 **Dependencies:** All views and tables
 
@@ -1507,7 +1579,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-12] Cr
 ## Acceptance Criteria
 - All 7 actions return correct aggregated data. Scope filtering works."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-12] Test dashboard and reporting queries" --body "**Spec:** 12 - Reporting
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-12] Test dashboard and reporting queries" --body "**Spec:** 12 - Reporting
 **Category:** Test
 
 ## Tests
@@ -1524,7 +1596,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-12] Te
 ## Acceptance Criteria
 - All queries correct. Scope filtering works."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-12] Build organizational leadership dashboard" --body "**Spec:** 12 - Reporting
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-12] Build organizational leadership dashboard" --body "**Spec:** 12 - Reporting
 **Category:** UI
 **Dependencies:** DashboardDL all actions
 
@@ -1539,7 +1611,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-12] B
 ## Acceptance Criteria
 - Dashboard loads with correct data. Widgets interactive. Scope filtering works."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-12] Build quality and monitoring dashboard widgets" --body "**Spec:** 12 - Reporting
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-12] Build quality and monitoring dashboard widgets" --body "**Spec:** 12 - Reporting
 **Category:** UI
 
 ## Widgets
@@ -1553,7 +1625,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-12] B
 ## Acceptance Criteria
 - All widgets display real-time data. Navigation works."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-12] Build overdue tickets report screen" --body "**Spec:** 12 - Reporting
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-12] Build overdue tickets report screen" --body "**Spec:** 12 - Reporting
 **Category:** UI
 
 ## Display
@@ -1565,7 +1637,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-12] B
 ## Acceptance Criteria
 - Both overdue categories shown. Sort by severity. Export works."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-12] Build service frequency and workload report" --body "**Spec:** 12 - Reporting
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-12] Build service frequency and workload report" --body "**Spec:** 12 - Reporting
 **Category:** UI
 
 ## Display
@@ -1582,7 +1654,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-12] B
 # ============================================================================
 echo ">>> SPEC 13: Cross-Cutting Testing"
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-13] Create structural integrity test suite" --body "**Spec:** 13 - Testing
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-13] Create structural integrity test suite" --body "**Spec:** 13 - Testing
 **Category:** Test
 
 ## Tests
@@ -1595,7 +1667,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-13] Cr
 ## Acceptance Criteria
 - All constraints verified. Document shows pass/fail per test."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-13] Create business scenario test suite (10 scenarios)" --body "**Spec:** 13 - Testing
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-13] Create business scenario test suite (10 scenarios)" --body "**Spec:** 13 - Testing
 **Category:** Test
 
 ## Scenarios
@@ -1613,7 +1685,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-13] Cr
 ## Acceptance Criteria
 - All 10 scenarios pass with setup, execution, assertions."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-13] Create SLA-specific test suite" --body "**Spec:** 13 - Testing
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-13] Create SLA-specific test suite" --body "**Spec:** 13 - Testing
 **Category:** Test
 
 ## Tests
@@ -1627,7 +1699,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-13] Cr
 ## Acceptance Criteria
 - All SLA tests pass. Elapsed accurate. Breach detection works."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-13] Create reporting validation test suite" --body "**Spec:** 13 - Testing
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-13] Create reporting validation test suite" --body "**Spec:** 13 - Testing
 **Category:** Test
 
 ## Tests
@@ -1645,7 +1717,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-13] Cr
 # ============================================================================
 echo ">>> SPEC 14: Documentation"
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-14] Create master deployment script (Deploy_All.sql)" --body "**Spec:** 14 - Documentation
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-14] Create master deployment script (Deploy_All.sql)" --body "**Spec:** 14 - Documentation
 **Category:** Docs
 
 ## Order
@@ -1666,7 +1738,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-14] Cr
 ## Acceptance Criteria
 - Clean DB deploy succeeds. Re-run does not error."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-14] Create rollback script (Rollback_All.sql)" --body "**Spec:** 14 - Documentation
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-14] Create rollback script (Rollback_All.sql)" --body "**Spec:** 14 - Documentation
 **Category:** Docs
 
 ## Order (reverse dependency)
@@ -1676,7 +1748,7 @@ IF EXISTS before each DROP. Safety warning comment.
 ## Acceptance Criteria
 - Clean removal. No orphan references."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-14] Document stored procedure API reference" --body "**Spec:** 14 - Documentation
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-14] Document stored procedure API reference" --body "**Spec:** 14 - Documentation
 **Category:** Docs
 
 ## Content
@@ -1688,7 +1760,7 @@ For each DL (ServiceDL, TicketDL, ArbitrationDL, DashboardDL):
 ## Acceptance Criteria
 - Complete reference. Usable as API contract."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-14] Document business rule matrix (BR-01 to BR-20)" --body "**Spec:** 14 - Documentation
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-14] Document business rule matrix (BR-01 to BR-20)" --body "**Spec:** 14 - Documentation
 **Category:** Docs
 
 ## Format
@@ -1697,7 +1769,7 @@ Rule ID | Description | Enforcement Location(s) | Test Reference
 ## Acceptance Criteria
 - All 20 rules documented with enforcement and test references."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-14] Create UI page map, navigation structure, and component library specs" --body "**Spec:** 14 - Documentation
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-14] Create UI page map, navigation structure, and component library specs" --body "**Spec:** 14 - Documentation
 **Category:** Docs
 
 ## Page Map
@@ -1717,7 +1789,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-14] C
 # ============================================================================
 echo ">>> SPEC 15: Frontend Infrastructure"
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-15] Set up frontend project scaffolding and configuration" --body "**Spec:** 15 - Frontend Infrastructure
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-15] Set up frontend project scaffolding and configuration" --body "**Spec:** 15 - Frontend Infrastructure
 **Category:** Setup
 
 ## Structure
@@ -1730,7 +1802,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-15] S
 ## Acceptance Criteria
 - Project builds and runs. Constants match DB seed values."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-15] Implement API service layer for all backend endpoints" --body "**Spec:** 15 - Frontend Infrastructure
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-15] Implement API service layer for all backend endpoints" --body "**Spec:** 15 - Frontend Infrastructure
 **Category:** Setup
 
 ## Files
@@ -1745,7 +1817,7 @@ gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Frontend][Spec-15] I
 ## Acceptance Criteria
 - All API functions match SP/DL contract. Error handling included."
 
-gh project item-add ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-15] Create API endpoint layer and DB connection utility" --body "**Spec:** 15 - Backend Infrastructure
+run_item gh project item-create ${PROJECT} --owner "${OWNER}" --title "[Backend][Spec-15] Create API endpoint layer and DB connection utility" --body "**Spec:** 15 - Backend Infrastructure
 **Category:** Setup
 
 ## API Endpoints
@@ -1794,3 +1866,11 @@ echo " Spec 00 -> 01 -> 02 -> 03 -> 04 -> 05/06 (parallel) -> 07 -> 08 -> 09 -> 
 echo " Spec 13/14/15 can run in parallel with implementation specs."
 echo ""
 echo "========================================="
+echo ""
+echo " Results: $((TOTAL_ITEMS - FAILED_ITEMS)) / ${TOTAL_ITEMS} items created successfully."
+if [ "${FAILED_ITEMS}" -gt 0 ]; then
+  echo " WARNING: ${FAILED_ITEMS} item(s) failed. Re-run the script to retry — duplicate"
+  echo "          titles on the same board are accepted by GitHub Projects."
+  echo ""
+  exit 1
+fi
