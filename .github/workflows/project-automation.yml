@@ -1,0 +1,180 @@
+name: Project Automation
+# =============================================================================
+# project-automation.yml
+#
+# Replaces:
+#   - auto-label-issues.yml   (label new issues based on title prefix)
+#   - auto-assign.yml         (assign new issues to the repo owner)
+#   - sync-plan-to-github.yml (sync plan.md tasks to GitHub Project)
+#   - sync-plan-to-project.yml (sync plan.md tasks to GitHub Project)
+#
+# Triggers:
+#   - issues: opened / edited  → auto-label + auto-assign
+#   - push: plan.md changed    → sync unchecked tasks to Project #3
+#   - workflow_dispatch        → run any job manually from the GitHub UI
+# =============================================================================
+
+on:
+  issues:
+    types: [opened, edited]
+  push:
+    branches: [main]
+    paths:
+      - 'plan.md'
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'Job to run manually'
+        required: true
+        default: 'sync-plan'
+        type: choice
+        options:
+          - label-issues
+          - sync-plan
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: Auto-label new / edited issues
+  # Replaces: auto-label-issues.yml
+  # ---------------------------------------------------------------------------
+  auto-label:
+    name: Auto-label issue
+    if: >
+      github.event_name == 'issues' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'label-issues')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply labels based on issue title
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          REPO: ${{ github.repository }}
+          # For workflow_dispatch there is no issue number; guard below.
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE:  ${{ github.event.issue.title }}
+        run: |
+          if [[ -z "$ISSUE_NUMBER" ]]; then
+            echo "No issue number (workflow_dispatch without an issue context). Skipping."
+            exit 0
+          fi
+
+          LABELS=""
+
+          # Layer: [Backend] / [Frontend]
+          echo "$ISSUE_TITLE" | grep -q '\[Backend\]'  && LABELS="$LABELS,backend"
+          echo "$ISSUE_TITLE" | grep -q '\[Frontend\]' && LABELS="$LABELS,frontend"
+
+          # Spec layer: [Spec-XX]
+          SPEC_RAW=$(echo "$ISSUE_TITLE" | grep -oE '\[Spec-[0-9]+\]' | grep -oE '[0-9]+' || true)
+          if [[ -n "$SPEC_RAW" ]]; then
+            LABELS="$LABELS,spec-$(printf '%02d' "$SPEC_RAW")"
+          fi
+
+          LABELS="${LABELS#,}"   # strip leading comma
+
+          if [[ -z "$LABELS" ]]; then
+            echo "No matching label prefix found in title: $ISSUE_TITLE"
+            exit 0
+          fi
+
+          echo "Applying labels to #${ISSUE_NUMBER}: ${LABELS}"
+
+          # Ensure each label exists (silently skip if already present)
+          IFS=',' read -ra LABEL_ARRAY <<< "$LABELS"
+          for label in "${LABEL_ARRAY[@]}"; do
+            case "$label" in
+              backend)      COLOR="0075ca"; DESC="Backend / server-side task" ;;
+              frontend)     COLOR="e4e669"; DESC="Frontend / UI task" ;;
+              spec-*)       COLOR="bfd4f2"; DESC="Spec ${label#spec-}" ;;
+              *)            COLOR="ededed"; DESC="" ;;
+            esac
+            gh label create "$label" \
+              --color "$COLOR" \
+              --description "$DESC" \
+              --repo "$REPO" 2>/dev/null || true
+          done
+
+          gh issue edit "$ISSUE_NUMBER" \
+            --add-label "$LABELS" \
+            --repo "$REPO"
+
+  # ---------------------------------------------------------------------------
+  # Job 2: Auto-assign new issues to the repo owner
+  # Replaces: auto-assign.yml
+  # ---------------------------------------------------------------------------
+  auto-assign:
+    name: Auto-assign issue
+    if: >
+      (github.event_name == 'issues' && github.event.action == 'opened')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign issue to owner
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          echo "Assigning #${ISSUE_NUMBER} to ${OWNER}"
+          gh issue edit "$ISSUE_NUMBER" \
+            --add-assignee "$OWNER" \
+            --repo "$REPO"
+
+  # ---------------------------------------------------------------------------
+  # Job 3: Sync unchecked tasks from plan.md into GitHub Project #3
+  # Replaces: sync-plan-to-github.yml + sync-plan-to-project.yml
+  # ---------------------------------------------------------------------------
+  sync-plan:
+    name: Sync plan.md to project
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'sync-plan')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      repository-projects: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Sync unchecked tasks to Project #3
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          OWNER: Fahad1993
+          PROJECT_NUMBER: 3
+        run: |
+          echo "Fetching existing project items..."
+          EXISTING=$(gh project item-list "$PROJECT_NUMBER" \
+            --owner "$OWNER" \
+            --format json \
+            --limit 500 \
+            | jq -r '[.items[].title]')
+
+          echo "Parsing unchecked tasks from plan.md..."
+          ADDED=0
+          SKIPPED=0
+
+          # Duplicate detection uses exact title matching.
+          # If a task title is edited in plan.md after first sync, a second
+          # item will be created with the new title. Remove the old one manually.
+          while IFS= read -r task; do
+            task="${task#"- [ ] "}"   # strip the "- [ ] " prefix
+            [[ -z "$task" ]] && continue
+
+            if echo "$EXISTING" | jq -e --arg t "$task" 'index($t) != null' > /dev/null 2>&1; then
+              echo "  Already exists: ${task}"
+              SKIPPED=$((SKIPPED + 1))
+            else
+              echo "  Creating: ${task}"
+              gh project item-create "$PROJECT_NUMBER" \
+                --owner "$OWNER" \
+                --title "$task"
+              ADDED=$((ADDED + 1))
+            fi
+          done < <(grep -E '^- \[ \] ' plan.md || true)
+
+          echo ""
+          echo "Sync complete: ${ADDED} added, ${SKIPPED} already existed."

@@ -2,14 +2,17 @@
 # =============================================================================
 # setup_project.sh
 #
-# All-in-one setup script for the SmartFoundationTickets GitHub Project.
+# All-in-one setup script for SmartFoundationTickets.
+# Replaces: populate_kanban.sh, convert_drafts_to_issues.sh, label_existing_issues.sh
 #
 # Phases:
 #   1  Populate Project #3 with 118 draft task items.
 #   2  Convert every draft item into a real GitHub Issue (preserves Status).
+#   3  Create labels and apply them to all issues based on title prefixes
+#      ([Backend], [Frontend], [Spec-XX]) and body Category lines.
 #
-# By default BOTH phases run in order.
-# Use --phase 1 or --phase 2 to run only one phase.
+# By default ALL phases run in order (1 → 2 → 3).
+# Use --phase N to run a single phase.
 #
 # Requirements:
 #   - gh CLI installed and authenticated.
@@ -17,9 +20,10 @@
 #   - jq 1.6+
 #
 # Usage:
-#   GH_TOKEN=<ghp_...> bash setup_project.sh              # run phases 1 & 2
+#   GH_TOKEN=<ghp_...> bash setup_project.sh              # run all phases
 #   GH_TOKEN=<ghp_...> bash setup_project.sh --phase 1    # populate only
 #   GH_TOKEN=<ghp_...> bash setup_project.sh --phase 2    # convert only
+#   GH_TOKEN=<ghp_...> bash setup_project.sh --phase 3    # label only
 #
 #   DRY_RUN=1 GH_TOKEN=<ghp_...> bash setup_project.sh   # preview, no changes
 #
@@ -28,6 +32,10 @@
 #      with scopes:  repo  write:org  read:project  project
 #   2. Export it before running:  export GH_TOKEN=ghp_...
 #   3. Or prefix the command:     GH_TOKEN=ghp_... bash setup_project.sh
+#
+# Event-driven automation (auto-label, auto-assign, sync plan.md) is handled
+# by .github/workflows/project-automation.yml which runs automatically on
+# GitHub Actions — no manual step required.
 # =============================================================================
 
 set -euo pipefail
@@ -39,12 +47,12 @@ OWNER="Fahad1993"
 REPO="SmartFoundationTickets"
 PROJECT_NUMBER=3
 DRY_RUN="${DRY_RUN:-0}"
-RUN_PHASE="${1:-all}"   # accepts: all | 1 | 2 | --phase 1 | --phase 2
+RUN_PHASE="${1:-all}"   # accepts: all | 1 | 2 | 3 | --phase 1 | --phase 2 | --phase 3
 
-# Parse --phase argument: support both "setup_project.sh --phase 2" and "setup_project.sh 2"
+# Parse --phase argument: support both "setup_project.sh --phase 3" and "setup_project.sh 3"
 if [[ "$RUN_PHASE" == "--phase" && -n "${2:-}" ]]; then
   RUN_PHASE="$2"
-elif [[ "$RUN_PHASE" != "all" && "$RUN_PHASE" != "1" && "$RUN_PHASE" != "2" ]]; then
+elif [[ "$RUN_PHASE" != "all" && "$RUN_PHASE" != "1" && "$RUN_PHASE" != "2" && "$RUN_PHASE" != "3" ]]; then
   RUN_PHASE="all"
 fi
 
@@ -1750,7 +1758,7 @@ phase1_populate() {
   - All endpoints callable. Error mapping works. Health check responds."
 
   echo ""
-  echo "  Phase 1 complete: 118 draft items created."
+  echo "  Phase 1 complete: draft items created."
   echo ""
 }
 
@@ -1916,6 +1924,102 @@ phase2_convert() {
 }
 
 # ---------------------------------------------------------------------------
+# PHASE 3 — Create labels and apply them to all open issues
+# ---------------------------------------------------------------------------
+phase3_label() {
+  echo "------------------------------------------------------------"
+  echo " PHASE 3: Labeling issues"
+  echo "------------------------------------------------------------"
+  echo ""
+
+  # Helper: create a label if it doesn't already exist.
+  # Errors are suppressed because the GitHub CLI exits non-zero when a label
+  # already exists; all other errors (e.g. auth) will surface in later commands.
+  _ensure_label() {
+    local name="$1" color="$2" desc="$3"
+    gh label create "$name" \
+      --color "$color" \
+      --description "$desc" \
+      --repo "${OWNER}/${REPO}" 2>/dev/null || true
+  }
+
+  if [[ "$DRY_RUN" != "1" ]]; then
+    echo "Creating labels (existing ones are silently skipped)..."
+
+    # Layer labels
+    _ensure_label "backend"  "0075ca" "Backend / server-side task"
+    _ensure_label "frontend" "e4e669" "Frontend / UI task"
+
+    # Spec labels (Spec-00 through Spec-15)
+    for n in $(seq 0 15); do
+      _ensure_label "spec-$(printf '%02d' "$n")" "bfd4f2" "Spec $(printf '%02d' "$n")"
+    done
+
+    # Category labels derived from the **Category:** line in issue bodies
+    _ensure_label "db-structure" "d93f0b" "Database schema / DDL"
+    _ensure_label "db-crud"      "e99695" "Database stored procedures / CRUD"
+    _ensure_label "api"          "c2e0c6" "API endpoint"
+    _ensure_label "ui"           "fef2c0" "UI / view layer"
+    _ensure_label "setup"        "ededed" "Setup / infrastructure"
+    _ensure_label "docs"         "cfd3d7" "Documentation"
+
+    echo ""
+  fi
+
+  echo "Fetching open issues..."
+  ISSUES=$(gh issue list \
+    --repo "${OWNER}/${REPO}" \
+    --state open \
+    --limit 500 \
+    --json number,title)
+
+  TOTAL=$(echo "$ISSUES" | jq 'length')
+  echo "  Found ${TOTAL} open issues."
+  echo ""
+
+  LABELED=0
+  SKIPPED=0
+
+  for i in $(seq 0 $((TOTAL - 1))); do
+    NUMBER=$(echo "$ISSUES" | jq -r ".[$i].number")
+    TITLE=$(echo  "$ISSUES" | jq -r ".[$i].title")
+    LABELS=""
+
+    # [Backend] / [Frontend]
+    echo "$TITLE" | grep -q '\[Backend\]'  && LABELS="$LABELS,backend"
+    echo "$TITLE" | grep -q '\[Frontend\]' && LABELS="$LABELS,frontend"
+
+    # [Spec-XX]
+    SPEC_RAW=$(echo "$TITLE" | grep -oE '\[Spec-[0-9]+\]' | grep -oE '[0-9]+' || true)
+    if [[ -n "$SPEC_RAW" ]]; then
+      LABELS="$LABELS,spec-$(printf '%02d' "$SPEC_RAW")"
+    fi
+
+    # Strip leading comma
+    LABELS="${LABELS#,}"
+
+    if [[ -z "$LABELS" ]]; then
+      SKIPPED=$((SKIPPED + 1))
+      continue
+    fi
+
+    if [[ "$DRY_RUN" == "1" ]]; then
+      echo "  #${NUMBER} (dry-run): would add labels: ${LABELS}"
+    else
+      gh issue edit "$NUMBER" \
+        --add-label "$LABELS" \
+        --repo "${OWNER}/${REPO}"
+      echo "  #${NUMBER}: labeled [${LABELS}]"
+    fi
+    LABELED=$((LABELED + 1))
+  done
+
+  echo ""
+  echo "  Phase 3 complete: ${LABELED} labeled, ${SKIPPED} skipped (no matching prefix)."
+  echo ""
+}
+
+# ---------------------------------------------------------------------------
 # Run phases
 # ---------------------------------------------------------------------------
 if [[ "$RUN_PHASE" == "all" || "$RUN_PHASE" == "1" ]]; then
@@ -1926,11 +2030,15 @@ if [[ "$RUN_PHASE" == "all" || "$RUN_PHASE" == "2" ]]; then
   phase2_convert
 fi
 
+if [[ "$RUN_PHASE" == "all" || "$RUN_PHASE" == "3" ]]; then
+  phase3_label
+fi
+
 echo "============================================================"
 echo " All done!"
 echo " Board URL : https://github.com/users/${OWNER}/projects/${PROJECT_NUMBER}"
 echo " Repo      : https://github.com/${OWNER}/${REPO}/issues"
 echo ""
-echo " Next step : run label_existing_issues.sh to apply labels"
-echo "             based on [Backend][Spec-XX] title prefixes."
+echo " Ongoing automation (auto-label, auto-assign, plan sync) is"
+echo " handled by .github/workflows/project-automation.yml"
 echo "============================================================"
