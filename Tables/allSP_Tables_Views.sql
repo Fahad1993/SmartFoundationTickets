@@ -290,7 +290,6 @@ CREATE TABLE [Tickets].[ServiceRoutingRule] (
     CONSTRAINT [FK_SRR_Service] FOREIGN KEY ([ServiceID_FK]) REFERENCES [Tickets].[Service]([ServiceID])
 );
 GO
-
 -- 2.3 ServiceSLAPolicy
 CREATE TABLE [Tickets].[ServiceSLAPolicy] (
     [ServiceSLAPolicyID]            BIGINT IDENTITY(1,1)    NOT NULL,
