@@ -47,6 +47,17 @@ BEGIN
             w.LastActionTypeID,
             w.LastActionID,
             ba.buildingActionTypeResidentAlias,
+            case
+            when ert.ExtendReasonTypeID in (select t.ExtendReasonTypeID from ExtendReasonType t where t.InsuranceRequired = 1 and t.Active = 1) and w.LastActionTypeID not in (61,24) then N'التأمين الاحترازي مطلوب'
+            when ert.ExtendReasonTypeID in (select t.ExtendReasonTypeID from ExtendReasonType t where t.InsuranceRequired = 1 and t.Active = 1) and w.LastActionTypeID in(61,24) then N'تم تنفيذ التأمين الاحترازي'
+            when ert.ExtendReasonTypeID in (select t.ExtendReasonTypeID from ExtendReasonType t where t.InsuranceRequired = 0 and t.Active = 1) then N'التأمين الاحترازي غير مطلوب'
+            end InsuranceStatusName,
+            case
+            when ert.ExtendReasonTypeID in (select t.ExtendReasonTypeID from ExtendReasonType t where t.InsuranceRequired = 1 and t.Active = 1) and w.LastActionTypeID not in (61,24) then N'0'
+            when ert.ExtendReasonTypeID in (select t.ExtendReasonTypeID from ExtendReasonType t where t.InsuranceRequired = 1 and t.Active = 1) and w.LastActionTypeID in(61,24) then N'1'
+            when ert.ExtendReasonTypeID in (select t.ExtendReasonTypeID from ExtendReasonType t where t.InsuranceRequired = 0 and t.Active = 1) then N'2'
+            end InsuranceStatusNo,
+
             w.buildingDetailsID,
             w.buildingDetailsNo,
             w.LastActionExtendReasonTypeID,
@@ -60,6 +71,7 @@ BEGIN
             , br.buildingRentAmount
             ,(br.buildingRentAmount * 40.00) InsuranceAmount
             ,(br.buildingRentAmount * 40.00) +isnull(sum_.Remaining,0.00) InsuranceAmountWithRemaining
+            
             
             
     FROM Housing.V_WaitingList w 
@@ -92,16 +104,27 @@ BEGIN
 FROM Housing.V_SumBillsTotalPriceAndTotalPaidForResident e
 GROUP BY e.residentInfoID,e.buildingDetailsID
         ) sum_ on w.residentInfoID = sum_.residentInfoID and w.buildingDetailsID = sum_.buildingDetailsID
-    WHERE w.IdaraId = @idaraID
-      AND  w.LastActionTypeID in (2,48,49,50,51,52,24)
+    WHERE w.IdaraId = 1
+      AND  w.LastActionTypeID in (2,48,49,50,51,52,61,24)
       order by w.LastActionEntryDate desc
       --or w.LastActionTypeID in (2,3,18,19,20,21,22,23,24,26,27,28,33,34,35)
 
 
+
+
+      ---------------------------------------------------
       Select e.ExtendReasonTypeID,e.ExtendReasonTypeName_A 
       from Housing.ExtendReasonType e
       where e.Active = 1
 
+
+      -----------------------------------------------------
+
+
+      select e.ExtendInsuranceTypeID,e.ExtendInsuranceTypeName_A 
+      from Housing.ExtendInsuranceType e
+      where e.ExtendInsuranceTypeActive = 1
+      order by e.ExtendInsuranceTypeID asc
 
 
 END
