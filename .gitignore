@@ -404,6 +404,8 @@ FodyWeavers.xsd
 
 # Environment variables (contains API keys)
 .env
+.claude/
+.specify/
 SmartFoundation.Mvc/appsettings.json
 .gitignore
 docs/ImplementationGuide.md

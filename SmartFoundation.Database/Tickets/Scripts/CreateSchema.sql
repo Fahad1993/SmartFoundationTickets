@@ -1,0 +1,4 @@
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = N'Tickets')
+BEGIN
+    EXEC(N'CREATE SCHEMA [Tickets] AUTHORIZATION [dbo]');
+END
