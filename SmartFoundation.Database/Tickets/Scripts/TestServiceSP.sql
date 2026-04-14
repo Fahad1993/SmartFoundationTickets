@@ -14,6 +14,11 @@ PRINT N'=== TestServiceSP: INSERT / UPDATE / DELETE ===';
 PRINT N'';
 
 -- ============================================================================
+-- Cleanup any prior test residue
+-- ============================================================================
+DELETE FROM [Tickets].[Service] WHERE [serviceCode] = N'TEST_FAUCET';
+
+-- ============================================================================
 -- TEST 1: INSERT_SERVICE — valid insert
 -- ============================================================================
 PRINT N'--- TEST 1: INSERT_SERVICE (valid) ---';

@@ -221,12 +221,12 @@ BEGIN
             IF @RuleID IS NULL
             BEGIN ;THROW 50001, N'ServiceRoutingRuleID (passed as @serviceID) is required', 1; END
 
-            IF NOT EXISTS (SELECT 1 FROM [Tickets].[ServiceRoutingRule] WHERE [serviceRoutingRuleID] = @RuleID AND [routingRuleActive] = 1)
+            IF NOT EXISTS (SELECT 1 FROM [Tickets].[ServiceRoutingRule] WHERE [serviceRoutingRuleID] = @RuleID AND [serviceRoutingRuleActive] = 1)
             BEGIN ;THROW 50001, N'Active routing rule not found', 1; END
 
             UPDATE [Tickets].[ServiceRoutingRule]
             SET [effectiveTo] = GETDATE()
-              , [routingRuleActive] = 0
+              , [serviceRoutingRuleActive] = 0
               , [entryData] = ISNULL(ISNULL([entryData],N'') + N',' + @entryData, [entryData])
               , [hostName]  = ISNULL(ISNULL(@hostName,N'') + N',' + [hostName], [hostName])
             WHERE [serviceRoutingRuleID] = @RuleID;

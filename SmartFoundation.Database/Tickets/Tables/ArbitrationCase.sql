@@ -11,7 +11,7 @@ CREATE TABLE [Tickets].[ArbitrationCase] (
     [decisionTargetDSDID_FK]  INT             NULL,
     [decisionNotes]           NVARCHAR (2000) NULL,
     [decisionDate]            DATETIME        NULL,
-    [arbitrationActive]       BIT             NULL,
+    [arbitrationCaseActive]  BIT             NULL,
     [entryDate]               DATETIME        CONSTRAINT [DF_Tickets_ArbitrationCase_entryDate] DEFAULT (GETDATE()) NULL,
     [entryData]               NVARCHAR (20)   NULL,
     [hostName]                NVARCHAR (200)  NULL,

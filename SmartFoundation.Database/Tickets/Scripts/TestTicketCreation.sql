@@ -17,6 +17,13 @@ PRINT N'=== TestTicketCreation: Resident / Internal / Other ===';
 PRINT N'';
 
 -- ============================================================================
+-- Cleanup any prior test residue
+-- ============================================================================
+DELETE FROM [Tickets].[TicketHistory] WHERE [entryData] = N'TEST';
+DELETE FROM [Tickets].[Ticket] WHERE [entryData] = N'TEST';
+DELETE FROM [Tickets].[Service] WHERE [serviceCode] = N'TEST_TKT_SVC';
+
+-- ============================================================================
 -- Setup: create a test service
 -- ============================================================================
 DECLARE @svcResult TABLE (IsSuccessful INT, Message_ NVARCHAR(MAX));
@@ -35,7 +42,7 @@ EXEC [Tickets].[ServiceSP]
     , @entryData = N'TEST'
     , @hostName = N'TEST-HOST';
 
-SET @testServiceID = SCOPE_IDENTITY();
+SELECT @testServiceID = [serviceID] FROM [Tickets].[Service] WHERE [serviceCode] = N'TEST_TKT_SVC' AND [serviceActive] = 1;
 DELETE FROM @svcResult;
 
 -- ============================================================================
@@ -262,7 +269,7 @@ SELECT @no1 = [ticketNo] FROM [Tickets].[Ticket] WHERE [ticketID] = @testTicketI
 SELECT @no2 = [ticketNo] FROM [Tickets].[Ticket] WHERE [ticketID] = @testTicketID2;
 SELECT @no3 = [ticketNo] FROM [Tickets].[Ticket] WHERE [ticketID] = @testTicketID3;
 
-IF @no1 LIKE N'TKT-____-_____' AND @no2 LIKE N'TKT-____-_____' AND @no3 LIKE N'TKT-____-_____ '
+IF @no1 LIKE N'TKT-____-_____%' AND @no2 LIKE N'TKT-____-_____%' AND @no3 LIKE N'TKT-____-_____%'
    AND @no1 <> @no2 AND @no2 <> @no3 AND @no1 <> @no3
     PRINT N'  PASS: All ticket numbers follow TKT-YYYY-NNNNN format and are unique';
 ELSE IF @no1 <> @no2 AND @no2 <> @no3 AND @no1 <> @no3

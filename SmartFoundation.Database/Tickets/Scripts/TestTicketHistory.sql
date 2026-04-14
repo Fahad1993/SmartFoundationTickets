@@ -15,6 +15,13 @@ PRINT N'=== TestTicketHistory: Creation-Event Logging ===';
 PRINT N'';
 
 -- ============================================================================
+-- Cleanup any prior test residue
+-- ============================================================================
+DELETE FROM [Tickets].[TicketHistory] WHERE [entryData] = N'TEST';
+DELETE FROM [Tickets].[Ticket] WHERE [entryData] = N'TEST';
+DELETE FROM [Tickets].[Service] WHERE [serviceCode] = N'TEST_HIST_SVC';
+
+-- ============================================================================
 -- Setup: create a test service
 -- ============================================================================
 DECLARE @svcResult TABLE (IsSuccessful INT, Message_ NVARCHAR(MAX));
@@ -31,7 +38,7 @@ EXEC [Tickets].[ServiceSP]
     , @entryData = N'TEST'
     , @hostName = N'TEST-HOST';
 
-SET @testServiceID = SCOPE_IDENTITY();
+SELECT @testServiceID = [serviceID] FROM [Tickets].[Service] WHERE [serviceCode] = N'TEST_HIST_SVC' AND [serviceActive] = 1;
 DELETE FROM @svcResult;
 
 -- ============================================================================

@@ -14,6 +14,12 @@ PRINT N'=== TestServiceSLAPolicy: UPSERT (INSERT then UPDATE) + Retrieval ===';
 PRINT N'';
 
 -- ============================================================================
+-- Cleanup any prior test residue
+-- ============================================================================
+DELETE FROM [Tickets].[ServiceSLAPolicy] WHERE [entryData] = N'TEST';
+DELETE FROM [Tickets].[Service] WHERE [serviceCode] = N'TEST_SLA_SVC';
+
+-- ============================================================================
 -- Setup: create a dedicated test service
 -- ============================================================================
 INSERT INTO @result
@@ -29,7 +35,7 @@ EXEC [Tickets].[ServiceSP]
     , @entryData = N'TEST'
     , @hostName = N'TEST-HOST';
 
-SET @testServiceID = SCOPE_IDENTITY();
+SELECT @testServiceID = [serviceID] FROM [Tickets].[Service] WHERE [serviceCode] = N'TEST_SLA_SVC' AND [serviceActive] = 1;
 DELETE FROM @result;
 
 -- ============================================================================

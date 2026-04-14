@@ -5,7 +5,7 @@ CREATE TABLE [Tickets].[ServiceSLAPolicy] (
     [priorityID_FK]               INT             NOT NULL,
     [firstResponseTargetMinutes]  INT             NULL,
     [assignmentTargetMinutes]     INT             NULL,
-    [operationalCompletionMinutes] INT            NULL,
+    [operationalCompletionTargetMinutes] INT       NULL,
     [finalClosureTargetMinutes]   INT             NULL,
     [effectiveFrom]               DATETIME        NULL,
     [effectiveTo]                 DATETIME        NULL,

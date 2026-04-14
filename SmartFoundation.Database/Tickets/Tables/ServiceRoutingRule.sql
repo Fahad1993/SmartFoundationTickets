@@ -8,7 +8,7 @@ CREATE TABLE [Tickets].[ServiceRoutingRule] (
     [effectiveTo]             DATETIME        NULL,
     [approvedByUserID]        INT             NULL,
     [changeReason]            NVARCHAR (1000) NULL,
-    [routingRuleActive]       BIT             NULL,
+    [serviceRoutingRuleActive] BIT            NULL,
     [entryDate]               DATETIME        CONSTRAINT [DF_Tickets_ServiceRoutingRule_entryDate] DEFAULT (GETDATE()) NULL,
     [entryData]               NVARCHAR (20)   NULL,
     [hostName]                NVARCHAR (200)  NULL,

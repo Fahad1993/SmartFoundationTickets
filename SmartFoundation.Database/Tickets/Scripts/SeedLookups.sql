@@ -115,13 +115,13 @@ DECLARE @svcID5 BIGINT = @svcID1 + 4;
 
 PRINT N'--- Seeding [Tickets].[ServiceRoutingRule] ---';
 -- Uses DSDID values 100-104 as representative DeptSecDiv nodes
-INSERT INTO [Tickets].[ServiceRoutingRule] ([serviceID_FK], [idaraID_FK], [targetDSDID_FK], [queueDistributorID_FK], [effectiveFrom], [effectiveTo], [changeReason_A], [changeReason_E], [approvedByUserID], [serviceRoutingRuleActive], [entryData], [hostName])
+INSERT INTO [Tickets].[ServiceRoutingRule] ([serviceID_FK], [idaraID_FK], [targetDSDID_FK], [queueDistributorID_FK], [effectiveFrom], [effectiveTo], [changeReason], [approvedByUserID], [serviceRoutingRuleActive], [entryData], [hostName])
 VALUES
-    (@svcID1, 1, 100, NULL, N'2026-01-01', NULL, N'قاعدة أولية',              N'Initial routing rule',              1, 1, N'SEED', N'SEED-HOST'),
-    (@svcID2, 1, 101, NULL, N'2026-01-01', NULL, N'قاعدة أولية',              N'Initial routing rule',              1, 1, N'SEED', N'SEED-HOST'),
-    (@svcID3, 1, 102, NULL, N'2026-01-01', NULL, N'قاعدة أولية',              N'Initial routing rule',              1, 1, N'SEED', N'SEED-HOST'),
-    (@svcID4, 1, 103, NULL, N'2026-01-01', NULL, N'قاعدة أولية',              N'Initial routing rule',              1, 1, N'SEED', N'SEED-HOST'),
-    (@svcID5, 1, 104, NULL, N'2026-01-01', NULL, N'قاعدة أولية',              N'Initial routing rule',              1, 1, N'SEED', N'SEED-HOST');
+    (@svcID1, 1, 100, NULL, N'2026-01-01', NULL, N'قاعدة أولية - Initial routing rule',              1, 1, N'SEED', N'SEED-HOST'),
+    (@svcID2, 1, 101, NULL, N'2026-01-01', NULL, N'قاعدة أولية - Initial routing rule',              1, 1, N'SEED', N'SEED-HOST'),
+    (@svcID3, 1, 102, NULL, N'2026-01-01', NULL, N'قاعدة أولية - Initial routing rule',              1, 1, N'SEED', N'SEED-HOST'),
+    (@svcID4, 1, 103, NULL, N'2026-01-01', NULL, N'قاعدة أولية - Initial routing rule',              1, 1, N'SEED', N'SEED-HOST'),
+    (@svcID5, 1, 104, NULL, N'2026-01-01', NULL, N'قاعدة أولية - Initial routing rule',              1, 1, N'SEED', N'SEED-HOST');
 
 DECLARE @ruleID1 BIGINT = SCOPE_IDENTITY() - 4;
 DECLARE @ruleID2 BIGINT = @ruleID1 + 1;
@@ -205,10 +205,10 @@ VALUES
 PRINT N'--- Seeding [Tickets].[ArbitrationCase] ---';
 INSERT INTO [Tickets].[ArbitrationCase] ([ticketID_FK], [idaraID_FK], [raisedByUserID], [raisedFromDSDID_FK], [arbitrationReasonID_FK], [arbitratorDistributorID], [arbitrationStatus], [decisionType], [decisionTargetDSDID_FK], [decisionNotes], [arbitrationCaseActive], [entryData], [hostName])
 VALUES
-    (@tktID5, 1, 11, 104, 1, 200, N'OPEN',       NULL,  NULL, NULL,                                N'Technician claims ticket belongs to another section',       1, N'SEED', N'SEED-HOST'),
+    (@tktID5, 1, 11, 104, 1, 200, N'OPEN',       NULL,  NULL, N'Technician claims ticket belongs to another section',       1, N'SEED', N'SEED-HOST'),
     (@tktID2, 1, 10, 101, 3, 201, N'DECIDED',     N'REDIRECT', 105, N'Redirected to correct maintenance section',  1, N'SEED', N'SEED-HOST'),
     (@tktID4, 1, 12, 103, 2, 200, N'CANCELLED',   NULL,  NULL, N'Requester withdrew the dispute',           1, N'SEED', N'SEED-HOST'),
-    (@tktID3, 1, 11, 102, 4, 202, N'OPEN',        NULL,  NULL, NULL,                                N'Service type unclear — needs classification',               1, N'SEED', N'SEED-HOST'),
+    (@tktID3, 1, 11, 102, 4, 202, N'OPEN',        NULL,  NULL, N'Service type unclear — needs classification',               1, N'SEED', N'SEED-HOST'),
     (@tktID1, 1, 10, 100, 5, 201, N'DECIDED',     N'OVERRULE', NULL, N'Original routing confirmed as correct', 1, N'SEED', N'SEED-HOST');
 
 PRINT N'--- Seeding [Tickets].[ClarificationRequest] ---';
@@ -228,7 +228,7 @@ DECLARE @clarID4 BIGINT = @clarID1 + 3;
 DECLARE @clarID5 BIGINT = @clarID1 + 4;
 
 PRINT N'--- Seeding [Tickets].[TicketPauseSession] ---';
-INSERT INTO [Tickets].[TicketPauseSession] ([ticketID_FK], [idaraID_FK], [pauseReasonID_FK], [relatedChildTicketID_FK], [relatedArbitrationCaseID_FK], [relatedClarificationRequestID_FK], [pauseStart], [pauseEnd], [slapausesFlag], [pauseNotes], [ticketPauseSessionActive], [entryData], [hostName])
+INSERT INTO [Tickets].[TicketPauseSession] ([ticketID_FK], [idaraID_FK], [pauseReasonID_FK], [relatedChildTicketID_FK], [relatedArbitrationCaseID_FK], [relatedClarificationRequestID_FK], [pauseStart], [pauseEnd], [slaPauseFlag], [pauseNotes], [ticketPauseSessionActive], [entryData], [hostName])
 VALUES
     (@tktID1, 1, 3, NULL, NULL,  @clarID1, N'2026-03-20 08:30', N'2026-03-20 09:00', 1, N'Paused for location clarification',            1, N'SEED', N'SEED-HOST'),
     (@tktID5, 1, 2, NULL, 1,     NULL,    N'2026-03-22 10:00', NULL,                1, N'Paused pending arbitration outcome',           1, N'SEED', N'SEED-HOST'),

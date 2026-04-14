@@ -16,6 +16,12 @@ PRINT N'=== TestServiceRoutingRule: INSERT / CLOSE / Historical Replacement ==='
 PRINT N'';
 
 -- ============================================================================
+-- Cleanup any prior test residue
+-- ============================================================================
+DELETE FROM [Tickets].[ServiceRoutingRule] WHERE [entryData] = N'TEST';
+DELETE FROM [Tickets].[Service] WHERE [serviceCode] = N'TEST_ROUTING_SVC';
+
+-- ============================================================================
 -- Setup: create a dedicated test service
 -- ============================================================================
 INSERT INTO @result
@@ -31,7 +37,7 @@ EXEC [Tickets].[ServiceSP]
     , @entryData = N'TEST'
     , @hostName = N'TEST-HOST';
 
-SET @testServiceID = SCOPE_IDENTITY();
+SELECT @testServiceID = [serviceID] FROM [Tickets].[Service] WHERE [serviceCode] = N'TEST_ROUTING_SVC' AND [serviceActive] = 1;
 DELETE FROM @result;
 
 -- ============================================================================
@@ -52,7 +58,7 @@ EXEC [Tickets].[ServiceSP]
 
 IF EXISTS (SELECT 1 FROM @result WHERE IsSuccessful = 1)
 BEGIN
-    SET @ruleID1 = SCOPE_IDENTITY();
+    SELECT @ruleID1 = MAX([serviceRoutingRuleID]) FROM [Tickets].[ServiceRoutingRule] WHERE [serviceID_FK] = @testServiceID;
     IF @ruleID1 IS NOT NULL
         PRINT N'  PASS: Routing rule inserted with ID = ' + CAST(@ruleID1 AS NVARCHAR(20));
     ELSE
@@ -133,7 +139,7 @@ BEGIN
     IF EXISTS (
         SELECT 1 FROM [Tickets].[ServiceRoutingRule]
         WHERE [serviceRoutingRuleID] = @ruleID1
-          AND [routingRuleActive] = 0
+          AND [serviceRoutingRuleActive] = 0
           AND [effectiveTo] IS NOT NULL
     )
         PRINT N'  PASS: Routing rule closed (active=0, effectiveTo set)';
@@ -186,13 +192,13 @@ EXEC [Tickets].[ServiceSP]
     , @entryData       = N'TEST'
     , @hostName        = N'TEST-HOST';
 
-SET @ruleID2 = SCOPE_IDENTITY();
+SELECT @ruleID2 = MAX([serviceRoutingRuleID]) FROM [Tickets].[ServiceRoutingRule] WHERE [serviceID_FK] = @testServiceID AND [targetDSDID_FK] = 200;
 DELETE FROM @result;
 
 IF @ruleID2 IS NOT NULL AND EXISTS (
     SELECT 1 FROM [Tickets].[ServiceRoutingRule]
     WHERE [serviceRoutingRuleID] = @ruleID2
-      AND [routingRuleActive] = 1
+      AND [serviceRoutingRuleActive] = 1
       AND [targetDSDID_FK] = 200
 )
     PRINT N'  PASS: New routing rule created after historical replacement (targetDSDID=200)';
@@ -202,7 +208,7 @@ BEGIN PRINT N'  FAIL: Replacement rule not found'; SET @errors = @errors + 1; EN
 IF EXISTS (
     SELECT 1 FROM [Tickets].[ServiceRoutingRule]
     WHERE [serviceRoutingRuleID] = @ruleID1
-      AND [routingRuleActive] = 0
+      AND [serviceRoutingRuleActive] = 0
 )
     PRINT N'  PASS: Old routing rule still preserved as inactive (historical accountability)';
 ELSE

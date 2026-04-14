@@ -1,16 +1,7 @@
--- ============================================================================
--- Smoke Test: Lookup Uniqueness and Seed Integrity
--- Validates all Tickets lookup tables have unique codes,
--- expected row counts, required fields, active flags, and entry metadata
--- ============================================================================
-
 SET NOCOUNT ON;
 
 DECLARE @errors INT = 0;
-
--- ============================================================================
--- Helper: report PASS / FAIL
--- ============================================================================
+DECLARE @cnt INT;
 DECLARE @label NVARCHAR(200);
 
 -- ============================================================================
@@ -27,12 +18,13 @@ IF EXISTS (SELECT [ticketStatusCode], COUNT(*) FROM [Tickets].[TicketStatus] GRO
 BEGIN PRINT N'  FAIL: Duplicate ticketStatusCode values'; SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: ticketStatusCode unique';
 
-IF (SELECT COUNT(*) FROM [Tickets].[TicketStatus]) <> 11
-BEGIN PRINT N'  FAIL: Expected 11 rows, found ' + CAST((SELECT COUNT(*) FROM [Tickets].[TicketStatus]) AS NVARCHAR(10)); SET @errors = @errors + 1; END
+SELECT @cnt = COUNT(*) FROM [Tickets].[TicketStatus];
+IF @cnt <> 11
+BEGIN PRINT N'  FAIL: Expected 11 rows, found ' + CAST(@cnt AS NVARCHAR(10)); SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: row count = 11';
 
 IF EXISTS (SELECT 1 FROM [Tickets].[TicketStatus] WHERE [ticketStatusCode] IS NULL OR [ticketStatusName_E] IS NULL)
-BEGIN PRINT N'  FAIL: NULL found in required columns (ticketStatusCode, ticketStatusName_E)'; SET @errors = @errors + 1; END
+BEGIN PRINT N'  FAIL: NULL found in required columns'; SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: required columns populated';
 
 IF NOT EXISTS (SELECT 1 FROM [Tickets].[TicketStatus] WHERE [ticketStatusActive] = 1)
@@ -57,12 +49,13 @@ IF EXISTS (SELECT [ticketClassCode], COUNT(*) FROM [Tickets].[TicketClass] GROUP
 BEGIN PRINT N'  FAIL: Duplicate ticketClassCode values'; SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: ticketClassCode unique';
 
-IF (SELECT COUNT(*) FROM [Tickets].[TicketClass]) <> 5
-BEGIN PRINT N'  FAIL: Expected 5 rows, found ' + CAST((SELECT COUNT(*) FROM [Tickets].[TicketClass]) AS NVARCHAR(10)); SET @errors = @errors + 1; END
+SELECT @cnt = COUNT(*) FROM [Tickets].[TicketClass];
+IF @cnt <> 5
+BEGIN PRINT N'  FAIL: Expected 5 rows, found ' + CAST(@cnt AS NVARCHAR(10)); SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: row count = 5';
 
 IF EXISTS (SELECT 1 FROM [Tickets].[TicketClass] WHERE [ticketClassCode] IS NULL OR [ticketClassName_E] IS NULL)
-BEGIN PRINT N'  FAIL: NULL found in required columns (ticketClassCode, ticketClassName_E)'; SET @errors = @errors + 1; END
+BEGIN PRINT N'  FAIL: NULL found in required columns'; SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: required columns populated';
 
 IF NOT EXISTS (SELECT 1 FROM [Tickets].[TicketClass] WHERE [ticketClassActive] = 1)
@@ -91,12 +84,13 @@ IF EXISTS (SELECT [priorityLevel], COUNT(*) FROM [Tickets].[Priority] WHERE [pri
 BEGIN PRINT N'  FAIL: Duplicate priorityLevel values'; SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: priorityLevel unique';
 
-IF (SELECT COUNT(*) FROM [Tickets].[Priority]) <> 5
-BEGIN PRINT N'  FAIL: Expected 5 rows, found ' + CAST((SELECT COUNT(*) FROM [Tickets].[Priority]) AS NVARCHAR(10)); SET @errors = @errors + 1; END
+SELECT @cnt = COUNT(*) FROM [Tickets].[Priority];
+IF @cnt <> 5
+BEGIN PRINT N'  FAIL: Expected 5 rows, found ' + CAST(@cnt AS NVARCHAR(10)); SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: row count = 5';
 
 IF EXISTS (SELECT 1 FROM [Tickets].[Priority] WHERE [priorityCode] IS NULL OR [priorityName_E] IS NULL)
-BEGIN PRINT N'  FAIL: NULL found in required columns (priorityCode, priorityName_E)'; SET @errors = @errors + 1; END
+BEGIN PRINT N'  FAIL: NULL found in required columns'; SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: required columns populated';
 
 IF EXISTS (SELECT 1 FROM [Tickets].[Priority] WHERE [priorityLevel] IS NULL)
@@ -125,12 +119,13 @@ IF EXISTS (SELECT [requesterTypeCode], COUNT(*) FROM [Tickets].[RequesterType] G
 BEGIN PRINT N'  FAIL: Duplicate requesterTypeCode values'; SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: requesterTypeCode unique';
 
-IF (SELECT COUNT(*) FROM [Tickets].[RequesterType]) <> 5
-BEGIN PRINT N'  FAIL: Expected 5 rows, found ' + CAST((SELECT COUNT(*) FROM [Tickets].[RequesterType]) AS NVARCHAR(10)); SET @errors = @errors + 1; END
+SELECT @cnt = COUNT(*) FROM [Tickets].[RequesterType];
+IF @cnt <> 5
+BEGIN PRINT N'  FAIL: Expected 5 rows, found ' + CAST(@cnt AS NVARCHAR(10)); SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: row count = 5';
 
 IF EXISTS (SELECT 1 FROM [Tickets].[RequesterType] WHERE [requesterTypeCode] IS NULL OR [requesterTypeName_E] IS NULL)
-BEGIN PRINT N'  FAIL: NULL found in required columns (requesterTypeCode, requesterTypeName_E)'; SET @errors = @errors + 1; END
+BEGIN PRINT N'  FAIL: NULL found in required columns'; SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: required columns populated';
 
 IF NOT EXISTS (SELECT 1 FROM [Tickets].[RequesterType] WHERE [requesterTypeActive] = 1)
@@ -155,12 +150,13 @@ IF EXISTS (SELECT [pauseReasonCode], COUNT(*) FROM [Tickets].[PauseReason] GROUP
 BEGIN PRINT N'  FAIL: Duplicate pauseReasonCode values'; SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: pauseReasonCode unique';
 
-IF (SELECT COUNT(*) FROM [Tickets].[PauseReason]) <> 5
-BEGIN PRINT N'  FAIL: Expected 5 rows, found ' + CAST((SELECT COUNT(*) FROM [Tickets].[PauseReason]) AS NVARCHAR(10)); SET @errors = @errors + 1; END
+SELECT @cnt = COUNT(*) FROM [Tickets].[PauseReason];
+IF @cnt <> 5
+BEGIN PRINT N'  FAIL: Expected 5 rows, found ' + CAST(@cnt AS NVARCHAR(10)); SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: row count = 5';
 
 IF EXISTS (SELECT 1 FROM [Tickets].[PauseReason] WHERE [pauseReasonCode] IS NULL OR [pauseReasonName_E] IS NULL)
-BEGIN PRINT N'  FAIL: NULL found in required columns (pauseReasonCode, pauseReasonName_E)'; SET @errors = @errors + 1; END
+BEGIN PRINT N'  FAIL: NULL found in required columns'; SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: required columns populated';
 
 IF NOT EXISTS (SELECT 1 FROM [Tickets].[PauseReason] WHERE [pauseReasonActive] = 1)
@@ -185,12 +181,13 @@ IF EXISTS (SELECT [arbitrationReasonCode], COUNT(*) FROM [Tickets].[ArbitrationR
 BEGIN PRINT N'  FAIL: Duplicate arbitrationReasonCode values'; SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: arbitrationReasonCode unique';
 
-IF (SELECT COUNT(*) FROM [Tickets].[ArbitrationReason]) <> 5
-BEGIN PRINT N'  FAIL: Expected 5 rows, found ' + CAST((SELECT COUNT(*) FROM [Tickets].[ArbitrationReason]) AS NVARCHAR(10)); SET @errors = @errors + 1; END
+SELECT @cnt = COUNT(*) FROM [Tickets].[ArbitrationReason];
+IF @cnt <> 5
+BEGIN PRINT N'  FAIL: Expected 5 rows, found ' + CAST(@cnt AS NVARCHAR(10)); SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: row count = 5';
 
 IF EXISTS (SELECT 1 FROM [Tickets].[ArbitrationReason] WHERE [arbitrationReasonCode] IS NULL OR [arbitrationReasonName_E] IS NULL)
-BEGIN PRINT N'  FAIL: NULL found in required columns (arbitrationReasonCode, arbitrationReasonName_E)'; SET @errors = @errors + 1; END
+BEGIN PRINT N'  FAIL: NULL found in required columns'; SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: required columns populated';
 
 IF NOT EXISTS (SELECT 1 FROM [Tickets].[ArbitrationReason] WHERE [arbitrationReasonActive] = 1)
@@ -215,12 +212,13 @@ IF EXISTS (SELECT [clarificationReasonCode], COUNT(*) FROM [Tickets].[Clarificat
 BEGIN PRINT N'  FAIL: Duplicate clarificationReasonCode values'; SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: clarificationReasonCode unique';
 
-IF (SELECT COUNT(*) FROM [Tickets].[ClarificationReason]) <> 5
-BEGIN PRINT N'  FAIL: Expected 5 rows, found ' + CAST((SELECT COUNT(*) FROM [Tickets].[ClarificationReason]) AS NVARCHAR(10)); SET @errors = @errors + 1; END
+SELECT @cnt = COUNT(*) FROM [Tickets].[ClarificationReason];
+IF @cnt <> 5
+BEGIN PRINT N'  FAIL: Expected 5 rows, found ' + CAST(@cnt AS NVARCHAR(10)); SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: row count = 5';
 
 IF EXISTS (SELECT 1 FROM [Tickets].[ClarificationReason] WHERE [clarificationReasonCode] IS NULL OR [clarificationReasonName_E] IS NULL)
-BEGIN PRINT N'  FAIL: NULL found in required columns (clarificationReasonCode, clarificationReasonName_E)'; SET @errors = @errors + 1; END
+BEGIN PRINT N'  FAIL: NULL found in required columns'; SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: required columns populated';
 
 IF NOT EXISTS (SELECT 1 FROM [Tickets].[ClarificationReason] WHERE [clarificationReasonActive] = 1)
@@ -245,12 +243,13 @@ IF EXISTS (SELECT [qualityReviewResultCode], COUNT(*) FROM [Tickets].[QualityRev
 BEGIN PRINT N'  FAIL: Duplicate qualityReviewResultCode values'; SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: qualityReviewResultCode unique';
 
-IF (SELECT COUNT(*) FROM [Tickets].[QualityReviewResult]) <> 5
-BEGIN PRINT N'  FAIL: Expected 5 rows, found ' + CAST((SELECT COUNT(*) FROM [Tickets].[QualityReviewResult]) AS NVARCHAR(10)); SET @errors = @errors + 1; END
+SELECT @cnt = COUNT(*) FROM [Tickets].[QualityReviewResult];
+IF @cnt <> 5
+BEGIN PRINT N'  FAIL: Expected 5 rows, found ' + CAST(@cnt AS NVARCHAR(10)); SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: row count = 5';
 
 IF EXISTS (SELECT 1 FROM [Tickets].[QualityReviewResult] WHERE [qualityReviewResultCode] IS NULL OR [qualityReviewResultName_E] IS NULL)
-BEGIN PRINT N'  FAIL: NULL found in required columns (qualityReviewResultCode, qualityReviewResultName_E)'; SET @errors = @errors + 1; END
+BEGIN PRINT N'  FAIL: NULL found in required columns'; SET @errors = @errors + 1; END
 ELSE PRINT N'  PASS: required columns populated';
 
 IF NOT EXISTS (SELECT 1 FROM [Tickets].[QualityReviewResult] WHERE [qualityReviewResultActive] = 1)
