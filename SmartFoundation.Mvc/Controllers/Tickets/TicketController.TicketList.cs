@@ -3,8 +3,6 @@ using SmartFoundation.Mvc.Helpers;
 using SmartFoundation.UI.ViewModels.SmartForm;
 using SmartFoundation.UI.ViewModels.SmartPage;
 using SmartFoundation.UI.ViewModels.SmartTable;
-using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
 using System.Data;
 using System.Text.Json;
 
@@ -46,9 +44,8 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
 
             if (IsFailedTicketListDataLoad(dt1))
             {
-                var fallbackTable = await TryLoadTicketListFallbackAsync(filterStatusID, filterServiceID, filterDSDID);
-                if (fallbackTable != null && fallbackTable.Columns.Count > 0)
-                    dt1 = fallbackTable;
+                TempData["Warning"] = "تعذر تحميل قائمة التذاكر عبر مسار البوابة.";
+                dt1 = new DataTable();
             }
 
             if (permissionTable is null || permissionTable.Rows.Count == 0)
@@ -93,19 +90,23 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                 if (perm == "RESPOND_CLARIFICATION") canRespondClarification = true;
             }
 
-            // Action permissions are configured under "TicketDetails" page — load them too
+            // ---- Supplement permissions from TicketDetails page ----
+            // Action permissions (INSERT_TICKET, ROUTE_TICKET, etc.) may be assigned to the
+            // TicketDetails menu item rather than TicketList in the live permission data.
+            // This second call ensures action buttons appear for users who have TicketDetails perms.
             try
             {
-                DataSet dsDetailPerms = await _mastersServies.GetDataLoadDataSetAsync(
-                    "TicketDetails", IdaraId, usersId, HostName, "-1"
-                );
-                var detailPermTable = dsDetailPerms?.Tables?.Count > 0 ? dsDetailPerms.Tables[0] : null;
+                var dsDetailPerms = await _mastersServies.GetDataLoadDataSetAsync(
+                    "TicketDetails", IdaraId, usersId, HostName);
+                var detailPermTable = (dsDetailPerms?.Tables?.Count ?? 0) > 0 ? dsDetailPerms!.Tables[0] : null;
                 if (detailPermTable != null)
                 {
                     foreach (DataRow row in detailPermTable.Rows)
                     {
                         var perm = row["permissionTypeName_E"]?.ToString()?.Trim().ToUpper();
                         if (perm == "INSERT_TICKET") canCreateTicket = true;
+                        if (perm == "RAISE_ARBITRATION" || perm == "DECIDE_ARBITRATION") canViewArbitrationInbox = true;
+                        if (perm == "SUBMIT_QUALITY_REVIEW" || perm == "FINALIZE_QUALITY_REVIEW") canViewQualityInbox = true;
                         if (perm == "ROUTE_TICKET") canRouteTicket = true;
                         if (perm == "REJECT_TICKET") canRejectTicket = true;
                         if (perm == "ASSIGN_TICKET") canAssignTicket = true;
@@ -125,7 +126,10 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                     }
                 }
             }
-            catch { /* TicketDetails permissions unavailable — rely on TicketList permissions only */ }
+            catch (Exception)
+            {
+                // silently ignore — supplemental perms are best-effort
+            }
 
             List<OptionItem> statusOptions = new();
             List<OptionItem> serviceOptions = new();
@@ -137,6 +141,7 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             List<OptionItem> pauseReasonOptions = new(), arbReasonOptions = new();
             List<OptionItem> qrResultOptions = new(), actionPriorityOptions = new(), actionClassOptions = new();
             List<OptionItem> clarificationReasonOptions = new(), clarificationTargetDsdOptions = new();
+            List<OptionItem> dsdOptions = new();
             pauseReasonOptions = await GetTicketDdlOptionsAsync("pauseReasonName_A", "pauseReasonID", "1", "PauseReasonDDL");
             arbReasonOptions = await GetTicketDdlOptionsAsync("arbitrationReasonName_A", "arbitrationReasonID", "1", "ArbitrationReasonDDL");
             qrResultOptions = await GetTicketDdlOptionsAsync("qualityReviewResultName_A", "qualityReviewResultID", "1", "QualityReviewResultDDL");
@@ -144,7 +149,8 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             actionClassOptions = await GetTicketDdlOptionsAsync("ticketClassName_A", "ticketClassID", "1", "TicketClassDDL");
             clarificationReasonOptions = await GetClarificationReasonOptionsAsync();
             clarificationTargetDsdOptions = await GetServiceCatalogueDsdOptionsAsync();
- 
+            dsdOptions = await GetTicketDdlOptionsAsync("dsdName_A", "DSDID", "1", "DSDDL");
+
             var columns = new List<TableColumn>();
             var rows = new List<Dictionary<string, object?>>();
 
@@ -426,10 +432,10 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                     PillEnabled=true, PillField="priorityName_A", PillTextField="priorityName_A",
                     PillCssClass="pill pill-red", PillMode="replace" },
 
-                new() { Target="row", Field="priorityName_A", Op="eq", Value="مرتفع", Priority=2, 
+                new() { Target="row", Field="priorityName_A", Op="eq", Value="مرتفع", Priority=2,
                     PillEnabled=true, PillField="priorityName_A", PillTextField="priorityName_A",
                     PillCssClass="pill pill-orange", PillMode="replace", PillSvg = SfIcons.Check },
-                    
+
 
                 new() { Target="row", Field="priorityName_A", Op="eq", Value="متوسط", Priority=2,
                     PillEnabled=true, PillField="priorityName_A", PillTextField="priorityName_A",
@@ -445,6 +451,12 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             };
 
             var tabGroupKey = "ticket-inbox";
+
+            var currentUrl = Request.Path + Request.QueryString;
+
+            // p03 always carries the logged-in user's ID.
+            // The JS requesterTypeToggle() handles showing/hiding p04 (resident) vs _p03display client-side.
+            var requesterUserValue = usersId;
 
             var toolbar = new TableToolbarConfig
             {
@@ -466,13 +478,12 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
 
                 // DDLs for ticket creation - Residents and Buildings
                 List<OptionItem> residentOptions = await GetTicketDdlOptionsAsync("FullName_A", "residentInfoID", "1", "ResidentDDL");
-
                 List<OptionItem> buildingOptions = await GetTicketDdlOptionsAsync("buildingDetailsNo", "buildingDetailsID", "1", "BuildingDDL");
 
-                // DDLs for ticket reason and description templates (no keyboard needed)
-                List<OptionItem> ticketReasonOptions = await GetTicketDdlOptionsAsync("ticketReasonName_A", "ticketReasonID", "1", "TicketReasonDDL");
-
-                List<OptionItem> descriptionTemplateOptions = await GetTicketDdlOptionsAsync("templateName_A", "templateID", "1", "TicketDescriptionTemplateDDL");
+                // DDLs for ticket reason and description templates.
+                // Value = the text that gets stored in @title / @description_ (not the numeric ID).
+                List<OptionItem> ticketReasonOptions = await GetTicketDdlOptionsAsync("ticketReasonName_A", "ticketReasonName_A", "1", "TicketReasonDDL");
+                List<OptionItem> descriptionTemplateOptions = await GetTicketDdlOptionsAsync("templateName_A", "templateContent_A", "1", "TicketDescriptionTemplateDDL");
 
                 // Parameter mapping for INSERT_TICKET in Masters_CRUD → [Tickets].[TicketSP]:
                 //   p01 → @ticketClassID_FK        p02 → @requesterTypeID_FK
@@ -483,6 +494,106 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                 //   p11 → @assignedUserID_FK        p12 → @locationBuildingNo
                 //   p13 → @locationUnitNo           p14 → @locationArea
                 //   p15 → @requiresQualityReview    p16 → @isOtherService
+
+                var addFields = new List<FieldConfig>
+                    {
+                        new() { Name = "pageName_",         Type = "hidden", Value = "TicketDetails" },
+                        new() { Name = "ActionType",        Type = "hidden", Value = "INSERT_TICKET" },
+                        new() { Name = "idaraID",           Type = "hidden", Value = IdaraId },
+                        new() { Name = "entrydata",         Type = "hidden", Value = usersId },
+                        new() { Name = "hostname",          Type = "hidden", Value = HostName },
+                        new() { Name = "redirectAction",    Type = "hidden", Value = "TicketList" },
+                        new() { Name = "redirectController",Type = "hidden", Value = "Ticket" },
+
+                        // p02 → @requesterTypeID_FK
+                        // مقيم (1) → يظهر p04 | أي نوع آخر → يظهر _p03display
+                        new FieldConfig
+                        {
+                            Label = "نوع مقدم الطلب", Name = "p02", Type = "select",
+                            Options = createRequesterTypeOptions, Required = true, ColCss = "4", Select2 = true,
+                            OnChangeJs = "requesterTypeToggle(this);"
+                        },
+
+                        // p03 → @requesterUserID_FK (دائماً يحمل ID المستخدم الحالي)
+                        new() { Name = "p03", Type = "hidden", Value = requesterUserValue },
+
+                        // عرض اسم المستخدم الداخلي – مخفي حتى يختار نوع مقدم طلب غير مقيم
+                        new FieldConfig
+                        {
+                            Label = "المستخدم (داخلي)", Name = "_p03display", Type = "text",
+                            ColCss = "4", Placeholder = "رقم الهوية",
+                            Value = $"{FullName} - {NationalId}", Readonly = true,
+                            ExtraCss = "sf-toggle-hidden"
+                        },
+
+                        // p04 → @requesterResidentID_FK — مخفي حتى يختار "مقيم" من p02
+                        new FieldConfig
+                        {
+                            Label = "المقيم", Name = "p04", Type = "select",
+                            Required = false, ColCss = "4", Select2 = true,
+                            Options = residentOptions, ExtraCss = "sf-toggle-hidden",
+                            Placeholder = "اختر المقيم"
+                        },
+
+                        // p01 → @ticketClassID_FK
+                        new() { Label = "فئة التذكرة", Name = "p01", Type = "select", Options = createClassOptions, ColCss = "4", Select2 = true },
+
+                        // p05 → @serviceID_FK
+                        new()
+                        {
+                            Label = "الخدمة",
+                            Name = "p05",
+                            Type = "select",
+                            Options = new List<OptionItem>(), // Initial empty state
+                            Required = true,
+                            ColCss = "4",
+                            Select2 = true,
+                            DependsOn = "p01",
+                            DependsUrl = "/crud/DDLFiltered?FK=ticketClassID_FK&textcol=serviceName_A&ValueCol=serviceID&PageName=ServiceDDL&TableIndex=0"
+                        },
+                        // p06 → @title (ticket reason)
+                        new()
+                        {
+                            Label = "سبب التذكرة",
+                            Name = "p06",
+                            Type = "select",
+                            Options = new List<OptionItem>(), // Initial empty state
+                            Required = true,
+                            ColCss = "6",
+                            Select2 = true,
+                            DependsOn = "p05",
+                            DependsUrl = "/crud/DDLFiltered?FK=serviceID_FK&textcol=ticketReasonName_A&ValueCol=ticketReasonID&PageName=TicketReasonDDL&TableIndex=0"
+                        },
+                        // p07 → @description_ (description template)
+                        new()
+                        {
+                            Label = "وصف التذكرة",
+                            Name = "p07",
+                            Type = "select",
+                            Options = new List<OptionItem>(), // Initial empty state
+                            ColCss = "6",
+                            Select2 = true,
+                            DependsOn = "p05",
+                            DependsUrl = "/crud/DDLFiltered?FK=serviceID_FK&textcol=templateName_A&ValueCol=templateID&PageName=TicketDescriptionTemplateDDL&TableIndex=0"
+                        },
+                        // p08 → @suggestedPriorityID_FK (could be updated based on ticket reason selection)
+                        new()
+                        {
+                            Label = "الأولوية",
+                            Name = "p08",
+                            Type = "select",
+                            Options = createPriorityOptions,
+                            ColCss = "6",
+                            Select2 = true
+                        },
+                        // p12 → @locationBuildingNo
+                        new() { Label = "المبنى",       Name = "p12", Type = "select", Options = buildingOptions,                         ColCss = "6", Select2 = true },
+                        // p13 → @locationUnitNo
+                        new() { Name = "p13", Type = "hidden", Value = "" },
+                        // p14 → @locationArea
+                        new() { Name = "p14", Type = "hidden", Value = "" },
+                    };
+
                 toolbar.Add = new TableAction
                 {
                     Label = "تذكرة جديدة",
@@ -490,83 +601,18 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                     Color = "success",
                     OpenModal = true,
                     ModalTitle = "إنشاء تذكرة جديدة",
-
                     OpenForm = new FormConfig
                     {
                         FormId = "createTicketForm",
                         Title = "إنشاء تذكرة جديدة",
                         Method = "post",
                         ActionUrl = "/crud/insert",
-                        Fields = new List<FieldConfig>
-                        {
-                            new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
-                            new() { Name = "ActionType", Type = "hidden", Value = "INSERT_TICKET" },
-                            new() { Name = "idaraID", Type = "hidden", Value = IdaraId },
-                            new() { Name = "entrydata", Type = "hidden", Value = usersId },
-                            new() { Name = "hostname", Type = "hidden", Value = HostName },
-                            new() { Name = "redirectAction", Type = "hidden", Value = "TicketList" },
-                            new() { Name = "redirectController", Type = "hidden", Value = "Ticket" },
-                            // p01 → @ticketClassID_FK
-                            new() { Label = "فئة التذكرة", Name = "p01", Type = "select", Options = createClassOptions, ColCss = "4", Select2 = true },
-                            // p02 → @requesterTypeID_FK
-                            new() { Label = "نوع مقدم الطلب", Name = "p02", Type = "select", Options = createRequesterTypeOptions, Required = true, ColCss = "4", Select2 = true,
-                                OnChangeJs = "var f=this.closest('form');" +
-                                    "var p3=f.querySelector('[name=\"p03\"]');" +
-                                    "var p3d=f.querySelector('[name=\"_p03display\"]');" +
-                                    "var p3dw=p3d?p3d.closest('.form-group'):null;" +
-                                    "var p4=f.querySelector('[name=\"p04\"]');" +
-                                    "var p4w=p4?p4.closest('.form-group'):null;" +
-                                        "var uid=f.querySelector('[name=\"_userId\"]')?.value||'';" +
-                                    "var udisp=f.querySelector('[name=\"_userDisplay\"]')?.value||uid;" +
-                                    "if(this.value==='1'){" +     // RESIDENT → show p04 (select), hide p03
-                                    "  if(p3d){p3d.classList.add('sf-toggle-hidden');}" +
-                                    "  if(p3dw){p3dw.style.display='none';}" +
-                                    "  if(p3){p3.value='';}" +
-                                    "  if(p4){p4.classList.remove('sf-toggle-hidden');p4.setAttribute('required','required');p4.dispatchEvent(new Event('change',{bubbles:true}));}" +
-                                    "  if(p4w){p4w.style.display='';}" +
-                                    "}else if(this.value){" +     // INTERNAL/SUPERVISOR/MANAGER → show p03, hide p04
-                                    "  if(p3d){p3d.classList.remove('sf-toggle-hidden');p3d.value=udisp;}" +
-                                    "  if(p3dw){p3dw.style.display='';}" +
-                                    "  if(p3){p3.value=uid;}" +
-                                    "  if(p4){p4.classList.add('sf-toggle-hidden');p4.removeAttribute('required');p4.value='';p4.dispatchEvent(new Event('change',{bubbles:true}));}" +
-                                    "  if(p4w){p4w.style.display='none';}" +
-                                    "}else{" +                    // nothing selected → hide both
-                                    "  if(p3d){p3d.classList.add('sf-toggle-hidden');}" +
-                                    "  if(p3dw){p3dw.style.display='none';}" +
-                                    "  if(p4){p4.classList.add('sf-toggle-hidden');p4.removeAttribute('required');p4.value='';p4.dispatchEvent(new Event('change',{bubbles:true}));}" +
-                                    "  if(p4w){p4w.style.display='none';}" +
-                                    "}" },
-                            // hidden helpers for JS restore
-                                    new() { Name = "_userId", Type = "hidden", Value = usersId },
-                            new() { Name = "_userDisplay", Type = "hidden", Value = $"{FullName} - {NationalId}" },
-                                    // p03 → @requesterUserID_FK (hidden, carries the actual internal user ID value)
-                                    new() { Name = "p03", Type = "hidden", Value = usersId },
-                            // Display-only field showing "Name - NationalId", readonly
-                            new() { Label = "المستخدم (داخلي)", Name = "_p03display", Type = "text", ColCss = "4", Placeholder = "رقم الهوية",
-                                Value = $"{FullName} - {NationalId}", Readonly = true, ExtraCss = "sf-toggle-hidden" },
-                            // p04 → @requesterResidentID_FK (for Resident type) - changed to select dropdown
-                            new() { Label = "المقيم", Name = "p04", Type = "select", Required = false, ColCss = "4", Select2 = true, Options = residentOptions,
-                                ExtraCss = "sf-toggle-hidden", Placeholder = "اختر المقيم" },
-                            // p05 → @serviceID_FK
-                            new() { Label = "الخدمة", Name = "p05", Type = "select", Options = createServiceOptions, Required = true, ColCss = "4", Select2 = true },
-                            // p06 → @title - changed from text to select (ticket reason)
-                            new() { Label = "سبب التذكرة", Name = "p06", Type = "select", Required = true, ColCss = "6", Select2 = true, Options = ticketReasonOptions },
-                            // p07 → @description_ - changed from textarea to select (description template)
-                            new() { Label = "وصف التذكرة", Name = "p07", Type = "select", ColCss = "6", Select2 = true, Options = descriptionTemplateOptions },
-                            // p08 → @suggestedPriorityID_FK
-                            new() { Label = "الأولوية", Name = "p08", Type = "select", Options = createPriorityOptions, ColCss = "6", Select2 = true },
-                            // p12 → @locationBuildingNo - changed from text to select (building)
-                            new() { Label = "المبنى", Name = "p12", Type = "select", ColCss = "6", Select2 = true, Options = buildingOptions },
-                            // p13 → @locationUnitNo (hidden field for future use if needed)
-                            new() { Name = "p13", Type = "hidden", Value = "" },
-                            // p14 → @locationArea (hidden field for future use if needed)
-                            new() { Name = "p14", Type = "hidden", Value = "" }
-                        },
+                        Fields = addFields,
                         Buttons = new List<FormButtonConfig>
-                        {
-                            new() { Text = "إرسال التذكرة", Type = "submit", Color = "success", Icon = "fa fa-paper-plane" },
-                            new() { Text = "إلغاء", Type = "button", Color = "secondary", OnClickJs = "this.closest('.sf-modal').__x.$data.closeModal();" }
-                        }
+                            {
+                                new() { Text = "إرسال التذكرة", Type = "submit", Color = "success", Icon = "fa fa-paper-plane" },
+                                new() { Text = "إلغاء", Type = "button", Color = "secondary", OnClickJs = "this.closest('.sf-modal').__x.$data.closeModal();" }
+                            }
                     }
                 };
             }
@@ -574,21 +620,26 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             // ---- Ticket action buttons (HousingExtend pattern) ----
             var ticketActions = new List<TableAction>();
 
-            var currentUrl = Request.Path + Request.QueryString;
-
             if (canRouteTicket)
             {
                 ticketActions.Add(new TableAction
                 {
-                    Label = "توجيه", Icon = "fa fa-route", Color = "primary",
-                    OpenModal = true, ModalTitle = "توجيه",
-                    Placement = TableActionPlacement.ActionsMenu,
-                    RequireSelection = true, MinSelection = 1, MaxSelection = 1,
+                    Label = "توجيه",
+                    Icon = "fa fa-route",
+                    Color = "primary",
+                    OpenModal = true,
+                    ModalTitle = "توجيه",
+                    Placement = TableActionPlacement.Button,
+                    RequireSelection = true,
+                    MinSelection = 1,
+                    MaxSelection = 1,
                     IsEdit = true,
                     OnBeforeOpenJs = "sfRouteEditForm(table, act);",
                     OpenForm = new FormConfig
                     {
-                        FormId = "routeTicketForm", Method = "post", ActionUrl = "/crud/insert",
+                        FormId = "routeTicketForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
                         Fields = new List<FieldConfig>
                         {
                             new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
@@ -598,7 +649,7 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                             new() { Name = "hostname", Type = "hidden", Value = HostName },
                             new() { Name = "redirectUrl", Type = "hidden", Value = currentUrl },
                             new() { Name = "p01", Type = "hidden" },
-                            new() { Label = "DSD", Name = "p03", Type = "text", ColCss = "12" }
+                            new() { Label = "القسم", Name = "p03", Type = "select", Options = dsdOptions, Required = true, ColCss = "12", Select2 = true }
                         }
                     },
                     Guards = new TableActionGuards
@@ -616,14 +667,21 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             {
                 ticketActions.Add(new TableAction
                 {
-                    Label = "رفض", Icon = "fa fa-ban", Color = "danger",
-                    OpenModal = true, ModalTitle = "رفض",
-                    RequireSelection = true, MinSelection = 1, MaxSelection = 1,
+                    Label = "رفض",
+                    Icon = "fa fa-ban",
+                    Color = "danger",
+                    OpenModal = true,
+                    ModalTitle = "رفض",
+                    RequireSelection = true,
+                    MinSelection = 1,
+                    MaxSelection = 1,
                     IsEdit = true,
                     OnBeforeOpenJs = "sfRouteEditForm(table, act);",
                     OpenForm = new FormConfig
                     {
-                        FormId = "rejectTicketForm", Method = "post", ActionUrl = "/crud/insert",
+                        FormId = "rejectTicketForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
                         Fields = new List<FieldConfig>
                         {
                             new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
@@ -651,14 +709,21 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             {
                 ticketActions.Add(new TableAction
                 {
-                    Label = "تعيين", Icon = "fa fa-user-plus", Color = "primary",
-                    OpenModal = true, ModalTitle = "تعيين",
-                    RequireSelection = true, MinSelection = 1, MaxSelection = 1,
+                    Label = "تعيين",
+                    Icon = "fa fa-user-plus",
+                    Color = "primary",
+                    OpenModal = true,
+                    ModalTitle = "تعيين",
+                    RequireSelection = true,
+                    MinSelection = 1,
+                    MaxSelection = 1,
                     IsEdit = true,
                     OnBeforeOpenJs = "sfRouteEditForm(table, act);",
                     OpenForm = new FormConfig
                     {
-                        FormId = "assignTicketForm", Method = "post", ActionUrl = "/crud/insert",
+                        FormId = "assignTicketForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
                         Fields = new List<FieldConfig>
                         {
                             new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
@@ -668,7 +733,19 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                             new() { Name = "hostname", Type = "hidden", Value = HostName },
                             new() { Name = "redirectUrl", Type = "hidden", Value = currentUrl },
                             new() { Name = "p01", Type = "hidden" },
-                            new() { Label = "المستخدم", Name = "p02", Type = "text", ColCss = "12" }
+                            new() { Name = "currentDSDID_FK", Type = "hidden" },
+                            new()
+                            {
+                                Label = "الموظف",
+                                Name = "p02",
+                                Type = "select",
+                                Options = new List<OptionItem>(), // Initial empty state
+                                Required = true,
+                                ColCss = "12",
+                                Select2 = true,
+                                DependsOn = "currentDSDID_FK",
+                                DependsUrl = "/crud/DDLFiltered?FK=DSDID&textcol=fullName_A&ValueCol=usersID&PageName=DsdUsersAllDDL&TableIndex=0"
+                            }
                         }
                     },
                     Guards = new TableActionGuards
@@ -686,15 +763,22 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             {
                 ticketActions.Add(new TableAction
                 {
-                    Label = "تعديل الأولوية", Icon = "fa fa-signal", Color = "warning",
-                    OpenModal = true, ModalTitle = "تعديل أولوية التذكرة",
+                    Label = "تعديل الأولوية",
+                    Icon = "fa fa-signal",
+                    Color = "warning",
+                    OpenModal = true,
+                    ModalTitle = "تعديل أولوية التذكرة",
                     Placement = TableActionPlacement.RowEndMenu,
-                    RequireSelection = true, MinSelection = 1, MaxSelection = 1,
+                    RequireSelection = true,
+                    MinSelection = 1,
+                    MaxSelection = 1,
                     IsEdit = true,
                     OnBeforeOpenJs = "sfRouteEditForm(table, act);",
                     OpenForm = new FormConfig
                     {
-                        FormId = "updatePriorityForm", Method = "post", ActionUrl = "/crud/insert",
+                        FormId = "updatePriorityForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
                         Fields = new List<FieldConfig>
                         {
                             new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
@@ -723,14 +807,21 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             {
                 ticketActions.Add(new TableAction
                 {
-                    Label = "بدء العمل", Icon = "fa fa-play", Color = "success",
-                    OpenModal = true, ModalTitle = "بدء العمل",
-                    RequireSelection = true, MinSelection = 1, MaxSelection = 1,
+                    Label = "بدء العمل",
+                    Icon = "fa fa-play",
+                    Color = "success",
+                    OpenModal = true,
+                    ModalTitle = "بدء العمل",
+                    RequireSelection = true,
+                    MinSelection = 1,
+                    MaxSelection = 1,
                     IsEdit = true,
                     OnBeforeOpenJs = "sfRouteEditForm(table, act);",
                     OpenForm = new FormConfig
                     {
-                        FormId = "startWorkForm", Method = "post", ActionUrl = "/crud/insert",
+                        FormId = "startWorkForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
                         Fields = new List<FieldConfig>
                         {
                             new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
@@ -758,15 +849,22 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             {
                 ticketActions.Add(new TableAction
                 {
-                    Label = "حل", Icon = "fa fa-check", Color = "success",
-                    OpenModal = true, ModalTitle = "حل",
+                    Label = "حل",
+                    Icon = "fa fa-check",
+                    Color = "success",
+                    OpenModal = true,
+                    ModalTitle = "حل",
                     Placement = TableActionPlacement.RowEndMenu,
-                    RequireSelection = true, MinSelection = 1, MaxSelection = 1,
+                    RequireSelection = true,
+                    MinSelection = 1,
+                    MaxSelection = 1,
                     IsEdit = true,
                     OnBeforeOpenJs = "sfRouteEditForm(table, act);",
                     OpenForm = new FormConfig
                     {
-                        FormId = "resolveTicketForm", Method = "post", ActionUrl = "/crud/insert",
+                        FormId = "resolveTicketForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
                         Fields = new List<FieldConfig>
                         {
                             new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
@@ -794,15 +892,22 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             {
                 ticketActions.Add(new TableAction
                 {
-                    Label = "إيقاف مؤقت", Icon = "fa fa-pause", Color = "warning",
-                    OpenModal = true, ModalTitle = "إيقاف مؤقت",
+                    Label = "إيقاف مؤقت",
+                    Icon = "fa fa-pause",
+                    Color = "warning",
+                    OpenModal = true,
+                    ModalTitle = "إيقاف مؤقت",
                     Placement = TableActionPlacement.RowEndMenu,
-                    RequireSelection = true, MinSelection = 1, MaxSelection = 1,
+                    RequireSelection = true,
+                    MinSelection = 1,
+                    MaxSelection = 1,
                     IsEdit = true,
                     OnBeforeOpenJs = "sfRouteEditForm(table, act);",
                     OpenForm = new FormConfig
                     {
-                        FormId = "pauseTicketForm", Method = "post", ActionUrl = "/crud/insert",
+                        FormId = "pauseTicketForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
                         Fields = new List<FieldConfig>
                         {
                             new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
@@ -831,10 +936,15 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             {
                 ticketActions.Add(new TableAction
                 {
-                    Label = "طلب توضيح", Icon = "fa fa-circle-question", Color = "orange",
-                    OpenModal = true, ModalTitle = "طلب توضيح",
+                    Label = "طلب توضيح",
+                    Icon = "fa fa-circle-question",
+                    Color = "orange",
+                    OpenModal = true,
+                    ModalTitle = "طلب توضيح",
                     Placement = TableActionPlacement.ActionsMenu,
-                    RequireSelection = true, MinSelection = 1, MaxSelection = 1,
+                    RequireSelection = true,
+                    MinSelection = 1,
+                    MaxSelection = 1,
                     IsEdit = true,
                     OnBeforeOpenJs = @"
                         var r = row || table.getSelectedRows?.()[0];
@@ -850,7 +960,9 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                     ",
                     OpenForm = new FormConfig
                     {
-                        FormId = "requestClarificationForm", Method = "post", ActionUrl = "/crud/insert",
+                        FormId = "requestClarificationForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
                         Fields = new List<FieldConfig>
                         {
                             new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
@@ -881,10 +993,15 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             {
                 ticketActions.Add(new TableAction
                 {
-                    Label = "الرد على التوضيح", Icon = "fa fa-reply", Color = "primary",
-                    OpenModal = true, ModalTitle = "الرد على التوضيح",
+                    Label = "الرد على التوضيح",
+                    Icon = "fa fa-reply",
+                    Color = "primary",
+                    OpenModal = true,
+                    ModalTitle = "الرد على التوضيح",
                     Placement = TableActionPlacement.ActionsMenu,
-                    RequireSelection = true, MinSelection = 1, MaxSelection = 1,
+                    RequireSelection = true,
+                    MinSelection = 1,
+                    MaxSelection = 1,
                     IsEdit = true,
                     OnBeforeOpenJs = @"
                         var r = row || table.getSelectedRows?.()[0];
@@ -898,7 +1015,9 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                     ",
                     OpenForm = new FormConfig
                     {
-                        FormId = "respondClarificationForm", Method = "post", ActionUrl = "/crud/insert",
+                        FormId = "respondClarificationForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
                         Fields = new List<FieldConfig>
                         {
                             new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
@@ -926,15 +1045,22 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             {
                 ticketActions.Add(new TableAction
                 {
-                    Label = "تحكيم", Icon = "fa fa-gavel", Color = "info",
-                    OpenModal = true, ModalTitle = "تحكيم",
+                    Label = "تحكيم",
+                    Icon = "fa fa-gavel",
+                    Color = "info",
+                    OpenModal = true,
+                    ModalTitle = "تحكيم",
                     Placement = TableActionPlacement.ActionsMenu,
-                    RequireSelection = true, MinSelection = 1, MaxSelection = 1,
+                    RequireSelection = true,
+                    MinSelection = 1,
+                    MaxSelection = 1,
                     IsEdit = true,
                     OnBeforeOpenJs = "sfRouteEditForm(table, act);",
                     OpenForm = new FormConfig
                     {
-                        FormId = "arbitrationForm", Method = "post", ActionUrl = "/crud/insert",
+                        FormId = "arbitrationForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
                         Fields = new List<FieldConfig>
                         {
                             new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
@@ -963,10 +1089,15 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             {
                 ticketActions.Add(new TableAction
                 {
-                    Label = "تذكرة فرعية", Icon = "fa fa-sitemap", Color = "secondary",
-                    OpenModal = true, ModalTitle = "تذكرة فرعية",
+                    Label = "تذكرة فرعية",
+                    Icon = "fa fa-sitemap",
+                    Color = "secondary",
+                    OpenModal = true,
+                    ModalTitle = "تذكرة فرعية",
                     Placement = TableActionPlacement.ActionsMenu,
-                    RequireSelection = true, MinSelection = 1, MaxSelection = 1,
+                    RequireSelection = true,
+                    MinSelection = 1,
+                    MaxSelection = 1,
                     IsEdit = true,
                     OnBeforeOpenJs = @"
                         var rows = table.getSelectedRows();
@@ -983,7 +1114,9 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                     ",
                     OpenForm = new FormConfig
                     {
-                        FormId = "childTicketForm", Method = "post", ActionUrl = "/crud/insert",
+                        FormId = "childTicketForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
                         Fields = new List<FieldConfig>
                         {
                             new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
@@ -1018,15 +1151,22 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             {
                 ticketActions.Add(new TableAction
                 {
-                    Label = "استئناف", Icon = "fa fa-play-circle", Color = "success",
-                    OpenModal = true, ModalTitle = "استئناف",
-                    RequireSelection = true, MinSelection = 1, MaxSelection = 1,
+                    Label = "استئناف",
+                    Icon = "fa fa-play-circle",
+                    Color = "success",
+                    OpenModal = true,
+                    ModalTitle = "استئناف",
+                    RequireSelection = true,
+                    MinSelection = 1,
+                    MaxSelection = 1,
                     IsEdit = true,
                     Placement = TableActionPlacement.ActionsMenu,
                     OnBeforeOpenJs = "sfRouteEditForm(table, act);",
                     OpenForm = new FormConfig
                     {
-                        FormId = "resumeTicketForm", Method = "post", ActionUrl = "/crud/insert",
+                        FormId = "resumeTicketForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
                         Fields = new List<FieldConfig>
                         {
                             new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
@@ -1054,14 +1194,21 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             {
                 ticketActions.Add(new TableAction
                 {
-                    Label = "مراجعة جودة", Icon = "fa fa-clipboard-check", Color = "info",
-                    OpenModal = true, ModalTitle = "مراجعة جودة",
-                    RequireSelection = true, MinSelection = 1, MaxSelection = 1,
+                    Label = "مراجعة جودة",
+                    Icon = "fa fa-clipboard-check",
+                    Color = "info",
+                    OpenModal = true,
+                    ModalTitle = "مراجعة جودة",
+                    RequireSelection = true,
+                    MinSelection = 1,
+                    MaxSelection = 1,
                     IsEdit = true,
                     OnBeforeOpenJs = "sfRouteEditForm(table, act);",
                     OpenForm = new FormConfig
                     {
-                        FormId = "qualityReviewForm", Method = "post", ActionUrl = "/crud/insert",
+                        FormId = "qualityReviewForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
                         Fields = new List<FieldConfig>
                         {
                             new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
@@ -1091,14 +1238,21 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             {
                 ticketActions.Add(new TableAction
                 {
-                    Label = "إنهاء المراجعة", Icon = "fa fa-check-double", Color = "success",
-                    OpenModal = true, ModalTitle = "إنهاء المراجعة",
-                    RequireSelection = true, MinSelection = 1, MaxSelection = 1,
+                    Label = "إنهاء المراجعة",
+                    Icon = "fa fa-check-double",
+                    Color = "success",
+                    OpenModal = true,
+                    ModalTitle = "إنهاء المراجعة",
+                    RequireSelection = true,
+                    MinSelection = 1,
+                    MaxSelection = 1,
                     IsEdit = true,
                     OnBeforeOpenJs = "sfRouteEditForm(table, act);",
                     OpenForm = new FormConfig
                     {
-                        FormId = "finalizeQRForm", Method = "post", ActionUrl = "/crud/insert",
+                        FormId = "finalizeQRForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
                         Fields = new List<FieldConfig>
                         {
                             new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
@@ -1126,14 +1280,22 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             {
                 ticketActions.Add(new TableAction
                 {
-                    Label = "إغلاق", Icon = "fa fa-lock", Color = "success", Placement = TableActionPlacement.RowEndMenu,
-                    OpenModal = true, ModalTitle = "إغلاق",
-                    RequireSelection = true, MinSelection = 1, MaxSelection = 1,
+                    Label = "إغلاق",
+                    Icon = "fa fa-lock",
+                    Color = "success",
+                    Placement = TableActionPlacement.RowEndMenu,
+                    OpenModal = true,
+                    ModalTitle = "إغلاق",
+                    RequireSelection = true,
+                    MinSelection = 1,
+                    MaxSelection = 1,
                     IsEdit = true,
                     OnBeforeOpenJs = "sfRouteEditForm(table, act);",
                     OpenForm = new FormConfig
                     {
-                        FormId = "closeTicketForm", Method = "post", ActionUrl = "/crud/insert",
+                        FormId = "closeTicketForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
                         Fields = new List<FieldConfig>
                         {
                             new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
@@ -1161,14 +1323,22 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             {
                 ticketActions.Add(new TableAction
                 {
-                    Label = "إعادة فتح", Icon = "fa fa-redo", Color = "warning", Placement = TableActionPlacement.RowEndMenu,
-                    OpenModal = true, ModalTitle = "إعادة فتح",
-                    RequireSelection = true, MinSelection = 1, MaxSelection = 1,
+                    Label = "إعادة فتح",
+                    Icon = "fa fa-redo",
+                    Color = "warning",
+                    Placement = TableActionPlacement.RowEndMenu,
+                    OpenModal = true,
+                    ModalTitle = "إعادة فتح",
+                    RequireSelection = true,
+                    MinSelection = 1,
+                    MaxSelection = 1,
                     IsEdit = true,
                     OnBeforeOpenJs = "sfRouteEditForm(table, act);",
                     OpenForm = new FormConfig
                     {
-                        FormId = "reopenTicketForm", Method = "post", ActionUrl = "/crud/insert",
+                        FormId = "reopenTicketForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
                         Fields = new List<FieldConfig>
                         {
                             new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
@@ -1329,8 +1499,9 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
 
             return View("TicketList", page);
         }
+    
 
-                private static bool IsFailedTicketListDataLoad(DataTable? table)
+        private static bool IsFailedTicketListDataLoad(DataTable? table)
                 {
                         if (table == null || table.Columns.Count == 0 || table.Rows.Count == 0)
                                 return false;
@@ -1339,131 +1510,6 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                                 && table.Columns.Contains("Message_")
                                 && !table.Columns.Contains("ticketNo");
                 }
-
-                private async Task<DataTable?> TryLoadTicketListFallbackAsync(string? filterStatusID, string? filterServiceID, string? filterDSDID)
-                {
-                        try
-                        {
-                                var builder = new ConfigurationBuilder()
-                                        .SetBasePath(_env.ContentRootPath)
-                                        .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
-                                        .AddJsonFile($"appsettings.{_env.EnvironmentName}.json", optional: true, reloadOnChange: false);
-
-                                var configuration = builder.Build();
-                                string? connectionString = configuration.GetConnectionString("Default");
-                                if (string.IsNullOrWhiteSpace(connectionString))
-                                        return null;
-
-                                var table = new DataTable();
-                                const string sql = @"
-SELECT
-            t.[ticketID]
-        , t.[ticketNo]
-        , COALESCE(t.[title_A], t.[title]) AS [title]
-        , CASE
-                WHEN s.[serviceName_A] IS NULL OR s.[serviceName_A] NOT LIKE N'%[ء-ي]%'
-                    THEN s.[serviceName_E]
-                ELSE s.[serviceName_A]
-            END AS [serviceName_A]
-        , s.[serviceName_E]
-        , CASE
-                WHEN rt.[requesterTypeName_A] IS NULL OR rt.[requesterTypeName_A] NOT LIKE N'%[ء-ي]%'
-                    THEN rt.[requesterTypeName_E]
-                ELSE rt.[requesterTypeName_A]
-            END AS [requesterTypeName_A]
-        , rt.[requesterTypeName_E]
-        , LTRIM(RTRIM(
-                    ISNULL(rud.firstName_A, N'') + N' ' +
-                    ISNULL(rud.secondName_A, N'') + N' ' +
-                    ISNULL(rud.thirdName_A, N'') + N' ' +
-                    ISNULL(rud.lastName_A, N'')
-            )) AS [requesterName]
-        , CASE
-                WHEN p.[priorityName_A] IS NULL OR p.[priorityName_A] NOT LIKE N'%[ء-ي]%'
-                    THEN p.[priorityName_E]
-                ELSE p.[priorityName_A]
-            END AS [priorityName_A]
-        , p.[priorityName_E]
-        , CASE
-                WHEN ts.[ticketStatusName_A] IS NULL OR ts.[ticketStatusName_A] NOT LIKE N'%[ء-ي]%'
-                    THEN ts.[ticketStatusName_E]
-                ELSE ts.[ticketStatusName_A]
-            END AS [ticketStatusName_A]
-        , ts.[ticketStatusName_E]
-        , ts.[ticketStatusCode]
-        , LTRIM(RTRIM(
-                    ISNULL(aud.firstName_A, N'') + N' ' +
-                    ISNULL(aud.secondName_A, N'') + N' ' +
-                    ISNULL(aud.thirdName_A, N'') + N' ' +
-                    ISNULL(aud.lastName_A, N'')
-            )) AS [assignedUserName]
-        , sla.[elapsedMinutes]
-        , t.[currentDSDID_FK]
-        , t.[assignedUserID_FK]
-        , t.[entryDate]
-FROM [Tickets].[Ticket] t
-LEFT JOIN [Tickets].[Service] s ON t.[serviceID_FK] = s.[serviceID]
-LEFT JOIN [Tickets].[Priority] p ON t.[effectivePriorityID_FK] = p.[priorityID]
-LEFT JOIN [Tickets].[TicketStatus] ts ON t.[ticketStatusID_FK] = ts.[ticketStatusID]
-LEFT JOIN [Tickets].[RequesterType] rt ON t.[requesterTypeID_FK] = rt.[requesterTypeID]
-OUTER APPLY (
-        SELECT TOP 1
-                    CASE WHEN ud.firstName_A IS NULL OR ud.firstName_A NOT LIKE N'%[ء-ي]%' THEN ud.firstName_E ELSE ud.firstName_A END AS firstName_A
-                , CASE WHEN ud.secondName_A IS NULL OR ud.secondName_A NOT LIKE N'%[ء-ي]%' THEN ud.secondName_E ELSE ud.secondName_A END AS secondName_A
-                , CASE WHEN ud.thirdName_A IS NULL OR ud.thirdName_A NOT LIKE N'%[ء-ي]%' THEN ud.thirdName_E ELSE ud.thirdName_A END AS thirdName_A
-                , CASE WHEN ud.lastName_A IS NULL OR ud.lastName_A NOT LIKE N'%[ء-ي]%' THEN ud.lastName_E ELSE ud.lastName_A END AS lastName_A
-        FROM dbo.UsersDetails ud
-        WHERE ud.usersID_FK = t.[requesterUserID_FK]
-        ORDER BY ud.entryDate DESC, ud.usersDetailsID DESC
-) rud
-OUTER APPLY (
-        SELECT TOP 1
-                    CASE WHEN ud.firstName_A IS NULL OR ud.firstName_A NOT LIKE N'%[ء-ي]%' THEN ud.firstName_E ELSE ud.firstName_A END AS firstName_A
-                , CASE WHEN ud.secondName_A IS NULL OR ud.secondName_A NOT LIKE N'%[ء-ي]%' THEN ud.secondName_E ELSE ud.secondName_A END AS secondName_A
-                , CASE WHEN ud.thirdName_A IS NULL OR ud.thirdName_A NOT LIKE N'%[ء-ي]%' THEN ud.thirdName_E ELSE ud.thirdName_A END AS thirdName_A
-                , CASE WHEN ud.lastName_A IS NULL OR ud.lastName_A NOT LIKE N'%[ء-ي]%' THEN ud.lastName_E ELSE ud.lastName_A END AS lastName_A
-        FROM dbo.UsersDetails ud
-        WHERE ud.usersID_FK = t.[assignedUserID_FK]
-        ORDER BY ud.entryDate DESC, ud.usersDetailsID DESC
-) aud
-OUTER APPLY (
-        SELECT TOP 1 sl.[elapsedMinutes]
-        FROM [Tickets].[TicketSLA] sl
-        WHERE sl.[ticketID_FK] = t.[ticketID]
-            AND sl.[slaTypeCode] = N'RESOLUTION'
-            AND sl.[ticketSLAActive] = 1
-) sla
-WHERE t.[ticketActive] = 1
-    AND (@idaraID IS NULL OR t.[idaraID_FK] = @idaraID)
-    AND (@filterStatusID IS NULL OR t.[ticketStatusID_FK] = @filterStatusID)
-    AND (@filterServiceID IS NULL OR t.[serviceID_FK] = @filterServiceID)
-    AND (@filterDSDID IS NULL OR t.[currentDSDID_FK] = @filterDSDID)
-ORDER BY t.[ticketID] DESC;";
-
-                                using var connection = new SqlConnection(connectionString);
-                                await connection.OpenAsync();
-
-                                using var command = new SqlCommand(sql, connection);
-                                command.Parameters.AddWithValue("@idaraID", ParseNullableInt(IdaraId) ?? (object)DBNull.Value);
-                                command.Parameters.AddWithValue("@filterStatusID", ParseNullableInt(filterStatusID) ?? (object)DBNull.Value);
-                                command.Parameters.AddWithValue("@filterServiceID", ParseNullableLong(filterServiceID) ?? (object)DBNull.Value);
-                                command.Parameters.AddWithValue("@filterDSDID", ParseNullableInt(filterDSDID) ?? (object)DBNull.Value);
-
-                                using var reader = await command.ExecuteReaderAsync();
-                                table.Load(reader);
-                                return table;
-                        }
-                        catch
-                        {
-                                return null;
-                        }
-                }
-
-                private static int? ParseNullableInt(string? value)
-                        => int.TryParse(value, out var parsed) ? parsed : null;
-
-                private static long? ParseNullableLong(string? value)
-                        => long.TryParse(value, out var parsed) ? parsed : null;
 
         private static string GetColType(Type t)
         {
