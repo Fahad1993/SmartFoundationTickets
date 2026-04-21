@@ -5,6 +5,10 @@
     padding: 1rem;
 }
 
+.ticket-details-page:has(.ticket-modal-open) {
+    overflow: hidden;
+}
+
 .ticket-details-container {
     max-width: 1400px;
     margin: 0 auto;
@@ -313,9 +317,9 @@ body.ticket-modal-open {
     position: fixed;
     inset: 0;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: 1rem;
+    padding: 2rem 1rem;
     background: rgba(33, 33, 33, 0.5);
     overflow-y: auto;
     isolation: isolate;
@@ -326,12 +330,13 @@ body.ticket-modal-open {
     width: min(100%, 36rem);
     position: relative;
     z-index: 1;
-    max-height: calc(100vh - 2rem);
+    max-height: calc(100vh - 4rem);
     background: #ffffff;
     border: 1px solid #e0e0e0;
     border-radius: 12px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
-    overflow: auto;
+    overflow-y: auto;
+    margin-bottom: 2rem;
 }
 
 .ticket-modal-header {
@@ -799,6 +804,11 @@ body.ticket-modal-open {
 
 .ticket-back-link i {
     font-size: 0.6875rem;
+}
+
+/* ---- Modal Open State (prevent body scroll) ---- */
+body:has(.ticket-modal-open) {
+    overflow: hidden;
 }
 
 /* ---- Responsive ---- */
