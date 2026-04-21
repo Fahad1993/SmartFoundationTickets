@@ -1,0 +1,187 @@
+/* Main container */
+.ticket-timeline {
+    position: relative;
+}
+
+/* Header */
+.ticket-timeline__header {
+    font-size: 18px;
+    font-weight: 700;
+    color: #212121;
+    margin-bottom: 24px;
+}
+
+/* Empty state */
+.ticket-timeline__empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: #9e9e9e;
+    font-style: italic;
+    font-size: 14px;
+}
+
+.ticket-timeline__empty i {
+    font-size: 24px;
+    margin-bottom: 12px;
+    color: #cbd5e1;
+}
+
+/* Timeline items */
+.ticket-timeline-item {
+    display: flex;
+    gap: 16px;
+    padding-bottom: 32px;
+    position: relative;
+}
+
+/* Vertical line from each dot to the next */
+.ticket-timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    right: 16px;
+    top: 16px;
+    bottom: -8px;
+    width: 2px;
+    height: calc(100% - 16px);
+    background: #e0e0e0;
+    z-index: 0;
+}
+
+/* Timeline dots */
+.ticket-timeline-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 3px solid #ffffff;
+    z-index: 1;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.08);
+}
+
+/* Completed state - solid colored dot */
+.ticket-timeline-dot.completed {
+    background: #22c55e;
+    box-shadow: 0 0 0 2px #991b3c, 0 0 0 4px #e8f5e9;
+}
+
+/* Active state - pulsing dot */
+.ticket-timeline-dot.active {
+    background: #f97316;
+    box-shadow: 0 0 0 2px #fb923c, 0 0 0 4px #fff7ed, 0 0 0 8px rgba(249, 115, 22, 0.2);
+    animation: pulse 2s infinite;
+}
+
+/* Pending state - gray hollow dot */
+.ticket-timeline-dot.pending {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    box-shadow: 0 0 0 2px #e0e0e0;
+}
+
+/* Color-specific dot variants */
+.ticket-timeline-dot.blue { background: #2196f3; box-shadow: 0 0 0 2px #93c5fd, 0 0 0 4px #dbeafe; }
+.ticket-timeline-dot.green { background: #22c55e; box-shadow: 0 0 0 2px #991b3c, 0 0 0 4px #e8f5e9; }
+.ticket-timeline-dot.yellow { background: #f97316; box-shadow: 0 0 0 2px #fbbf24, 0 0 0 4px #fff7ed; }
+.ticket-timeline-dot.red { background: #ef4444; box-shadow: 0 0 0 2px #fca5a5, 0 0 0 4px #fecaca; }
+.ticket-timeline-dot.purple { background: #9c27b0; box-shadow: 0 0 0 2px #e1bee7, 0 0 0 4px #f3e5f5; }
+.ticket-timeline-dot.gray { background: #9e9e9e; box-shadow: 0 0 0 2px #e0e0e0; }
+
+/* Timeline content */
+.ticket-timeline-content {
+    flex: 1;
+}
+
+.ticket-timeline-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.ticket-timeline-action {
+    font-weight: 700;
+    font-size: 15px;
+    color: #212121;
+}
+
+.ticket-timeline-status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.ticket-timeline-status-badge--gray { background: #f5f5f5; color: #64748b; }
+.ticket-timeline-status-badge--blue { background: #dbeafe; color: #1976d2; }
+.ticket-timeline-status-badge--yellow { background: #fef3c7; color: #b45309; }
+.ticket-timeline-status-badge--green { background: #dcfce7; color: #16a34a; }
+.ticket-timeline-status-badge--red { background: #fee2e2; color: #991b1b; }
+.ticket-timeline-status-badge--purple { background: #f3e8ff; color: #7b1fa2; }
+
+/* Notes */
+.ticket-timeline-notes {
+    font-size: 14px;
+    color: #424242;
+    line-height: 1.6;
+    margin-bottom: 4px;
+    word-wrap: break-word;
+}
+
+/* Meta info */
+.ticket-timeline-meta {
+    font-size: 12px;
+    color: #9e9e9e;
+}
+
+/* Event status variants */
+.ticket-timeline-item--created { }
+.ticket-timeline-item--changed { }
+.ticket-timeline-item--routed { }
+.ticket-timeline-item--assigned { }
+.ticket-timeline-item--started { }
+.ticket-timeline-item--resolved { }
+.ticket-timeline-item--closed { }
+.ticket-timeline-item--rejected { }
+.ticket-timeline-item--paused { }
+.ticket-timeline-item--resumed { }
+.ticket-timeline-item--reopened { }
+.ticket-timeline-item--arbitration { }
+.ticket-timeline-item--clarification { }
+.ticket-timeline-item--default { }
+
+/* Pulse animation */
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 2px #fb923c, 0 0 0 4px #fff7ed, 0 0 0 8px rgba(249, 115, 22, 0.2); }
+    50% { box-shadow: 0 0 0 2px #fb923c, 0 0 0 4px #fff7ed, 0 0 0 0 12px rgba(249, 115, 22, 0.1); }
+    100% { box-shadow: 0 0 0 2px #fb923c, 0 0 0 4px #fff7ed, 0 0 0 8px rgba(249, 115, 22, 0.2); }
+}
+
+/* RTL Support */
+.ticket-timeline[dir="rtl"] .ticket-timeline-item:not(:last-child)::before {
+    right: 16px;
+    left: auto;
+}
+
+.ticket-timeline[dir="rtl"] .ticket-timeline-dot {
+    right: auto;
+    left: 16px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .ticket-timeline-item {
+        gap: 12px;
+    }
+
+    .ticket-timeline-dot {
+        width: 14px;
+        height: 14px;
+    }
+
+    .ticket-timeline-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+}

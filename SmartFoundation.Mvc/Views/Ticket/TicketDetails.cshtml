@@ -1,0 +1,12 @@
+@model SmartFoundation.UI.ViewModels.SmartPage.SmartPageViewModel
+@{
+    ViewData["Title"] = Model.PageTitle;
+}
+
+<link rel="stylesheet" href="~/css/ticket-details.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/SlaPanel.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/ticket-timeline.css" asp-append-version="true" />
+<script src="~/js/SlaPanel.js" asp-append-version="true"></script>
+<script src="~/js/ticket-timeline.js" asp-append-version="true"></script>
+
+@await Component.InvokeAsync("SmartRenderer", new { model = Model })
