@@ -1,0 +1,174 @@
+@using SmartFoundation.UI.ViewModels.SmartForm
+@{
+    var form = (FormConfig)ViewData["ActionForm"]!;
+    var actionColor = (string)ViewData["ActionColor"]!;
+    var actionIcon = (string)ViewData["ActionIcon"]!;
+    var actionLabel = (string)ViewData["ActionLabel"]!;
+    var hasEnctype = (bool)ViewData["HasEnctype"]!;
+    var formAction = form.ActionUrl ?? "/crud/insert";
+    var formMethod = form.Method ?? "POST";
+
+    var hiddenFields = form.Fields.Where(f => f.Type == "hidden").ToList();
+    var visibleFields = form.Fields.Where(f => f.Type != "hidden").ToList();
+}
+
+@if (hasEnctype)
+{
+<form method="@formMethod" action="@formAction" enctype="@form.Enctype">
+    @for (var h = 0; h < hiddenFields.Count; h++)
+    {
+        <input type="hidden" name="@hiddenFields[h].Name" value="@hiddenFields[h].Value" />
+    }
+    <div class="grid grid-cols-12 gap-4">
+        @for (var v = 0; v < visibleFields.Count; v++)
+        {
+            var field = visibleFields[v];
+            <div class="col-span-@(field.ColCss ?? "12") form-group">
+                @if (!string.IsNullOrWhiteSpace(field.Label))
+                {
+                    <label class="sf-label">
+                        @field.Label
+                        @if (field.Required) { <span class="text-red-500">*</span> }
+                    </label>
+                }
+                @if (field.Type == "select")
+                {
+                    @if (field.Required)
+                    {
+                        <select name="@field.Name" class="sf-input" required>
+                            <option value="">-- اختر --</option>
+                            @foreach (var opt in field.Options)
+                            {
+                                <option value="@opt.Value">@opt.Text</option>
+                            }
+                        </select>
+                    }
+                    else
+                    {
+                        <select name="@field.Name" class="sf-input">
+                            <option value="">-- اختر --</option>
+                            @foreach (var opt in field.Options)
+                            {
+                                <option value="@opt.Value">@opt.Text</option>
+                            }
+                        </select>
+                    }
+                }
+                else if (field.Type == "textarea")
+                {
+                    @if (field.Required)
+                    {
+                        <textarea name="@field.Name" class="sf-input" rows="3" required placeholder="@field.Placeholder"></textarea>
+                    }
+                    else
+                    {
+                        <textarea name="@field.Name" class="sf-input" rows="3" placeholder="@field.Placeholder"></textarea>
+                    }
+                }
+                else if (field.Type == "file")
+                {
+                    <input type="file" name="@field.Name" class="sf-input" />
+                }
+                else
+                {
+                    @if (field.Required)
+                    {
+                        <input type="@field.Type" name="@field.Name" class="sf-input" value="@field.Value" required placeholder="@field.Placeholder" />
+                    }
+                    else
+                    {
+                        <input type="@field.Type" name="@field.Name" class="sf-input" value="@field.Value" placeholder="@field.Placeholder" />
+                    }
+                }
+            </div>
+        }
+    </div>
+    <div class="mt-6 flex items-center justify-end gap-3">
+        <button type="button" class="btn btn-secondary" x-on:click="openModal = null">إلغاء</button>
+        <button type="submit" class="btn btn-@actionColor">
+            @if (!string.IsNullOrWhiteSpace(actionIcon)) { <i class="@actionIcon"></i> }
+            @actionLabel
+        </button>
+    </div>
+</form>
+}
+else
+{
+<form method="@formMethod" action="@formAction">
+    @for (var h = 0; h < hiddenFields.Count; h++)
+    {
+        <input type="hidden" name="@hiddenFields[h].Name" value="@hiddenFields[h].Value" />
+    }
+    <div class="grid grid-cols-12 gap-4">
+        @for (var v = 0; v < visibleFields.Count; v++)
+        {
+            var field = visibleFields[v];
+            <div class="col-span-@(field.ColCss ?? "12") form-group">
+                @if (!string.IsNullOrWhiteSpace(field.Label))
+                {
+                    <label class="sf-label">
+                        @field.Label
+                        @if (field.Required) { <span class="text-red-500">*</span> }
+                    </label>
+                }
+                @if (field.Type == "select")
+                {
+                    @if (field.Required)
+                    {
+                        <select name="@field.Name" class="sf-input" required>
+                            <option value="">-- اختر --</option>
+                            @foreach (var opt in field.Options)
+                            {
+                                <option value="@opt.Value">@opt.Text</option>
+                            }
+                        </select>
+                    }
+                    else
+                    {
+                        <select name="@field.Name" class="sf-input">
+                            <option value="">-- اختر --</option>
+                            @foreach (var opt in field.Options)
+                            {
+                                <option value="@opt.Value">@opt.Text</option>
+                            }
+                        </select>
+                    }
+                }
+                else if (field.Type == "textarea")
+                {
+                    @if (field.Required)
+                    {
+                        <textarea name="@field.Name" class="sf-input" rows="3" required placeholder="@field.Placeholder"></textarea>
+                    }
+                    else
+                    {
+                        <textarea name="@field.Name" class="sf-input" rows="3" placeholder="@field.Placeholder"></textarea>
+                    }
+                }
+                else if (field.Type == "file")
+                {
+                    <input type="file" name="@field.Name" class="sf-input" />
+                }
+                else
+                {
+                    @if (field.Required)
+                    {
+                        <input type="@field.Type" name="@field.Name" class="sf-input" value="@field.Value" required placeholder="@field.Placeholder" />
+                    }
+                    else
+                    {
+                        <input type="@field.Type" name="@field.Name" class="sf-input" value="@field.Value" placeholder="@field.Placeholder" />
+                    }
+                }
+            </div>
+        }
+    </div>
+    <div class="mt-6 flex items-center justify-end gap-3">
+        <button type="button" class="btn btn-secondary" x-on:click="openModal = null">إلغاء</button>
+        <button type="submit" class="btn btn-@actionColor">
+            @if (!string.IsNullOrWhiteSpace(actionIcon)) { <i class="@actionIcon"></i> }
+            @actionLabel
+        </button>
+    </div>
+</form>
+}

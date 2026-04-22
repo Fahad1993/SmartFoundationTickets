@@ -103,7 +103,7 @@ namespace SmartFoundation.Mvc.Controllers.HousingCommandCenter
                     ShowMetricProgressBar = true,
                     ShowMetricTargetActual = true,
                     AutoCalculatePercentages = true,
-                    PreferredCardsPerRow = 5,
+                    PreferredCardsPerRow = 6,
                     PercentFormat = "0.0",
                     NumberFormat = "0"
                 },
@@ -120,6 +120,19 @@ namespace SmartFoundation.Mvc.Controllers.HousingCommandCenter
         private static List<HousingCommandCenterMetric> BuildMetrics() =>
         [
             new HousingCommandCenterMetric
+            {
+                Key        = "m_housing_readiness",
+                SortOrder  = 1,
+                Title      = "جاهزية المخزون السكني والأصول",
+                ShortTitle = "جاهزية السكن والأصول",
+                Subtitle   = "يقيس صلاحية الوحدات للتسكين الفعلي ويربط حالة المنازل بالأصول والمرافق الداعمة ومساحات الوحدات والغرف",
+                Target = 100, Actual = 83, Unit = "%",
+                Icon = "fa-solid fa-building-circle-check", Emoji = "🏛️",
+                Tone  = "info",
+                Color = Color.Gold,
+                Hint  = "إذا انخفض هذا المؤشر فالمشكلة غالبًا في جاهزية الأصل نفسه أو دورة الإحالة بين الصيانة والجودة والخدمات العامة."
+            },
+             new HousingCommandCenterMetric
             {
                 Key        = "m_housing_readiness",
                 SortOrder  = 1,
