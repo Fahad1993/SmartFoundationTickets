@@ -7,14 +7,12 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
     {
         private async Task<List<OptionItem>> GetClarificationReasonOptionsAsync(string? firstOption = "اختر سبب طلب التوضيح")
         {
-            const string sql = @"
-SELECT [clarificationReasonID], [clarificationReasonName_A], [clarificationReasonName_E]
-FROM [Tickets].[ClarificationReason]
-WHERE [clarificationReasonActive] = 1
-ORDER BY [clarificationReasonID];";
-
-            var table = await ExecuteTicketFallbackQueryAsync(sql);
-            return BuildOptionItems(table, "clarificationReasonID", "clarificationReasonName_A", firstOption);
+            return await GetTicketDdlOptionsAsync(
+                "clarificationReasonName_A",
+                "clarificationReasonID",
+                "1",
+                "ClarificationReasonDDL",
+                firstOption);
         }
 
         private async Task<Dictionary<long, long>> GetOpenClarificationRequestMapAsync(IEnumerable<long> ticketIds)
@@ -27,37 +25,40 @@ ORDER BY [clarificationReasonID];";
             if (ids.Count == 0)
                 return new Dictionary<long, long>();
 
-            var idList = string.Join(",", ids);
-            var sql = $@"
-SELECT [ticketID_FK], [clarificationRequestID]
-FROM
-(
-    SELECT
-          cr.[ticketID_FK]
-        , cr.[clarificationRequestID]
-        , ROW_NUMBER() OVER (
-              PARTITION BY cr.[ticketID_FK]
-              ORDER BY cr.[requestDate] DESC, cr.[clarificationRequestID] DESC
-          ) AS [rn]
-    FROM [Tickets].[ClarificationRequest] cr
-    WHERE ISNULL(cr.[clarificationActive], 1) = 1
-      AND cr.[clarificationStatus] = N'OPEN'
-      AND cr.[ticketID_FK] IN ({idList})
-) q
-WHERE q.[rn] = 1;";
-
-            var table = await ExecuteTicketFallbackQueryAsync(sql);
             var result = new Dictionary<long, long>();
 
-            foreach (DataRow row in table.Rows)
+            foreach (var ticketId in ids)
             {
-                if (!long.TryParse(row["ticketID_FK"]?.ToString(), out var ticketId))
+                var table = await LoadClarificationRequestsFallbackAsync((int)ticketId);
+                if (table.Rows.Count == 0)
                     continue;
 
-                if (!long.TryParse(row["clarificationRequestID"]?.ToString(), out var clarificationRequestId))
-                    continue;
+                foreach (DataRow row in table.Rows)
+                {
+                    var status = row.Table.Columns.Contains("clarificationStatus")
+                        ? row["clarificationStatus"]?.ToString()
+                        : null;
 
-                result[ticketId] = clarificationRequestId;
+                    if (!string.Equals(status, "OPEN", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    var rowTicketId = ticketId;
+                    if (row.Table.Columns.Contains("ticketID_FK")
+                        && long.TryParse(row["ticketID_FK"]?.ToString(), out var parsedTicketId)
+                        && parsedTicketId > 0)
+                    {
+                        rowTicketId = parsedTicketId;
+                    }
+
+                    if (rowTicketId != ticketId)
+                        continue;
+
+                    if (!TryParseClarificationRequestId(row, out var clarificationRequestId))
+                        continue;
+
+                    result[rowTicketId] = clarificationRequestId;
+                    break;
+                }
             }
 
             return result;
@@ -65,56 +66,113 @@ WHERE q.[rn] = 1;";
 
         private async Task<DataTable> LoadClarificationRequestsFallbackAsync(int ticketId)
         {
-            const string sql = @"
-SELECT
-      cr.[clarificationRequestID]
-    , cr.[ticketID_FK]
-    , cr.[requestedByUserID]
-    , cr.[requestedFromUserID]
-    , cr.[requestedFromDSDID_FK]
-    , COALESCE(NULLIF(reason.[clarificationReasonName_A], N''), reason.[clarificationReasonName_E]) AS [clarificationReasonName_A]
-    , cr.[requestNotes]
-    , cr.[responseNotes]
-    , cr.[requestDate]
-    , cr.[responseDate]
-    , cr.[clarificationStatus]
-    , requestedByUser.[fullName] AS [requestedByName]
-    , requestedFromUser.[fullName] AS [requestedFromUserName]
-    , routeDsd.[DepartmentName] AS [requestedFromDepartmentName]
-    , routeDsd.[DivisonName] AS [requestedFromDivisionName]
-    , routeDsd.[SectionName] AS [requestedFromSectionName]
-FROM [Tickets].[ClarificationRequest] cr
-LEFT JOIN [Tickets].[ClarificationReason] reason
-    ON cr.[clarificationReasonID_FK] = reason.[clarificationReasonID]
-LEFT JOIN dbo.[V_GetFullStructureForDSD] routeDsd
-    ON routeDsd.[DSDID] = cr.[requestedFromDSDID_FK]
-OUTER APPLY (
-    SELECT TOP 1 LTRIM(RTRIM(
-          ISNULL(CASE WHEN ud.[firstName_A] IS NULL OR ud.[firstName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[firstName_E] ELSE ud.[firstName_A] END, N'') + N' ' +
-          ISNULL(CASE WHEN ud.[secondName_A] IS NULL OR ud.[secondName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[secondName_E] ELSE ud.[secondName_A] END, N'') + N' ' +
-          ISNULL(CASE WHEN ud.[thirdName_A] IS NULL OR ud.[thirdName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[thirdName_E] ELSE ud.[thirdName_A] END, N'') + N' ' +
-          ISNULL(CASE WHEN ud.[lastName_A] IS NULL OR ud.[lastName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[lastName_E] ELSE ud.[lastName_A] END, N'')
-    )) AS [fullName]
-    FROM [dbo].[UsersDetails] ud
-    WHERE ud.[usersID_FK] = cr.[requestedByUserID]
-    ORDER BY ud.[entryDate] DESC, ud.[usersDetailsID] DESC
-) requestedByUser
-OUTER APPLY (
-    SELECT TOP 1 LTRIM(RTRIM(
-          ISNULL(CASE WHEN ud.[firstName_A] IS NULL OR ud.[firstName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[firstName_E] ELSE ud.[firstName_A] END, N'') + N' ' +
-          ISNULL(CASE WHEN ud.[secondName_A] IS NULL OR ud.[secondName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[secondName_E] ELSE ud.[secondName_A] END, N'') + N' ' +
-          ISNULL(CASE WHEN ud.[thirdName_A] IS NULL OR ud.[thirdName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[thirdName_E] ELSE ud.[thirdName_A] END, N'') + N' ' +
-          ISNULL(CASE WHEN ud.[lastName_A] IS NULL OR ud.[lastName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[lastName_E] ELSE ud.[lastName_A] END, N'')
-    )) AS [fullName]
-    FROM [dbo].[UsersDetails] ud
-    WHERE ud.[usersID_FK] = cr.[requestedFromUserID]
-    ORDER BY ud.[entryDate] DESC, ud.[usersDetailsID] DESC
-) requestedFromUser
-WHERE cr.[ticketID_FK] = @ticketID
-  AND ISNULL(cr.[clarificationActive], 1) = 1
-ORDER BY cr.[requestDate] DESC, cr.[clarificationRequestID] DESC;";
+            try
+            {
+                DataSet dataSet = await _mastersServies.GetDataLoadDataSetAsync(
+                    "ClarificationRequests",
+                    IdaraId,
+                    usersId,
+                    HostName,
+                    ticketId.ToString());
 
-            return await ExecuteTicketDetailsQueryAsync(sql, ("@ticketID", ticketId));
+                var table = ResolveClarificationRequestsTable(dataSet);
+                if (table != null)
+                    return table;
+            }
+            catch
+            {
+                // Gateway route unavailable.
+            }
+
+            return new DataTable();
+        }
+
+        private static bool TryParseClarificationRequestId(DataRow row, out long clarificationRequestId)
+        {
+            clarificationRequestId = 0;
+
+            if (row.Table.Columns.Contains("clarificationRequestID")
+                && long.TryParse(row["clarificationRequestID"]?.ToString(), out clarificationRequestId)
+                && clarificationRequestId > 0)
+            {
+                return true;
+            }
+
+            if (row.Table.Columns.Contains("clarificationRequestId")
+                && long.TryParse(row["clarificationRequestId"]?.ToString(), out clarificationRequestId)
+                && clarificationRequestId > 0)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static DataTable? ResolveClarificationRequestsTable(DataSet? dataSet)
+        {
+            if (dataSet == null)
+                return null;
+
+            foreach (DataTable table in dataSet.Tables)
+            {
+                if (IsGatewayErrorTable(table))
+                    continue;
+
+                if (!table.Columns.Contains("clarificationRequestID")
+                    || !table.Columns.Contains("clarificationStatus"))
+                {
+                    continue;
+                }
+
+                EnsureClarificationProjection(table);
+                return table;
+            }
+
+            return null;
+        }
+
+        private static void EnsureClarificationProjection(DataTable table)
+        {
+            if (!table.Columns.Contains("entryDate") && table.Columns.Contains("requestDate"))
+            {
+                table.Columns.Add("entryDate", typeof(string));
+                foreach (DataRow row in table.Rows)
+                {
+                    row["entryDate"] = row["requestDate"]?.ToString() ?? string.Empty;
+                }
+            }
+
+            if (!table.Columns.Contains("targetDSDName_A"))
+            {
+                table.Columns.Add("targetDSDName_A", typeof(string));
+            }
+
+            foreach (DataRow row in table.Rows)
+            {
+                if (!string.IsNullOrWhiteSpace(row["targetDSDName_A"]?.ToString()))
+                    continue;
+
+                var parts = new List<string>();
+                if (table.Columns.Contains("requestedFromDepartmentName")
+                    && !string.IsNullOrWhiteSpace(row["requestedFromDepartmentName"]?.ToString()))
+                {
+                    parts.Add(row["requestedFromDepartmentName"]!.ToString()!);
+                }
+
+                if (table.Columns.Contains("requestedFromDivisionName")
+                    && !string.IsNullOrWhiteSpace(row["requestedFromDivisionName"]?.ToString()))
+                {
+                    parts.Add(row["requestedFromDivisionName"]!.ToString()!);
+                }
+
+                if (table.Columns.Contains("requestedFromSectionName")
+                    && !string.IsNullOrWhiteSpace(row["requestedFromSectionName"]?.ToString()))
+                {
+                    parts.Add(row["requestedFromSectionName"]!.ToString()!);
+                }
+
+                row["targetDSDName_A"] = parts.Count == 0 ? string.Empty : string.Join(" / ", parts);
+            }
         }
     }
 }
