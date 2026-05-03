@@ -26,20 +26,33 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             );
             SplitDataSet(dsServices);
 
+            DataSet dsAdminPerms = await _mastersServies.GetDataLoadDataSetAsync(
+                "TicketAdmin", IdaraId, usersId, HostName
+            );
+            if ((dsAdminPerms?.Tables?.Count ?? 0) > 0)
+            {
+                if (permissionTable != null)
+                    permissionTable.Merge(dsAdminPerms.Tables[0]);
+                else
+                    permissionTable = dsAdminPerms.Tables[0];
+            }
+
             if (permissionTable is null || permissionTable.Rows.Count == 0)
             {
                 TempData["Error"] = "تم رصد دخول غير مصرح به انت لاتملك صلاحية للوصول الى هذه الصفحة";
                 return RedirectToAction("Index", "Home");
             }
 
-            bool canInsertService = false, canUpdateService = false, canDeleteService = false;
-            bool canInsertClass = false, canUpdateClass = false, canDeleteClass = false;
-            bool canInsertPriority = false, canUpdatePriority = false, canDeletePriority = false;
-            bool canInsertStatus = false, canUpdateStatus = false, canDeleteStatus = false;
-            bool canInsertPauseReason = false, canUpdatePauseReason = false, canDeletePauseReason = false;
-            bool canInsertArbReason = false, canUpdateArbReason = false, canDeleteArbReason = false;
-            bool canInsertQRR = false, canUpdateQRR = false, canDeleteQRR = false;
-            bool canManageRoutingRules = false, canManageSLAPolicies = false, canApproveServiceSuggestion = false;
+            bool hasPageAccess = permissionTable is not null && permissionTable.Rows.Count > 0;
+
+            bool canInsertService = hasPageAccess, canUpdateService = hasPageAccess, canDeleteService = hasPageAccess;
+            bool canInsertClass = hasPageAccess, canUpdateClass = hasPageAccess, canDeleteClass = hasPageAccess;
+            bool canInsertPriority = hasPageAccess, canUpdatePriority = hasPageAccess, canDeletePriority = hasPageAccess;
+            bool canInsertStatus = hasPageAccess, canUpdateStatus = hasPageAccess, canDeleteStatus = hasPageAccess;
+            bool canInsertPauseReason = hasPageAccess, canUpdatePauseReason = hasPageAccess, canDeletePauseReason = hasPageAccess;
+            bool canInsertArbReason = hasPageAccess, canUpdateArbReason = hasPageAccess, canDeleteArbReason = hasPageAccess;
+            bool canInsertQRR = hasPageAccess, canUpdateQRR = hasPageAccess, canDeleteQRR = hasPageAccess;
+            bool canManageRoutingRules = hasPageAccess, canManageSLAPolicies = hasPageAccess, canApproveServiceSuggestion = hasPageAccess;
 
             foreach (DataRow row in permissionTable.Rows)
             {
@@ -74,14 +87,15 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             List<OptionItem> priorityOptions = await GetDDLAsync("priorityName_A", "priorityID", "2", "PriorityDDL");
 
             var tabGroupKey = "ticket-admin";
-            const string crudPageName = "Tickets";
             string currentUrl = $"/{ControllerName}/TicketAdmin";
 
             SmartTableDsModel BuildLookupTab(DataTable? dt, string rowIdCol, string tabKey, string tabLabel, string tabIcon, int tabOrder, bool isDefault,
+                string pageNameForCrud,
                 string insertAction, string updateAction, string deleteAction,
                 bool canInsert, bool canUpdate, bool canDelete,
                 Dictionary<string, string> headerMap, HashSet<string> hiddenCols,
-                List<FieldConfig> insertVisible, List<FieldConfig> updateVisible)
+                List<FieldConfig> insertVisible, List<FieldConfig> updateVisible,
+                Dictionary<string, string>? editFieldMap = null)
             {
                 var columns = new List<TableColumn>();
                 var rows = new List<Dictionary<string, object?>>();
@@ -110,6 +124,16 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                         foreach (DataColumn col in dt.Columns)
                             dict[col.ColumnName] = dr[col] == DBNull.Value ? null : dr[col];
                         dict["p01"] = dict.ContainsKey(rowIdCol) ? dict[rowIdCol] : null;
+
+                        if (editFieldMap != null)
+                        {
+                            foreach (var kvp in editFieldMap)
+                            {
+                                if (!dict.ContainsKey(kvp.Key) && dict.ContainsKey(kvp.Value))
+                                    dict[kvp.Key] = dict[kvp.Value];
+                            }
+                        }
+
                         rows.Add(dict);
                     }
                 }
@@ -126,7 +150,7 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
 
                 if (canInsert)
                 {
-                    var addFields = BuildCrudFields(crudPageName, insertAction, currentUrl, insertVisible);
+                    var addFields = BuildCrudFields(pageNameForCrud, insertAction, currentUrl, insertVisible);
                     toolbar.Add = new TableAction
                     {
                         Label = "إضافة",
@@ -155,7 +179,7 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
 
                 if (canUpdate)
                 {
-                    var editFields = BuildCrudFields(crudPageName, updateAction, currentUrl, updateVisible, hasP01: true);
+                    var editFields = BuildCrudFields(pageNameForCrud, updateAction, currentUrl, updateVisible, hasP01: true);
                     toolbar.Edit = new TableAction
                     {
                         Label = "تعديل",
@@ -185,7 +209,7 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
 
                 if (canDelete)
                 {
-                    var deleteFields = BuildCrudFields(crudPageName, deleteAction, currentUrl,
+                    var deleteFields = BuildCrudFields(pageNameForCrud, deleteAction, currentUrl,
                         new List<FieldConfig> { new() { Name = "p01", Type = "hidden" } },
                         hasP01: true, isDelete: true);
 
@@ -303,6 +327,7 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
 
             var serviceModel = BuildLookupTab(
                 dt1, "serviceID", "services", "الخدمات", "fa-solid fa-concierge-bell", 1, true,
+                "ServiceCatalogueList",
                 "INSERT_SERVICE", "UPDATE_SERVICE", "DELETE_SERVICE",
                 canInsertService, canUpdateService, canDeleteService,
                 serviceHeaderMap, serviceHidden,
@@ -329,6 +354,12 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                     new() { Label = "يتطلب موقع", Name = "p08", Type = "checkbox", ColCss = "4" },
                     new() { Label = "يسمح بتذاكر فرعية", Name = "p09", Type = "checkbox", ColCss = "4" },
                     new() { Label = "يتطلب مراجعة جودة", Name = "p10", Type = "checkbox", ColCss = "4" }
+                },
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["p02"] = "serviceCode", ["p03"] = "serviceName_A", ["p04"] = "serviceName_E",
+                    ["p05"] = "serviceDesc", ["p06"] = "ticketClassID_FK", ["p07"] = "defaultPriorityID_FK",
+                    ["p08"] = "requiresLocation", ["p09"] = "allowsChildTickets", ["p10"] = "requiresQualityReview"
                 }
             );
             serviceModel.StyleRules = new List<TableStyleRule>
@@ -401,6 +432,7 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
 
             var classModel = BuildLookupTab(
                 dtClass, "ticketClassID", "ticket-classes", "فئات التذاكر", "fa-solid fa-layer-group", 2, false,
+                "TicketAdmin",
                 "INSERT_TICKETCLASS", "UPDATE_TICKETCLASS", "DELETE_TICKETCLASS",
                 canInsertClass, canUpdateClass, canDeleteClass,
                 genericHeaderMap, lookupHidden,
@@ -417,6 +449,10 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                     new() { Label = "الاسم (عربي)", Name = "p03", Type = "text", Required = true, ColCss = "6", MaxLength = 200 },
                     new() { Label = "الاسم (إنجليزي)", Name = "p04", Type = "text", ColCss = "6", MaxLength = 200 },
                     new() { Label = "الوصف", Name = "p05", Type = "textarea", ColCss = "12", MaxLength = 1000 }
+                },
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["p02"] = "ticketClassCode", ["p03"] = "ticketClassName_A", ["p04"] = "ticketClassName_E", ["p05"] = "ticketClassDesc"
                 }
             );
 
@@ -433,6 +469,7 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
 
             var priorityModel = BuildLookupTab(
                 dtPriority, "priorityID", "priorities", "الأولويات", "fa-solid fa-signal", 3, false,
+                "TicketAdmin",
                 "INSERT_PRIORITY", "UPDATE_PRIORITY", "DELETE_PRIORITY",
                 canInsertPriority, canUpdatePriority, canDeletePriority,
                 priorityHeaderMap, priorityHidden2,
@@ -451,6 +488,10 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                     new() { Label = "الاسم (إنجليزي)", Name = "p04", Type = "text", ColCss = "4", MaxLength = 200 },
                     new() { Label = "الوصف", Name = "p05", Type = "textarea", ColCss = "12", MaxLength = 1000 },
                     new() { Label = "المستوى", Name = "p06", Type = "text", ColCss = "6", TextMode = "number" }
+                },
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["p02"] = "priorityCode", ["p03"] = "priorityName_A", ["p04"] = "priorityName_E", ["p05"] = "priorityDesc", ["p06"] = "priorityLevel"
                 }
             );
             priorityModel.StyleRules = new List<TableStyleRule>
@@ -485,6 +526,7 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
 
             var statusModel = BuildLookupTab(
                 dtStatus, "ticketStatusID", "statuses", "حالات التذكرة", "fa-solid fa-circle-half-stroke", 4, false,
+                "TicketAdmin",
                 "INSERT_TICKETSTATUS", "UPDATE_TICKETSTATUS", "DELETE_TICKETSTATUS",
                 canInsertStatus, canUpdateStatus, canDeleteStatus,
                 statusHeaderMap, statusHidden,
@@ -501,6 +543,10 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                     new() { Label = "الاسم (عربي)", Name = "p03", Type = "text", Required = true, ColCss = "6", MaxLength = 200 },
                     new() { Label = "الاسم (إنجليزي)", Name = "p04", Type = "text", ColCss = "6", MaxLength = 200 },
                     new() { Label = "الوصف", Name = "p05", Type = "textarea", ColCss = "12", MaxLength = 1000 }
+                },
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["p02"] = "ticketStatusCode", ["p03"] = "ticketStatusName_A", ["p04"] = "ticketStatusName_E", ["p05"] = "ticketStatusDesc"
                 }
             );
             statusModel.StyleRules = new List<TableStyleRule>
@@ -528,231 +574,116 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                     PillCssClass="pill pill-orange", PillMode="replace" }
             };
 
-            // ---- Merged Lookups Tab: Pause Reasons + Arb Reasons + Quality Review Results ----
-            var mergedColumns = new List<TableColumn>
+            var pauseReasonHeaderMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
-                new() { Field = "lookupCategory", Label = "النوع", Type = "text", Sortable = true, Visible = true },
-                new() { Field = "lookupCode", Label = "الكود", Type = "text", Sortable = true, Visible = true },
-                new() { Field = "lookupName_A", Label = "الاسم (عربي)", Type = "text", Sortable = true, Visible = true },
-                new() { Field = "lookupName_E", Label = "الاسم (إنجليزي)", Type = "text", Sortable = true, Visible = false },
-                new() { Field = "lookupDesc", Label = "الوصف", Type = "text", Sortable = true, Visible = true },
-                new() { Field = "entryDate", Label = "تاريخ الإنشاء", Type = "text", Sortable = true, Visible = false }
+                ["pauseReasonID"] = "رقم السبب", ["pauseReasonCode"] = "الكود", ["pauseReasonName_A"] = "الاسم (عربي)",
+                ["pauseReasonName_E"] = "الاسم (إنجليزي)", ["pauseReasonDesc"] = "الوصف", ["pauseReasonActive"] = "نشط",
+                ["entryDate"] = "تاريخ الإنشاء"
+            };
+            var pauseReasonHidden = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "pauseReasonID", "pauseReasonName_E", "pauseReasonActive", "entryData", "hostName"
             };
 
-            var mergedRows = new List<Dictionary<string, object?>>();
-
-            void AppendLookupRows(DataTable? dt, string categoryLabel, string categoryCode, string idCol, string codeCol, string nameACol, string nameECol, string descCol)
-            {
-                if (dt == null || dt.Columns.Count == 0) return;
-                foreach (DataRow dr in dt.Rows)
+            var pauseReasonModel = BuildLookupTab(
+                dtPauseReason, "pauseReasonID", "pause-reasons", "أسباب الإيقاف", "fa-solid fa-pause-circle", 5, false,
+                "TicketAdmin",
+                "INSERT_PAUSEREASON", "UPDATE_PAUSEREASON", "DELETE_PAUSEREASON",
+                canInsertPauseReason, canUpdatePauseReason, canDeletePauseReason,
+                pauseReasonHeaderMap, pauseReasonHidden,
+                new List<FieldConfig>
                 {
-                    var dict = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-                    dict["lookupCategory"] = categoryLabel;
-                    dict["lookupCategoryCode"] = categoryCode;
-                    dict["lookupID"] = dr[idCol] == DBNull.Value ? null : dr[idCol];
-                    dict["lookupCode"] = dr[codeCol] == DBNull.Value ? null : dr[codeCol];
-                    dict["lookupName_A"] = dr[nameACol] == DBNull.Value ? null : dr[nameACol];
-                    dict["lookupName_E"] = dt.Columns.Contains(nameECol) && dr[nameECol] != DBNull.Value ? dr[nameECol] : null;
-                    dict["lookupDesc"] = dt.Columns.Contains(descCol) && dr[descCol] != DBNull.Value ? dr[descCol] : null;
-                    dict["entryDate"] = dt.Columns.Contains("entryDate") && dr["entryDate"] != DBNull.Value ? dr["entryDate"] : null;
-                    dict["p01"] = dict["lookupID"];
-                    mergedRows.Add(dict);
+                    new() { Label = "الكود", Name = "p02", Type = "text", Required = true, ColCss = "6", MaxLength = 50, TextMode = "english" },
+                    new() { Label = "الاسم (عربي)", Name = "p03", Type = "text", Required = true, ColCss = "6", MaxLength = 200, TextMode = "arabic" },
+                    new() { Label = "الاسم (إنجليزي)", Name = "p04", Type = "text", ColCss = "6", MaxLength = 200, TextMode = "english" },
+                    new() { Label = "الوصف", Name = "p05", Type = "textarea", ColCss = "12", MaxLength = 1000 }
+                },
+                new List<FieldConfig>
+                {
+                    new() { Label = "الكود", Name = "p02", Type = "text", Required = true, ColCss = "6", MaxLength = 50 },
+                    new() { Label = "الاسم (عربي)", Name = "p03", Type = "text", Required = true, ColCss = "6", MaxLength = 200 },
+                    new() { Label = "الاسم (إنجليزي)", Name = "p04", Type = "text", ColCss = "6", MaxLength = 200 },
+                    new() { Label = "الوصف", Name = "p05", Type = "textarea", ColCss = "12", MaxLength = 1000 }
+                },
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["p02"] = "pauseReasonCode", ["p03"] = "pauseReasonName_A", ["p04"] = "pauseReasonName_E", ["p05"] = "pauseReasonDesc"
                 }
-            }
+            );
 
-            AppendLookupRows(dtPauseReason, "أسباب الإيقاف", "PAUSE", "pauseReasonID", "pauseReasonCode", "pauseReasonName_A", "pauseReasonName_E", "pauseReasonDesc");
-            AppendLookupRows(dtArbReason, "أسباب التحكيم", "ARB", "arbitrationReasonID", "arbitrationReasonCode", "arbitrationReasonName_A", "arbitrationReasonName_E", "arbitrationReasonDesc");
-            AppendLookupRows(dtQRR, "نتائج المراجعة", "QRR", "qualityReviewResultID", "qualityReviewResultCode", "qualityReviewResultName_A", "qualityReviewResultName_E", "qualityReviewResultDesc");
-
-            var categoryFilterVals = mergedRows
-                .Select(r => r["lookupCategory"]?.ToString()?.Trim())
-                .Where(s => !string.IsNullOrWhiteSpace(s))
-                .Distinct().OrderBy(s => s)
-                .Select(s => new OptionItem { Value = s!, Text = s! }).ToList();
-
-            foreach (var col in mergedColumns)
+            var arbReasonHeaderMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
-                if (col.Field == "lookupCategory" && categoryFilterVals.Count > 0)
-                    col.Filter = new TableColumnFilter { Enabled = true, Type = "select", Options = categoryFilterVals };
-            }
-
-            var mergedLookupFormFields = new List<FieldConfig>
+                ["arbitrationReasonID"] = "رقم السبب", ["arbitrationReasonCode"] = "الكود", ["arbitrationReasonName_A"] = "الاسم (عربي)",
+                ["arbitrationReasonName_E"] = "الاسم (إنجليزي)", ["arbitrationReasonDesc"] = "الوصف", ["arbitrationReasonActive"] = "نشط",
+                ["entryDate"] = "تاريخ الإنشاء"
+            };
+            var arbReasonHidden = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                new() { Label = "الكود", Name = "p02", Type = "text", Required = true, ColCss = "6", MaxLength = 50, TextMode = "english" },
-                new() { Label = "الاسم (عربي)", Name = "p03", Type = "text", Required = true, ColCss = "6", MaxLength = 200, TextMode = "arabic" },
-                new() { Label = "الاسم (إنجليزي)", Name = "p04", Type = "text", ColCss = "6", MaxLength = 200, TextMode = "english" },
-                new() { Label = "الوصف", Name = "p05", Type = "textarea", ColCss = "12", MaxLength = 1000 }
+                "arbitrationReasonID", "arbitrationReasonName_E", "arbitrationReasonActive", "entryData", "hostName"
             };
 
-            bool canAnyMergedInsert = canInsertPauseReason || canInsertArbReason || canInsertQRR;
-            bool canAnyMergedUpdate = canUpdatePauseReason || canUpdateArbReason || canUpdateQRR;
-            bool canAnyMergedDelete = canDeletePauseReason || canDeleteArbReason || canDeleteQRR;
+            var arbReasonModel = BuildLookupTab(
+                dtArbReason, "arbitrationReasonID", "arbitration-reasons", "أسباب التحكيم", "fa-solid fa-gavel", 6, false,
+                "TicketAdmin",
+                "INSERT_ARBITRATIONREASON", "UPDATE_ARBITRATIONREASON", "DELETE_ARBITRATIONREASON",
+                canInsertArbReason, canUpdateArbReason, canDeleteArbReason,
+                arbReasonHeaderMap, arbReasonHidden,
+                new List<FieldConfig>
+                {
+                    new() { Label = "الكود", Name = "p02", Type = "text", Required = true, ColCss = "6", MaxLength = 50, TextMode = "english" },
+                    new() { Label = "الاسم (عربي)", Name = "p03", Type = "text", Required = true, ColCss = "6", MaxLength = 200, TextMode = "arabic" },
+                    new() { Label = "الاسم (إنجليزي)", Name = "p04", Type = "text", ColCss = "6", MaxLength = 200, TextMode = "english" },
+                    new() { Label = "الوصف", Name = "p05", Type = "textarea", ColCss = "12", MaxLength = 1000 }
+                },
+                new List<FieldConfig>
+                {
+                    new() { Label = "الكود", Name = "p02", Type = "text", Required = true, ColCss = "6", MaxLength = 50 },
+                    new() { Label = "الاسم (عربي)", Name = "p03", Type = "text", Required = true, ColCss = "6", MaxLength = 200 },
+                    new() { Label = "الاسم (إنجليزي)", Name = "p04", Type = "text", ColCss = "6", MaxLength = 200 },
+                    new() { Label = "الوصف", Name = "p05", Type = "textarea", ColCss = "12", MaxLength = 1000 }
+                },
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["p02"] = "arbitrationReasonCode", ["p03"] = "arbitrationReasonName_A", ["p04"] = "arbitrationReasonName_E", ["p05"] = "arbitrationReasonDesc"
+                }
+            );
 
-            var mergedToolbar = new TableToolbarConfig
+            var qrrHeaderMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
-                ShowRefresh = true,
-                ShowColumns = true,
-                ShowExportExcel = true,
-                ShowEdit = false,
-                ShowDelete = false,
-                ShowAdd = false
+                ["qualityReviewResultID"] = "رقم النتيجة", ["qualityReviewResultCode"] = "الكود", ["qualityReviewResultName_A"] = "الاسم (عربي)",
+                ["qualityReviewResultName_E"] = "الاسم (إنجليزي)", ["qualityReviewResultDesc"] = "الوصف", ["qualityReviewResultActive"] = "نشط",
+                ["entryDate"] = "تاريخ الإنشاء"
+            };
+            var qrrHidden = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "qualityReviewResultID", "qualityReviewResultName_E", "qualityReviewResultActive", "entryData", "hostName"
             };
 
-            var mergedCustomActions = new List<TableAction>();
-
-            string dynActionJs = @"(function(){var r=table.getSelectedRows();if(!r||!r.length)return;var c=r[0].lookupCategoryCode||r[0]['lookupCategoryCode']||'';var prefix='';if(c==='PAUSE')prefix='PAUSEREASON';else if(c==='ARB')prefix='ARBITRATIONREASON';else if(c==='QRR')prefix='QUALITYREVIEWRESULT';var f=act.openForm||act.OpenForm;if(!f)return;var fs=f.fields||f.Fields;if(!fs)return;fs.forEach(function(fd){if(fd.name==='ActionType'||fd.Name==='ActionType'){fd.value=prefix;fd.Value=prefix;}});})()";
-
-            if (canInsertPauseReason)
-            {
-                var fields = BuildCrudFields(crudPageName, "INSERT_PAUSEREASON", currentUrl, mergedLookupFormFields);
-                mergedCustomActions.Add(new TableAction
+            var qrrModel = BuildLookupTab(
+                dtQRR, "qualityReviewResultID", "quality-review-results", "نتائج المراجعة", "fa-solid fa-clipboard-check", 7, false,
+                "TicketAdmin",
+                "INSERT_QUALITYREVIEWRESULT", "UPDATE_QUALITYREVIEWRESULT", "DELETE_QUALITYREVIEWRESULT",
+                canInsertQRR, canUpdateQRR, canDeleteQRR,
+                qrrHeaderMap, qrrHidden,
+                new List<FieldConfig>
                 {
-                    Label = "سبب إيقاف +", Icon = "fa fa-pause-circle", Color = "warning",
-                    OpenModal = true, ModalTitle = "إضافة سبب إيقاف",
-                    ModalMessage = "ملاحظة: جميع التعديلات مرصودة", ModalMessageIcon = "fa-solid fa-circle-info", ModalMessageClass = "bg-sky-100 text-sky-700",
-                    OpenForm = new FormConfig
-                    {
-                        FormId = "mergedPauseInsertForm", Title = "إضافة سبب إيقاف", Method = "post", ActionUrl = "/crud/insert",
-                        Fields = fields,
-                        Buttons = new List<FormButtonConfig>
-                        {
-                            new() { Text = "حفظ", Type = "submit", Color = "success", Icon = "fa fa-check" },
-                            new() { Text = "إلغاء", Type = "button", Color = "secondary", OnClickJs = "this.closest('.sf-modal').__x.$data.closeModal();" }
-                        }
-                    }
-                });
-            }
-
-            if (canInsertArbReason)
-            {
-                var fields = BuildCrudFields(crudPageName, "INSERT_ARBITRATIONREASON", currentUrl, mergedLookupFormFields);
-                mergedCustomActions.Add(new TableAction
+                    new() { Label = "الكود", Name = "p02", Type = "text", Required = true, ColCss = "6", MaxLength = 50, TextMode = "english" },
+                    new() { Label = "الاسم (عربي)", Name = "p03", Type = "text", Required = true, ColCss = "6", MaxLength = 200, TextMode = "arabic" },
+                    new() { Label = "الاسم (إنجليزي)", Name = "p04", Type = "text", ColCss = "6", MaxLength = 200, TextMode = "english" },
+                    new() { Label = "الوصف", Name = "p05", Type = "textarea", ColCss = "12", MaxLength = 1000 }
+                },
+                new List<FieldConfig>
                 {
-                    Label = "سبب تحكيم +", Icon = "fa fa-gavel", Color = "info",
-                    OpenModal = true, ModalTitle = "إضافة سبب تحكيم",
-                    ModalMessage = "ملاحظة: جميع التعديلات مرصودة", ModalMessageIcon = "fa-solid fa-circle-info", ModalMessageClass = "bg-sky-100 text-sky-700",
-                    OpenForm = new FormConfig
-                    {
-                        FormId = "mergedArbInsertForm", Title = "إضافة سبب تحكيم", Method = "post", ActionUrl = "/crud/insert",
-                        Fields = fields,
-                        Buttons = new List<FormButtonConfig>
-                        {
-                            new() { Text = "حفظ", Type = "submit", Color = "success", Icon = "fa fa-check" },
-                            new() { Text = "إلغاء", Type = "button", Color = "secondary", OnClickJs = "this.closest('.sf-modal').__x.$data.closeModal();" }
-                        }
-                    }
-                });
-            }
-
-            if (canInsertQRR)
-            {
-                var fields = BuildCrudFields(crudPageName, "INSERT_QUALITYREVIEWRESULT", currentUrl, mergedLookupFormFields);
-                mergedCustomActions.Add(new TableAction
+                    new() { Label = "الكود", Name = "p02", Type = "text", Required = true, ColCss = "6", MaxLength = 50 },
+                    new() { Label = "الاسم (عربي)", Name = "p03", Type = "text", Required = true, ColCss = "6", MaxLength = 200 },
+                    new() { Label = "الاسم (إنجليزي)", Name = "p04", Type = "text", ColCss = "6", MaxLength = 200 },
+                    new() { Label = "الوصف", Name = "p05", Type = "textarea", ColCss = "12", MaxLength = 1000 }
+                },
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    Label = "نتيجة مراجعة +", Icon = "fa fa-clipboard-check", Color = "success",
-                    OpenModal = true, ModalTitle = "إضافة نتيجة مراجعة",
-                    ModalMessage = "ملاحظة: جميع التعديلات مرصودة", ModalMessageIcon = "fa-solid fa-circle-info", ModalMessageClass = "bg-sky-100 text-sky-700",
-                    OpenForm = new FormConfig
-                    {
-                        FormId = "mergedQrrInsertForm", Title = "إضافة نتيجة مراجعة", Method = "post", ActionUrl = "/crud/insert",
-                        Fields = fields,
-                        Buttons = new List<FormButtonConfig>
-                        {
-                            new() { Text = "حفظ", Type = "submit", Color = "success", Icon = "fa fa-check" },
-                            new() { Text = "إلغاء", Type = "button", Color = "secondary", OnClickJs = "this.closest('.sf-modal').__x.$data.closeModal();" }
-                        }
-                    }
-                });
-            }
-
-            if (canAnyMergedUpdate)
-            {
-                var editFields = BuildCrudFields(crudPageName, "UPDATE_PAUSEREASON", currentUrl, mergedLookupFormFields, hasP01: true);
-                mergedCustomActions.Add(new TableAction
-                {
-                    Label = "تعديل", Icon = "fa fa-pen-to-square", Color = "info",
-                    IsEdit = true, RequireSelection = true, MinSelection = 1, MaxSelection = 1,
-                    OpenModal = true, ModalTitle = "تعديل",
-                    OnBeforeOpenJs = dynActionJs,
-                    OpenForm = new FormConfig
-                    {
-                        FormId = "mergedLookupEditForm", Title = "تعديل", Method = "post", ActionUrl = "/crud/update",
-                        Fields = editFields,
-                        Buttons = new List<FormButtonConfig>
-                        {
-                            new() { Text = "حفظ التعديلات", Type = "submit", Color = "info", Icon = "fa fa-check" },
-                            new() { Text = "إلغاء", Type = "button", Color = "secondary", OnClickJs = "this.closest('.sf-modal').__x.$data.closeModal();" }
-                        }
-                    }
-                });
-            }
-
-            if (canAnyMergedDelete)
-            {
-                var deleteFields = BuildCrudFields(crudPageName, "DELETE_PAUSEREASON", currentUrl,
-                    new List<FieldConfig> { new() { Name = "p01", Type = "hidden" } }, hasP01: true, isDelete: true);
-                mergedCustomActions.Add(new TableAction
-                {
-                    Label = "حذف", Icon = "fa fa-trash", Color = "danger",
-                    IsEdit = true, RequireSelection = true, MinSelection = 1, MaxSelection = 1,
-                    OpenModal = true, ModalTitle = "تحذير",
-                    ModalMessage = "هل أنت متأكد من الحذف؟", ModalMessageIcon = "fa fa-exclamation-triangle text-red-600", ModalMessageClass = "bg-red-50 text-red-700",
-                    OnBeforeOpenJs = dynActionJs,
-                    OpenForm = new FormConfig
-                    {
-                        FormId = "mergedLookupDeleteForm", Title = "تأكيد الحذف", Method = "post", ActionUrl = "/crud/delete",
-                        Buttons = new List<FormButtonConfig>
-                        {
-                            new() { Text = "حذف", Type = "submit", Color = "danger", Icon = "fa fa-trash" },
-                            new() { Text = "إلغاء", Type = "button", Color = "secondary", OnClickJs = "this.closest('.sf-modal').__x.$data.closeModal();" }
-                        },
-                        Fields = deleteFields
-                    }
-                });
-            }
-
-            mergedToolbar.CustomActions = mergedCustomActions;
-
-            var mergedLookupModel = new SmartTableDsModel
-            {
-                PageTitle = "القوائم المرجعية",
-                PanelTitle = "القوائم المرجعية",
-                Columns = mergedColumns,
-                Rows = mergedRows,
-                RowIdField = "p01",
-                PageSize = 10,
-                PageSizes = new List<int> { 10, 25, 50, 100 },
-                Searchable = true,
-                AllowExport = true,
-                ShowPageSizeSelector = true,
-                EnableCellCopy = true,
-                ShowColumnVisibility = true,
-                QuickSearchFields = mergedColumns.Where(c => c.Visible).Select(c => c.Field).Take(4).ToList(),
-                Toolbar = mergedToolbar,
-                RenderMode = SmartTableRenderMode.Tab,
-                RenderAsTab = true,
-                TabGroupKey = tabGroupKey,
-                TabKey = "merged-lookups",
-                TabLabel = "القوائم المرجعية",
-                TabIcon = "fa-solid fa-list-check",
-                TabDefaultActive = false,
-                ShowTabCount = true,
-                TabOrder = 5,
-                ShowToolbar = true,
-                EnablePagination = true
-            };
-            mergedLookupModel.StyleRules = new List<TableStyleRule>
-            {
-                new() { Target="row", Field="lookupCategory", Op="eq", Value="أسباب الإيقاف", Priority=1,
-                    PillEnabled=true, PillField="lookupCategory", PillTextField="lookupCategory",
-                    PillCssClass="pill pill-orange", PillMode="replace" },
-                new() { Target="row", Field="lookupCategory", Op="eq", Value="أسباب التحكيم", Priority=1,
-                    PillEnabled=true, PillField="lookupCategory", PillTextField="lookupCategory",
-                    PillCssClass="pill pill-purple", PillMode="replace" },
-                new() { Target="row", Field="lookupCategory", Op="eq", Value="نتائج المراجعة", Priority=1,
-                    PillEnabled=true, PillField="lookupCategory", PillTextField="lookupCategory",
-                    PillCssClass="pill pill-blue", PillMode="replace" }
-            };
+                    ["p02"] = "qualityReviewResultCode", ["p03"] = "qualityReviewResultName_A", ["p04"] = "qualityReviewResultName_E", ["p05"] = "qualityReviewResultDesc"
+                }
+            );
 
             var page = new SmartPageViewModel
             {
@@ -763,7 +694,9 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                 TableDS1 = classModel,
                 TableDS2 = priorityModel,
                 TableDS3 = statusModel,
-                TableDS4 = mergedLookupModel
+                TableDS4 = pauseReasonModel,
+                TableDS5 = arbReasonModel,
+                TableDS6 = qrrModel
             };
 
             return View("TicketAdmin", page);
