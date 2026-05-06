@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using SmartFoundation.Application.Services;
 using SmartFoundation.Mvc.Controllers;
 using SmartFoundation.UI.ViewModels.SmartForm;
 using SmartFoundation.UI.ViewModels.SmartPage;
 using SmartFoundation.UI.ViewModels.SmartTable;
-using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Text;
 using System.Text.Json;
@@ -98,6 +98,18 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             return true;
         }
 
+        protected string GetDefaultConnectionString()
+        {
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(_env.ContentRootPath)
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddJsonFile($"appsettings.{_env.EnvironmentName}.json", optional: true, reloadOnChange: true);
+
+            var configuration = builder.Build();
+            return configuration.GetConnectionString("Default")
+                ?? throw new InvalidOperationException("Default connection string is not configured.");
+        }
+
         protected void SplitDataSet(DataSet ds)
         {
             permissionTable = (ds?.Tables?.Count ?? 0) > 0 ? ds.Tables[0] : null;
@@ -121,19 +133,10 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
         {
             if (string.Equals(pageName, "ResidentDDL", StringComparison.OrdinalIgnoreCase))
             {
-                try
-                {
-                    var residentTable = await GetResidentsWithHousing();
-                    var residentOptions = BuildResidentOptionItems(residentTable, firstOption);
-                    if (HasUsableOptions(residentOptions))
-                        return residentOptions;
-                }
-                catch
-                {
-                    // Fall back to the generic DDL path if the resident-specific source is unavailable.
-                }
-
-                return await LoadTicketDdlOptionsFallbackAsync(pageName, textCol, valueCol, firstOption);
+                var residentTable = await GetResidentsWithHousing();
+                var residentOptions = BuildResidentOptionItems(residentTable, firstOption);
+                if (HasUsableOptions(residentOptions))
+                    return residentOptions;
             }
 
             var ddlResult = await _CrudController.GetDDLValues(
@@ -154,205 +157,7 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             if (HasUsableOptions(options))
                 return options;
 
-            return await LoadTicketDdlOptionsFallbackAsync(pageName, textCol, valueCol, firstOption);
-        }
-
-        private async Task<List<OptionItem>> LoadTicketDdlOptionsFallbackAsync(
-            string pageName,
-            string textCol,
-            string valueCol,
-            string? firstOption)
-        {
-            try
-            {
-                if (string.Equals(pageName, "ResidentDDL", StringComparison.OrdinalIgnoreCase))
-                {
-                    var residentSql = GetTicketDdlFallbackSql(pageName, valueCol);
-                    if (!string.IsNullOrWhiteSpace(residentSql))
-                    {
-                        var residentTable = await ExecuteTicketFallbackQueryAsync(residentSql);
-                        return BuildResidentOptionItems(residentTable, firstOption);
-                    }
-
-                    return BuildResidentOptionItems(null, firstOption);
-                }
-
-                var sql = GetTicketDdlFallbackSql(pageName, valueCol);
-                if (string.IsNullOrWhiteSpace(sql))
-                    return BuildOptionItems(null, valueCol, textCol, firstOption);
-
-                var table = await ExecuteTicketFallbackQueryAsync(sql);
-                return BuildOptionItems(table, valueCol, textCol, firstOption);
-            }
-            catch
-            {
-                return BuildOptionItems(null, valueCol, textCol, firstOption);
-            }
-        }
-
-        private string? GetTicketDdlFallbackSql(string pageName, string valueCol)
-        {
-            if (string.Equals(pageName, "TicketList", StringComparison.OrdinalIgnoreCase))
-            {
-                if (string.Equals(valueCol, "ticketStatusID", StringComparison.OrdinalIgnoreCase))
-                {
-                    return @"
-SELECT [ticketStatusID], [ticketStatusName_A], [ticketStatusName_E]
-FROM [Tickets].[TicketStatus]
-WHERE [ticketStatusActive] = 1
-ORDER BY [ticketStatusID];";
-                }
-
-                if (string.Equals(valueCol, "serviceID", StringComparison.OrdinalIgnoreCase))
-                {
-                    return @"
-SELECT [serviceID], [serviceName_A], [serviceName_E]
-FROM [Tickets].[Service]
-WHERE [serviceActive] = 1
-  AND ([idaraID_FK] = @idaraID OR @idaraID IS NULL OR [idaraID_FK] IS NULL)
-ORDER BY [serviceID];";
-                }
-            }
-
-            return pageName switch
-            {
-                "ResidentDDL" => @"
-;WITH ResidentHousing AS
-(
-    SELECT
-        r.[residentInfoID] AS [residentInfoID],
-        r.[NationalID] AS [NationalID],
-        r.[generalNo_FK] AS [generalNo_FK],
-        r.[FullName_A] AS [ResidentName_A],
-        r.[FullName_A] AS [FullName_A],
-        CASE
-            WHEN ba.[BuildingNo] IS NULL
-              OR LTRIM(RTRIM(CONVERT(NVARCHAR(100), ba.[BuildingNo]))) = N''
-              OR CONVERT(NVARCHAR(100), ba.[BuildingNo]) = N'No_house'
-            THEN N'بدون سكن'
-            ELSE CONVERT(NVARCHAR(100), ba.[BuildingNo])
-        END AS [BuildingNo],
-        ROW_NUMBER() OVER
-        (
-            PARTITION BY r.[residentInfoID]
-            ORDER BY
-                CASE
-                    WHEN ba.[BuildingNo] IS NULL
-                      OR LTRIM(RTRIM(CONVERT(NVARCHAR(100), ba.[BuildingNo]))) = N''
-                      OR CONVERT(NVARCHAR(100), ba.[BuildingNo]) = N'No_house'
-                    THEN 1 ELSE 0
-                END,
-                ba.[BuildingAssignDate] DESC,
-                ba.[BuildingAssignID] DESC
-        ) AS [rn]
-    FROM [Housing].[V_GetFullResidentDetails] r
-    INNER JOIN [DATACORE].[Housing].[BuildingAssign] ba
-        ON r.[generalNo_FK] = ba.[GeneralNo]
-    INNER JOIN [DATACORE].[Housing].[BuildingAssignStatus] bas
-        ON ba.[BuildingAssignStatusID_FK] = bas.[BuildingAssignStatusID]
-    WHERE r.[IdaraID] = @idaraID
-      AND bas.[Active] = 1
-)
-SELECT
-    [residentInfoID],
-    [NationalID],
-    [generalNo_FK],
-    [ResidentName_A],
-    [FullName_A],
-    [BuildingNo]
-FROM ResidentHousing
-WHERE [rn] = 1
-ORDER BY [ResidentName_A] ASC;",
-                "RequesterTypeDDL" => @"
-SELECT [requesterTypeID], [requesterTypeCode], [requesterTypeName_A], [requesterTypeName_E]
-FROM [Tickets].[RequesterType]
-WHERE [requesterTypeActive] = 1
-ORDER BY [requesterTypeID];",
-                "TicketClassDDL" => @"
-SELECT [ticketClassID], [ticketClassCode], [ticketClassName_A], [ticketClassName_E]
-FROM [Tickets].[TicketClass]
-WHERE [ticketClassActive] = 1
-ORDER BY [ticketClassID];",
-                "PriorityDDL" => @"
-SELECT [priorityID], [priorityCode], [priorityName_A], [priorityName_E]
-FROM [Tickets].[Priority]
-WHERE [priorityActive] = 1
-ORDER BY [priorityID];",
-                "PauseReasonDDL" => @"
-SELECT [pauseReasonID], [pauseReasonCode], [pauseReasonName_A], [pauseReasonName_E]
-FROM [Tickets].[PauseReason]
-WHERE [pauseReasonActive] = 1
-ORDER BY [pauseReasonID];",
-                "ArbitrationReasonDDL" => @"
-SELECT [arbitrationReasonID], [arbitrationReasonCode], [arbitrationReasonName_A], [arbitrationReasonName_E]
-FROM [Tickets].[ArbitrationReason]
-WHERE [arbitrationReasonActive] = 1
-ORDER BY [arbitrationReasonID];",
-                "QualityReviewResultDDL" => @"
-SELECT [qualityReviewResultID], [qualityReviewResultCode], [qualityReviewResultName_A], [qualityReviewResultName_E]
-FROM [Tickets].[QualityReviewResult]
-WHERE [qualityReviewResultActive] = 1
-ORDER BY [qualityReviewResultID];",
-                "BuildingDDL" => @"
-SELECT
-    bd.[buildingDetailsID] AS [buildingDetailsID],
-    bd.[buildingDetailsNo] AS [buildingDetailsNo],
-    bd.[buildingDetailsRooms] AS [buildingDetailsRooms],
-    bt.[buildingTypeName_A] AS [buildingTypeName_A],
-    m.[militaryLocationName_A] AS [militaryLocationName_A],
-    bc.[buildingClassName_A] AS [buildingClassName_A]
-FROM [DATACORE].[Housing].[BuildingDetails] bd
-INNER JOIN [DATACORE].[Housing].[BuildingType] bt ON bd.[buildingTypeID_FK] = bt.[buildingTypeID]
-INNER JOIN [DATACORE].[Housing].[MilitaryLocation] m ON bd.[militaryLocationID_FK] = m.[militaryLocationID]
-INNER JOIN [DATACORE].[Housing].[BuildingClass] bc ON bd.[buildingClassID_FK] = bc.[buildingClassID]
-WHERE bd.[buildingDetailsActive] = 1
-  AND bd.[IdaraId_FK] = @idaraID
-  AND bt.[buildingTypeActive] = 1
-  AND m.[militaryLocationActive] = 1
-  AND bc.[buildingClassActive] = 1
-ORDER BY bd.[buildingDetailsNo] ASC;",
-                "TicketReasonDDL" => @"
-SELECT [ticketReasonID], [ticketReasonCode], [ticketReasonName_A], [ticketReasonName_E], [priorityID_FK]
-FROM [Tickets].[TicketReason]
-WHERE [ticketReasonActive] = 1
-  AND ([idaraID_FK] = @idaraID OR [idaraID_FK] IS NULL)
-ORDER BY [displayOrder] ASC, [ticketReasonID] ASC;",
-                "TicketDescriptionTemplateDDL" => @"
-SELECT [templateID], [templateCode], [templateName_A], [templateName_E], [templateContent_A]
-FROM [Tickets].[TicketDescriptionTemplate]
-WHERE [templateActive] = 1
-  AND ([idaraID_FK] = @idaraID OR [idaraID_FK] IS NULL)
-ORDER BY [displayOrder] ASC, [templateID] ASC;",
-                _ => null
-            };
-        }
-
-        private async Task<DataTable> ExecuteTicketFallbackQueryAsync(string sql)
-        {
-            var dt = new DataTable();
-            var connectionString = GetDefaultConnectionString();
-
-            using var connection = new SqlConnection(connectionString);
-            await connection.OpenAsync();
-
-            using var command = new SqlCommand(sql, connection);
-            command.Parameters.AddWithValue("@idaraID", string.IsNullOrWhiteSpace(IdaraId) ? DBNull.Value : int.Parse(IdaraId));
-
-            using var reader = await command.ExecuteReaderAsync();
-            dt.Load(reader);
-            return dt;
-        }
-
-        private string GetDefaultConnectionString()
-        {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(_env.ContentRootPath)
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{_env.EnvironmentName}.json", optional: true, reloadOnChange: true);
-
-            var configuration = builder.Build();
-            return configuration.GetConnectionString("Default")
-                ?? throw new InvalidOperationException("Default connection string is not configured.");
+            return BuildOptionItems(null, valueCol, textCol, firstOption);
         }
 
         private List<OptionItem> BuildOptionItems(
@@ -585,30 +390,32 @@ ORDER BY [displayOrder] ASC, [templateID] ASC;",
         /// </summary>
         protected async Task<DataTable> GetResidentsWithHousing()
         {
-            var dt = new DataTable();
-
-            var connectionString = GetDefaultConnectionString();
-
-            using (var connection = new SqlConnection(connectionString))
+            try
             {
-                await connection.OpenAsync();
+                var dataSet = await _mastersServies.GetDataLoadDataSetAsync(
+                    "ResidentDDL",
+                    IdaraId,
+                    usersId,
+                    HostName);
 
-                using (var command = new SqlCommand("[Tickets].[ResidentDDL]", connection))
+                if ((dataSet.Tables?.Count ?? 0) > 1
+                    && dataSet.Tables[1].Columns.Contains("residentInfoID"))
                 {
-                    command.CommandType = CommandType.StoredProcedure;
-                    command.Parameters.AddWithValue("@pageName_", "ResidentDDL");
-                    command.Parameters.AddWithValue("@idaraID", IdaraId ?? (object)DBNull.Value);
-                    command.Parameters.AddWithValue("@entrydata", usersId ?? (object)DBNull.Value);
-                    command.Parameters.AddWithValue("@hostname", HostName ?? (object)DBNull.Value);
+                    return dataSet.Tables[1];
+                }
 
-                    using (var reader = await command.ExecuteReaderAsync())
-                    {
-                        dt.Load(reader);
-                    }
+                if ((dataSet.Tables?.Count ?? 0) > 0
+                    && dataSet.Tables[0].Columns.Contains("residentInfoID"))
+                {
+                    return dataSet.Tables[0];
                 }
             }
+            catch
+            {
+                // Return empty table when gateway route is unavailable.
+            }
 
-            return dt;
+            return new DataTable();
         }
     }
 }
