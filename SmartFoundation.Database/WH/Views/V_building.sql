@@ -1,11 +1,4 @@
-﻿
-CREATE VIEW [WH].[V_building]
-AS
-SELECT        warehousePartID AS buildingID, warehousePartTypeID_FK AS buildingTypeID_FK, warehousePartName AS buildingName, warehousePartParentID_FK AS buildingParentID_FK, warehousePartActive AS buildingActive, 
-                         warehousePartIsChecked AS buildingIsChecked, hostName AS buildingHostName, entryDate AS buildingEntryDate, entryData AS buildingEntryData, warehousePartName_A AS buildingPartName_A, 
-                         warehousePartOldName AS buildingOldName, warehousePartOldParentID_FK AS buildingOldParentID_FK,IdaraID_FK
-FROM            WH.WarehousePart
-WHERE        (warehousePartTypeID_FK = 2)
+﻿CREATE   VIEW [WH].[V_building] AS SELECT warehousePartID AS buildingID, warehousePartTypeID_FK AS buildingTypeID_FK, warehousePartName AS buildingName, warehousePartParentID_FK AS buildingParentID_FK, warehousePartActive AS buildingActive, warehousePartIsChecked AS buildingIsChecked, hostName AS buildingHostName, entryDate AS buildingEntryDate, entryData AS buildingEntryData, warehousePartName_A AS buildingPartName_A, warehousePartOldName AS buildingOldName, warehousePartOldParentID_FK AS buildingOldParentID_FK, IdaraID_FK FROM WH.WarehousePart WHERE warehousePartTypeID_FK = 5;
 GO
 EXECUTE sp_addextendedproperty @name = N'MS_DiagramPaneCount', @value = 1, @level0type = N'SCHEMA', @level0name = N'WH', @level1type = N'VIEW', @level1name = N'V_building';
 

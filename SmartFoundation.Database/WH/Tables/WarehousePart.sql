@@ -12,7 +12,6 @@
     [hostName]                    NVARCHAR (200) NULL,
     [entryDate]                   DATETIME       CONSTRAINT [DF_WarehousePart_entryDate] DEFAULT (getdate()) NULL,
     [entryData]                   NVARCHAR (20)  NULL,
-    CONSTRAINT [PK_WarehousePart_1] PRIMARY KEY CLUSTERED ([warehousePartID] ASC),
-    CONSTRAINT [FK_WarehousePart_WarehousePartType1] FOREIGN KEY ([warehousePartTypeID_FK]) REFERENCES [WH].[WarehousePartType] ([warehousePartTypeID])
+    CONSTRAINT [PK_WarehousePart_1] PRIMARY KEY CLUSTERED ([warehousePartID] ASC)
 );
 

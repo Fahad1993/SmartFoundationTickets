@@ -5,6 +5,7 @@ CREATE PROCEDURE [Tickets].[ServiceDL]
     , @entryData  INT
     , @hostName   NVARCHAR(400)
     , @filterServiceID  BIGINT = NULL
+    , @filterTicketClassID INT = NULL
 )
 AS
 BEGIN
@@ -13,29 +14,55 @@ BEGIN
     IF @pageName_ = N'ServiceCatalogueList' OR @pageName_ IS NULL
     BEGIN
         SELECT
-              s.[serviceID]
-            , s.[serviceCode]
-            , s.[serviceName_A]
-            , s.[serviceName_E]
-            , s.[serviceDesc]
-            , s.[idaraID_FK]
-            , s.[ticketClassID_FK]
-            , tc.[ticketClassName_A]
-            , tc.[ticketClassName_E]
-            , s.[defaultPriorityID_FK]
-            , p.[priorityName_A]
-            , p.[priorityName_E]
-            , s.[requiresLocation]
-            , s.[allowsChildTickets]
-            , s.[requiresQualityReview]
-            , s.[serviceActive]
-        FROM [Tickets].[Service] s
-        LEFT JOIN [Tickets].[TicketClass] tc ON s.[ticketClassID_FK] = tc.[ticketClassID]
-        LEFT JOIN [Tickets].[Priority] p ON s.[defaultPriorityID_FK] = p.[priorityID]
-        WHERE s.[serviceActive] = 1
-          AND (s.[idaraID_FK] = @idaraID OR s.[idaraID_FK] IS NULL)
-          AND (s.[serviceID] = @filterServiceID OR @filterServiceID IS NULL)
-        ORDER BY s.[serviceID] DESC;
+              v.[serviceID]
+            , v.[serviceCode]
+            , v.[serviceName_A]
+            , v.[serviceName_E]
+            , v.[serviceDesc]
+            , v.[idaraID_FK]
+            , v.[ticketClassID_FK]
+            , v.[ticketClassName_A]
+            , v.[ticketClassName_E]
+            , v.[defaultPriorityID_FK]
+            , v.[priorityName_A]
+            , v.[priorityName_E]
+            , v.[requiresLocation]
+            , v.[allowsChildTickets]
+            , v.[requiresQualityReview]
+            , v.[serviceActive]
+            , CASE WHEN v.[serviceActive] = 1 THEN N'نشطة' ELSE N'غير نشطة' END AS [serviceStatusText]
+            , v.[departmentName]
+            , v.[divisionSectionName]
+            , v.[activeRoutingRuleID]
+            , v.[activeTargetDSDID]
+            , v.[routingDistributorID]
+            , v.[routingEffectiveFrom]
+            , v.[routingDepartmentName]
+            , v.[routingDivisionName]
+            , v.[routingSectionName]
+            , v.[routingDistributorName]
+            , v.[slaPolicyID]
+            , v.[slaPriorityID_FK]
+            , v.[slaPriorityName]
+            , v.[firstResponseTargetMinutes]
+            , v.[assignmentTargetMinutes]
+            , v.[operationalCompletionTargetMinutes]
+            , v.[finalClosureTargetMinutes]
+        FROM [Tickets].[V_ServiceFullDefinition] v
+        WHERE (v.[idaraID_FK] = @idaraID OR v.[idaraID_FK] IS NULL)
+          AND (v.[serviceID] = @filterServiceID OR @filterServiceID IS NULL)
+          AND (v.[ticketClassID_FK] = @filterTicketClassID OR @filterTicketClassID IS NULL)
+        ORDER BY v.[serviceActive] DESC, v.[serviceID] DESC;
+
+        SELECT [ticketClassID], [ticketClassName_A], [ticketClassName_E]
+        FROM [Tickets].[TicketClass]
+        WHERE [ticketClassActive] = 1
+        ORDER BY [ticketClassID];
+
+        SELECT [priorityID], [priorityName_A], [priorityName_E]
+        FROM [Tickets].[Priority]
+        WHERE [priorityActive] = 1
+        ORDER BY [priorityID];
 
         RETURN;
     END
@@ -97,7 +124,8 @@ BEGIN
             , scs.[idaraID_FK]
             , scs.[proposedServiceName_A]
             , scs.[proposedServiceName_E]
-            , scs.[proposedServiceDesc]
+            , COALESCE(scs.[proposedServiceDesc_A], scs.[proposedServiceDesc]) AS [proposedServiceDesc_A]
+            , COALESCE(scs.[proposedServiceDesc_A], scs.[proposedServiceDesc]) AS [proposedServiceDesc]
             , scs.[proposedTargetDSDID_FK]
             , scs.[proposedPriorityID_FK]
             , scs.[approvalStatus]

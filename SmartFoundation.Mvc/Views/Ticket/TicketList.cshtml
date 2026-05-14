@@ -1,0 +1,11 @@
+﻿@using System.Text.Json
+@model SmartFoundation.UI.ViewModels.SmartPage.SmartPageViewModel
+@{
+    ViewData["Title"] = Model.PageTitle;
+    var webJson = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+}
+
+@await Component.InvokeAsync("SmartRenderer", new { model = Model })
+
+<script id="ticket-list-debug-model" type="application/json">@Html.Raw(JsonSerializer.Serialize(Model, webJson))</script>
+<script src="~/js/ticket-list-debug.js" asp-append-version="true"></script>

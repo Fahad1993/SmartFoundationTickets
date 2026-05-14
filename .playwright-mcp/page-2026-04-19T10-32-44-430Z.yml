@@ -1,0 +1,77 @@
+- generic [active] [ref=e1]:
+  - heading "An unhandled exception occurred while processing the request." [level=1] [ref=e2]
+  - generic [ref=e3]: "ArgumentException: Column 'pauseReasonID' does not belong to table Table1."
+  - paragraph [ref=e4]: System.Data.DataRow.GetDataColumn(string columnName)
+  - list [ref=e5]:
+    - listitem [ref=e6] [cursor=pointer]: Stack
+    - listitem [ref=e7] [cursor=pointer]: Query
+    - listitem [ref=e8] [cursor=pointer]: Cookies
+    - listitem [ref=e9] [cursor=pointer]: Headers
+    - listitem [ref=e10] [cursor=pointer]: Routing
+  - list [ref=e12]:
+    - listitem [ref=e13]:
+      - 'heading "ArgumentException: Column ''pauseReasonID'' does not belong to table Table1." [level=2] [ref=e14]'
+      - list [ref=e15]:
+        - listitem [ref=e16]:
+          - heading "System.Data.DataRow.GetDataColumn(string columnName)" [level=3] [ref=e17]
+        - listitem [ref=e18]:
+          - heading "System.Data.DataRow.get_Item(string columnName)" [level=3] [ref=e19]
+        - listitem [ref=e20]:
+          - heading "SmartFoundation.Mvc.Controllers.CrudController.GetDDLValues(string textcol, string ValueCol, string TableIndex, string PageName, string usersId, string IdaraId, string HostName, string FilterColumn, string FilterValue, string FirstOption) in CrudController.cs" [level=3] [ref=e21]:
+            - text: SmartFoundation.Mvc.Controllers.CrudController.GetDDLValues(string textcol, string ValueCol, string TableIndex, string PageName, string usersId, string IdaraId, string HostName, string FilterColumn, string FilterValue, string FirstOption) in
+            - code [ref=e22]: CrudController.cs
+          - button "+" [ref=e23] [cursor=pointer]
+          - list [ref=e25]:
+            - listitem [ref=e26]: var value = row[ValueCol]?.ToString()?.Trim() ?? "";
+        - listitem [ref=e27]:
+          - heading "SmartFoundation.Mvc.Controllers.Tickets.TicketController.GetDDLAsync(string labelCol, string valueCol, string ddlType, string pageNameOverride) in TicketController.TicketDetails.cs" [level=3] [ref=e28]:
+            - text: SmartFoundation.Mvc.Controllers.Tickets.TicketController.GetDDLAsync(string labelCol, string valueCol, string ddlType, string pageNameOverride) in
+            - code [ref=e29]: TicketController.TicketDetails.cs
+          - button "+" [ref=e30] [cursor=pointer]
+          - list [ref=e32]:
+            - listitem [ref=e33]: var ddlResult = await _CrudController.GetDDLValues(
+        - listitem [ref=e34]:
+          - heading "SmartFoundation.Mvc.Controllers.Tickets.TicketController.TicketDetails(Nullable<int> id) in TicketController.TicketDetails.cs" [level=3] [ref=e35]:
+            - text: SmartFoundation.Mvc.Controllers.Tickets.TicketController.TicketDetails(Nullable<int> id) in
+            - code [ref=e36]: TicketController.TicketDetails.cs
+          - button "+" [ref=e37] [cursor=pointer]
+          - list [ref=e39]:
+            - listitem [ref=e40]: List<OptionItem> pauseReasonOptions = await GetDDLAsync("pauseReasonName_A", "pauseReasonID", "1", "PauseReasonDDL");
+        - listitem [ref=e41]:
+          - heading "Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor+TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, object controller, object[] arguments)" [level=3] [ref=e42]
+        - listitem [ref=e43]:
+          - heading "Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask<IActionResult> actionResultValueTask)" [level=3] [ref=e44]
+        - listitem [ref=e45]:
+          - heading "Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, object state, bool isCompleted)" [level=3] [ref=e46]
+        - listitem [ref=e47]:
+          - heading "Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)" [level=3] [ref=e48]
+        - listitem [ref=e49]:
+          - heading "Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(ref State next, ref Scope scope, ref object state, ref bool isCompleted)" [level=3] [ref=e50]
+        - listitem [ref=e51]:
+          - heading "Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, object state, bool isCompleted)" [level=3] [ref=e52]
+        - listitem [ref=e53]:
+          - heading "Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResourceFilter>g__Awaited|25_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, object state, bool isCompleted)" [level=3] [ref=e54]
+        - listitem [ref=e55]:
+          - heading "Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResourceExecutedContextSealed context)" [level=3] [ref=e56]
+        - listitem [ref=e57]:
+          - heading "Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(ref State next, ref Scope scope, ref object state, ref bool isCompleted)" [level=3] [ref=e58]
+        - listitem [ref=e59]:
+          - heading "Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, object state, bool isCompleted)" [level=3] [ref=e60]
+        - listitem [ref=e61]:
+          - heading "Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)" [level=3] [ref=e62]
+        - listitem [ref=e63]:
+          - heading "Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)" [level=3] [ref=e64]
+        - listitem [ref=e65]:
+          - heading "Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)" [level=3] [ref=e66]
+        - listitem [ref=e67]:
+          - heading "Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)" [level=3] [ref=e68]
+        - listitem [ref=e69]:
+          - heading "Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)" [level=3] [ref=e70]
+        - listitem [ref=e71]:
+          - heading "Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)" [level=3] [ref=e72]
+        - listitem [ref=e73]:
+          - heading "Microsoft.AspNetCore.ResponseCompression.ResponseCompressionMiddleware.InvokeCore(HttpContext context)" [level=3] [ref=e74]
+        - listitem [ref=e75]:
+          - heading "Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)" [level=3] [ref=e76]
+    - listitem [ref=e77]:
+      - button "Show raw exception details" [ref=e79] [cursor=pointer]

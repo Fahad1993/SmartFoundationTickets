@@ -1,5 +1,5 @@
 {
-  "enabledMcpjsonServers": ["context7", "sequential-thinking", "github"],
+  "enabledMcpjsonServers": ["context7", "sequential-thinking", "github", "playwright"],
   "env": {
     "CONTEXT7_API_KEY": "ctx7sk-be3ba758-ec74-45aa-840b-3b9280734b2f"
   }

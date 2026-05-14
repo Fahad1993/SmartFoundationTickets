@@ -293,7 +293,15 @@ BEGIN
             w.residentInfoID,
             w.GeneralNo,
             w.ActionDecisionNo,
-            w.ActionDecisionDate,
+            DATEADD(
+                        DAY,
+                        DATEDIFF(
+                            DAY,
+                            ISNULL(CAST(w.OccupentDate AS date), GETDATE()),
+                            ISNULL(CAST(DATEADD(DAY, 1, w.ExitDate) AS date), GETDATE())
+                        ),
+                        CAST(w.ActionDecisionDate AS date)
+                    ),
             w.WaitingClassID,
             w.WaitingOrderTypeID,
             1,

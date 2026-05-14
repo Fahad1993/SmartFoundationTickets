@@ -14,9 +14,11 @@ SELECT
     , th.[notes]
     , th.[actionDate]
     , os.[ticketStatusCode]  AS [oldStatusCode]
-    , os.[ticketStatusName_E] AS [oldStatusName_E]
+    , os.[ticketStatusName_A] AS [oldStatusName_A]
+    , COALESCE(os.[ticketStatusName_A], os.[ticketStatusName_E]) AS [oldStatusName_E]
     , ns.[ticketStatusCode]  AS [newStatusCode]
-    , ns.[ticketStatusName_E] AS [newStatusName_E]
+    , ns.[ticketStatusName_A] AS [newStatusName_A]
+    , COALESCE(ns.[ticketStatusName_A], ns.[ticketStatusName_E]) AS [newStatusName_E]
 FROM [Tickets].[TicketHistory] th
 INNER JOIN [Tickets].[TicketStatus] ns
     ON th.[newStatusID_FK] = ns.[ticketStatusID]

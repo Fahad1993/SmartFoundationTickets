@@ -472,250 +472,12 @@ BEGIN
     -------------------------------------------------------------------
         ELSE IF @pageName_ = 'Users'
         BEGIN
-        if(@isAdmin = 1)
-        Begin
-            -- Users
-           select d.usersID,
-           d.nationalID,
-           d.GeneralNo,
-           d.FullName,
-           ud.firstName_A,
-           ud.secondName_A,
-           ud.thirdName_A,
-           ud.lastName_A,
-           ud.firstName_E,
-           ud.secondName_E,
-           ud.thirdName_E,
-           ud.lastName_E,
-           d.UsersAuthTypeID,
-           d.UsersAuthTypeName_A,
-           case 
-           when d.userActive = 1 then N'نشط'
-           when d.userActive = 0 then N'معطل'
-           End ActiveStatus,
-           d.userTypeName_A,
-           d.userTypeID_FK,
-
-           d.userActive,
-           d.IdaraID,
-           d.idaraLongName_A,
-           r1.distributorName_A,
-           d.EntryFullName,
-           convert(nvarchar(10),d.entryDate,23)+' '+convert(nvarchar(10),d.entryDate,8) entryDate,
-           ud.nationalIDIssueDate,
-               ud.dateOfBirth,
-               ud.genderID_FK,
-               ud.nationalityID_FK,
-               ud.religionID_FK,
-               ud.maritalStatusID_FK,
-               ud.educationID_FK,
-              
-               r1.distributorID
-
-           from [DATACORE].[dbo].[V_GetFullSystemUsersDetails] d
-           inner join dbo.UsersDetails ud on d.usersID = ud.usersID_FK and ud.userActive = 1 and d.userActive = 1
-           left join dbo.UserDistributor ui on ud.usersID_FK = ui.userID_FK and ui.UDActive = 1
-           left join dbo.Distributor r on ui.distributorID_FK = r.distributorID
-           left join dbo.V_GetFullStructureForDSD dd on dd.DSDID = r.DSDID_FK and r.distributorType_FK = 1
-           left join dbo.DeptSecDiv ds on dd.DepartmentID = ds.deptID_FK and ds.secID_FK is null and ds.divID_FK is null
-           left join dbo.Distributor r1 on ds.DSDID = r1.DSDID_FK and r1.distributorType_FK = 1
-           -- and dd.DSDLevel = 3
-          -- where dd.DepartmentID is not null --and dd.IdaraID = @idaraID
-
-
-          order by d.usersID desc
-
-
-          END 
-
-         ELSE if(@isAdmin = 2)
-        Begin
-            -- Users
-           select d.usersID,
-           d.nationalID,
-           d.GeneralNo,
-           d.FullName,
-           ud.firstName_A,
-           ud.secondName_A,
-           ud.thirdName_A,
-           ud.lastName_A,
-           ud.firstName_E,
-           ud.secondName_E,
-           ud.thirdName_E,
-           ud.lastName_E,
-           d.UsersAuthTypeID,
-           d.UsersAuthTypeName_A,
-           case 
-           when d.userActive = 1 then N'نشط'
-           when d.userActive = 0 then N'معطل'
-           End ActiveStatus,
-           d.userTypeName_A,
-           d.userTypeID_FK,
-
-           d.userActive,
-           d.IdaraID,
-           d.idaraLongName_A,
-           r1.distributorName_A,
-           d.EntryFullName,
-           convert(nvarchar(10),d.entryDate,23)+' '+convert(nvarchar(10),d.entryDate,8) entryDate,
-           ud.nationalIDIssueDate,
-               ud.dateOfBirth,
-               ud.genderID_FK,
-               ud.nationalityID_FK,
-               ud.religionID_FK,
-               ud.maritalStatusID_FK,
-               ud.educationID_FK,
-          
-               r1.distributorID
-
-           from [DATACORE].[dbo].[V_GetFullSystemUsersDetails] d
-           inner join dbo.UsersDetails ud on d.usersID = ud.usersID_FK and ud.userActive = 1 and d.userActive = 1
-           left join dbo.UserDistributor ui on ud.usersID_FK = ui.userID_FK and ui.UDActive = 1
-           left join dbo.Distributor r on ui.distributorID_FK = r.distributorID
-           left join dbo.V_GetFullStructureForDSD dd on dd.DSDID = r.DSDID_FK and r.distributorType_FK = 1
-           left join dbo.DeptSecDiv ds on dd.DepartmentID = ds.deptID_FK and ds.secID_FK is null and ds.divID_FK is null
-           left join dbo.Distributor r1 on ds.DSDID = r1.DSDID_FK and r1.distributorType_FK = 1
-           where d.IdaraID = @idaraID
-           order by d.usersID desc
-          END 
-
-          if(@isAdmin = 3)
-            Begin
-                -- Users
-               select d.usersID,
-               d.nationalID,
-               d.GeneralNo,
-               d.FullName,
-               ud.firstName_A,
-               ud.secondName_A,
-               ud.thirdName_A,
-               ud.lastName_A,
-               ud.firstName_E,
-               ud.secondName_E,
-               ud.thirdName_E,
-               ud.lastName_E,
-               d.UsersAuthTypeID,
-               d.UsersAuthTypeName_A , 
-               case 
-           when d.userActive = 1 then N'نشط'
-           when d.userActive = 0 then N'معطل'
-           End ActiveStatus,
-               d.userTypeName_A,
-               d.userTypeID_FK,
-               d.userActive,
-               d.IdaraID,
-               d.idaraLongName_A,
-               r1.distributorName_A,
-               d.EntryFullName,
-           convert(nvarchar(10),d.entryDate,23)+' '+convert(nvarchar(10),d.entryDate,8) entryDate,
-               ud.nationalIDIssueDate,
-               ud.dateOfBirth,
-               ud.genderID_FK,
-               ud.nationalityID_FK,
-               ud.religionID_FK,
-               ud.maritalStatusID_FK,
-               ud.educationID_FK,
-              
-              
-               r1.distributorID
-
-           from [DATACORE].[dbo].[V_GetFullSystemUsersDetails] d
-           inner join dbo.UsersDetails ud on d.usersID = ud.usersID_FK and ud.userActive = 1 and d.userActive = 1
-           left join dbo.UserDistributor ui on ud.usersID_FK = ui.userID_FK and ui.UDActive = 1
-           left join dbo.Distributor r on ui.distributorID_FK = r.distributorID
-           left join dbo.V_GetFullStructureForDSD dd on dd.DSDID = r.DSDID_FK and r.distributorType_FK = 1
-           left join dbo.DeptSecDiv ds on dd.DepartmentID = ds.deptID_FK and ds.secID_FK is null and ds.divID_FK is null
-           left join dbo.Distributor r1 on ds.DSDID = r1.DSDID_FK and r1.distributorType_FK = 1
-             
-               
-               where d.IdaraID = @idaraID
-               order by d.usersID desc
-              END 
-           
-
-
-
-            if(@isAdmin = 1)
-        Begin
-          Select i.idaraID,i.idaraLongName_A from dbo.Idara i
-        END
-
-        ELSE if(@isAdmin = 2)
-        Begin
-            Select i.idaraID,i.idaraLongName_A from dbo.Idara i
-           where  i.IdaraID = @idaraID
-        END
-
-         ELSE if(@isAdmin = 3)
-        Begin
-            Select i.idaraID,i.idaraLongName_A from dbo.Idara i
-           where  i.IdaraID = @idaraID
-        END
-           
-
-
-
-           
-            if(@isAdmin = 1)
-        Begin
-
-           select ua.UsersAuthTypeID,ua.UsersAuthTypeName_A from dbo.UsersAuthType ua where ua.UsersAuthTypeActive = 1
-
-           END
-           else if(@isAdmin = 2)
-        Begin
-
-           select ua.UsersAuthTypeID,ua.UsersAuthTypeName_A from dbo.UsersAuthType ua where ua.UsersAuthTypeActive = 1 and ua.UsersAuthTypeID in (2,3)
-
-           END
-           else if(@isAdmin = 3)
-
-        Begin
-
-           select ua.UsersAuthTypeID,ua.UsersAuthTypeName_A from dbo.UsersAuthType ua where ua.UsersAuthTypeActive = 1 and ua.UsersAuthTypeID in (2,3)
-
-           END
-
-
-           select t.userTypeID,t.userTypeName_A from dbo.UserType t where t.userTypeActive =1
-
-
-           select g.genderID,g.genderName_A from dbo.Gender g 
-
-           select n.nationalityID,n.nationalityName_A from dbo.Nationality n where n.nationalityActive = 1
-
-           select n.religionID,n.religionName_A from dbo.Religion n where n.religionActive = 1
-
-           select n.maritalStatusID,n.maritalStatusName_A from dbo.MaritalStatus n where n.maritalStatusActive = 1
-
-           select n.educationID,n.educationName_A from dbo.Education n where n.educationActive = 1
-
-           select @isAdmin isAdmin
-
-            if(@isAdmin = 1)
-        Begin
-            select r.distributorName_A,r.distributorID,d.IdaraID
-           from dbo.V_GetFullStructureForDSD d
-           inner join dbo.Distributor r on d.DSDID = r.DSDID_FK and r.distributorType_FK = 1 and d.DSDLevel = 3
-           where d.DepartmentID is not null 
-        END
-
-        ELSE if(@isAdmin = 2)
-        Begin
-            select r.distributorName_A,r.distributorID,d.IdaraID
-           from dbo.V_GetFullStructureForDSD d
-           inner join dbo.Distributor r on d.DSDID = r.DSDID_FK and r.distributorType_FK = 1 and d.DSDLevel = 3
-           where d.DepartmentID is not null and d.IdaraID = @idaraID
-        END
-
-         ELSE if(@isAdmin = 3)
-        Begin
-            select r.distributorName_A,r.distributorID,d.IdaraID
-           from dbo.V_GetFullStructureForDSD d
-           inner join dbo.Distributor r on d.DSDID = r.DSDID_FK and r.distributorType_FK = 1 and d.DSDLevel = 3
-           where d.DepartmentID is not null and d.IdaraID = @idaraID
-        END
-
+       EXEC [dbo].[UsersDL]
+                      @pageName_                      = @pageName_
+                    , @idaraID                        = @idaraID
+                    , @entryData                      = @entrydata
+                    , @hostName                       = @hostName
+                    
 
         END  
     -------------------------------------------------------------------
@@ -730,6 +492,14 @@ BEGIN
                     , @entryData                      = @entrydata
                     , @hostName                       = @hostName
                     , @UsersID                        = @parameter_01
+
+
+          SELECT    v.userID,
+                    v.menuName_E,
+                    v.menuName_A,
+                    v.permissionTypeName_E,
+                    v.permissionTypeName_A 
+          FROM [dbo].[ft_UserAllPermissionsForAi](@entrydata) v
            
         END
 
@@ -1029,7 +799,9 @@ END
     -------------------------------------------------------------------
     --                     PAGE: buildingUtilityType
     -------------------------------------------------------------------
-        ELSE IF @pageName_ = 'buildingUtilityType'
+              
+
+ELSE IF @pageName_ = 'buildingUtilityType'
         BEGIN
 
 
@@ -1421,7 +1193,7 @@ END
 
 
           -------------------------------------------------------------------
-    --                     PAGE: AllMeterRead
+    --                     PAGE: HousingHandover
     -------------------------------------------------------------------
         ELSE IF @pageName_ = 'HousingHandover'
         BEGIN
@@ -1466,11 +1238,172 @@ END
 
         END
 
+    -------------------------------------------------------------------
+    --                     PAGE: RentExemption
+    -------------------------------------------------------------------
+        ELSE IF @pageName_ = 'MeterServiceTypeFixedAmount'
+        BEGIN
+
+
+            -- One Resident Data
+
+          EXEC [Housing].[MeterServiceTypeFixedAmountDL]
+                      @pageName_                      = @pageName_
+                    , @idaraID                        = @idaraID
+                    , @entryData                      = @entrydata
+                    , @hostName                       = @hostName
+                    
+
+
+           
+
+
+        END
 
 
 
+          -------------------------------------------------------------------
+    --                     نظام الدعم الفني للموقع
+    -------------------------------------------------------------------
+
+      -------------------------------------------------------------------
+    --                     PAGE: SupportMyTickets
+    -------------------------------------------------------------------
 
 
+          ELSE IF @pageName_ = 'SupportMyTickets'
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM dbo.V_GetListUserPermission v
+                WHERE v.userID = @entrydata
+                  AND v.menuName_E = @pageName_
+                  AND v.permissionTypeName_E IN (N'SMT_ACCESS', N'SMT_SELECT')
+            )
+            BEGIN
+                SELECT 0 AS IsSuccessful, N'عفوا لاتملك صلاحية عرض هذه الصفحة' AS Message_;
+            END
+            ELSE
+            BEGIN
+                EXEC [support].[SupportMyTicketsDL]
+                      @pageName_ = @pageName_
+                    , @idaraID   = @idaraID
+                    , @entryData = @entrydata
+                    , @hostName  = @hostName;
+            END
+        END
+
+         -------------------------------------------------------------------
+    --                     PAGE: SupportPhoneTickets
+    -------------------------------------------------------------------
+
+ELSE IF @pageName_ = 'SupportPhoneTickets'
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM dbo.V_GetListUserPermission v
+                WHERE v.userID = @entrydata
+                  AND v.menuName_E = @pageName_
+                  AND v.permissionTypeName_E IN (N'SPT_ACCESS', N'SPT_SELECT')
+            )
+            BEGIN
+                SELECT 0 AS IsSuccessful, N'عفوا لاتملك صلاحية عرض هذه الصفحة' AS Message_;
+            END
+            ELSE
+            BEGIN
+                EXEC [support].[SupportPhoneTicketsDL]
+                      @pageName_ = @pageName_
+                    , @idaraID   = @idaraID
+                    , @entryData = @entrydata
+                    , @hostName  = @hostName
+                    , @permissionUserID = @parameter_01;
+            END
+        END
+
+ELSE IF @pageName_ = 'SupportTicketDetails'
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM dbo.V_GetListUserPermission v
+                WHERE v.userID = @entrydata
+                  AND v.menuName_E = @pageName_
+                  AND v.permissionTypeName_E IN (N'STD_ACCESS', N'STD_SELECT')
+            )
+            BEGIN
+                SELECT 0 AS IsSuccessful, N'عفوا لاتملك صلاحية عرض هذه الصفحة' AS Message_;
+            END
+            ELSE
+            BEGIN
+                EXEC [support].[SupportTicketDetailsDL]
+                      @pageName_ = @pageName_
+                    , @idaraID   = @idaraID
+                    , @entryData = @entrydata
+                    , @hostName  = @hostName
+                    , @ticketID  = @parameter_01;
+            END
+        END
+
+         -------------------------------------------------------------------
+    --                     PAGE: SupportInbox
+    -------------------------------------------------------------------
+
+ELSE IF @pageName_ = 'SupportInbox'
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM dbo.V_GetListUserPermission v
+                WHERE v.userID = @entrydata
+                  AND v.menuName_E = @pageName_
+                  AND v.permissionTypeName_E IN (N'SIN_ACCESS', N'SIN_SELECT')
+            )
+            BEGIN
+                SELECT 0 AS IsSuccessful, N'عفوا لاتملك صلاحية عرض هذه الصفحة' AS Message_;
+            END
+            ELSE
+            BEGIN
+                EXEC [support].[SupportInboxDL]
+                      @pageName_    = @pageName_
+                    , @idaraID      = @idaraID
+                    , @entryData    = @entrydata
+                    , @hostName     = @hostName
+                    , @statusID     = @parameter_01
+                    , @priorityID   = @parameter_02
+                    , @ticketTypeID = @parameter_03
+                    , @assignedToID = @parameter_04
+                    , @dateFrom     = @parameter_05
+                    , @dateTo       = @parameter_06
+                    , @searchText   = @parameter_07;
+            END
+        END
+
+         -------------------------------------------------------------------
+    --                     PAGE: SupportTeamManagement
+    -------------------------------------------------------------------
+
+ELSE IF @pageName_ = 'SupportTeamManagement'
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM dbo.V_GetListUserPermission v
+                WHERE v.userID = @entrydata
+                  AND v.menuName_E = @pageName_
+                  AND v.permissionTypeName_E IN (N'STM_ACCESS', N'STM_SELECT')
+            )
+            BEGIN
+                SELECT 0 AS IsSuccessful, N'عفوا لاتملك صلاحية عرض هذه الصفحة' AS Message_;
+            END
+            ELSE
+            BEGIN
+                DECLARE @supportOnlyActive BIT = CASE WHEN @parameter_01 = '0' THEN 0 ELSE 1 END;
+
+                EXEC [support].[SupportTeamManagementDL]
+                      @pageName_  = @pageName_
+                    , @idaraID    = @idaraID
+                    , @entryData  = @entrydata
+                    , @hostName   = @hostName
+                    , @onlyActive = @supportOnlyActive;
+            END
+        END
 
 
 
@@ -2215,6 +2148,43 @@ END
 
 
 
+
+    -- ============================================================
+    --                       TICKETS MODULE
+    -- ============================================================
+    ELSE IF @pageName_ IN (N'TicketList', N'TicketDetails', N'TicketHistory', N'StatusDDL',
+                           N'ChildTickets', N'PauseSessions', N'TicketSLAs',
+                           N'QualityReviews', N'ArbitrationCases', N'TicketAttachments',
+                           N'PauseReasonDDL', N'ArbitrationReasonDDL', N'QualityReviewResultDDL',
+                           N'RequesterTypeDDL', N'TicketClassDDL', N'PriorityDDL',
+                           N'OpenArbitrations', N'PendingReviews', N'BreachedSLAs',
+                           N'TicketAdminLookup', N'ResidentDDL', N'BuildingDDL',
+                           N'TicketReasonDDL', N'TicketDescriptionTemplateDDL')
+    BEGIN
+        EXEC [Tickets].[TicketDL]
+              @pageName_   = @pageName_
+            , @idaraID     = @idaraID
+            , @entryData   = @entrydata
+            , @hostName    = @hostname
+            , @filterTicketID       = @parameter_01
+            , @filterTicketNo       = @parameter_02
+            , @filterStatusID       = @parameter_03
+            , @filterServiceID      = @parameter_04
+            , @filterAssignedUserID = @parameter_05
+            , @filterDSDID          = @parameter_06;
+    END
+
+              ELSE IF @pageName_ IN (N'ServiceCatalogueList', N'RoutingRuleLookup', N'SLAPolicyLookup',
+                   N'SuggestionReview', N'ServiceDDL')
+              BEGIN
+            EXEC [Tickets].[ServiceDL]
+                  @pageName_             = @pageName_
+                , @idaraID               = @idaraID
+                , @entryData             = @entrydata
+                , @hostName              = @hostname
+                , @filterServiceID       = @parameter_01
+                , @filterTicketClassID   = @parameter_02;
+              END
 
     -------------------------------------------------------------------
     --                     PAGE NOT FOUND

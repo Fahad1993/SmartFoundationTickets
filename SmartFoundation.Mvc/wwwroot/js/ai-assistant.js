@@ -188,6 +188,79 @@
 
     const userIdEl = document.getElementById("sf-ai-userid");
     const userId = userIdEl ? (userIdEl.value || "").trim() : "";
+    const fullNameEl = document.getElementById("sf-ai-fullname");
+    const userPhotoFallbackEl = document.getElementById("sf-ai-userphoto-src");
+
+    function getFirstName(fullName) {
+        const n = (fullName || "").trim();
+        if (!n) return "";
+        const parts = n.split(/\s+/).filter(Boolean);
+        return parts.length > 0 ? parts[0] : "";
+    }
+
+    const userFirstName = getFirstName(fullNameEl ? (fullNameEl.value || "").trim() : "");
+
+    function buildWelcomeOpenMessage() {
+        const salutation = userFirstName ? `هلا ${userFirstName}👋` : "هلا 👋";
+        return `${salutation}\n\nأنا فيصل مساعدك الذكي داخل النظام.\n\nاسألني: كيف أضيف مستفيد؟ كيف اعدل؟ أين أجد التقرير؟\n\nملاحظة: المساعد الذكي لازال تحت التدريب في مرحلة الاطلاق التجريبي تأكد من صحة الأجوبة قبل الاعتماد عليها كلياً`;
+    }
+
+    function isValidAvatarSrc(src) {
+        if (!src || typeof src !== "string") return false;
+        const s = src.trim();
+        if (!s) return false;
+        if (s.includes("/img/Ai.png")) return false;
+        return true;
+    }
+
+    function normalizeUserPhotoValue(value) {
+        if (!value || typeof value !== "string") return "";
+        const raw = value.trim();
+        if (!raw) return "";
+
+        if (raw.startsWith("data:image/")) return raw;
+        if (raw.startsWith("/")) return raw;
+        return `data:image/jpeg;base64,${raw}`;
+    }
+
+    function resolveUserAvatarSrc() {
+        const menuPhoto = document.getElementById("sf-user-photo");
+        if (menuPhoto && isValidAvatarSrc(menuPhoto.currentSrc || menuPhoto.src || "")) {
+            return menuPhoto.currentSrc || menuPhoto.src;
+        }
+
+        const menuPhotoBySelector = document.querySelector(".user-card img[data-user-photo='menu'], .user-card img");
+        if (menuPhotoBySelector && isValidAvatarSrc(menuPhotoBySelector.currentSrc || menuPhotoBySelector.src || "")) {
+            return menuPhotoBySelector.currentSrc || menuPhotoBySelector.src;
+        }
+
+        const fallbackRaw = userPhotoFallbackEl ? (userPhotoFallbackEl.value || "").trim() : "";
+        const fallback = normalizeUserPhotoValue(fallbackRaw);
+        if (isValidAvatarSrc(fallback)) {
+            return fallback;
+        }
+
+        return "";
+    }
+
+    const userAvatarSrc = resolveUserAvatarSrc();
+
+    const CONVERSATION_STORAGE_KEY = "sf_ai_conversation_id_v1";
+    function getOrCreateConversationId() {
+        try {
+            const existing = sessionStorage.getItem(CONVERSATION_STORAGE_KEY);
+            if (existing && existing.trim()) return existing.trim();
+        } catch { }
+
+        const randomPart = Math.random().toString(36).slice(2, 10);
+        const generated = `sfai-${Date.now().toString(36)}-${randomPart}`;
+
+        try { sessionStorage.setItem(CONVERSATION_STORAGE_KEY, generated); } catch { }
+        return generated;
+    }
+
+    const conversationId = getOrCreateConversationId();
+    const clientId = `${window.location.host}|${navigator.userAgent.slice(0, 60)}`;
 
     const form = sendBtn.closest("form") || input.closest("form");
     if (form) {
@@ -216,20 +289,27 @@
         const msg = document.createElement("div");
         msg.className = "sf-ai-msg";
 
-        //const avatar = document.createElement("div");
-        //avatar.className = "sf-ai-avatar " + (role === "user" ? "user" : "bot");
-        //avatar.textContent = role === "user" ? "👤" : "🤖";
         const avatar = document.createElement("div");
-avatar.className = "sf-ai-avatar " + (role === "user" ? "user" : "bot");
+        avatar.className = "sf-ai-avatar " + (role === "user" ? "user" : "bot");
 
-if (role === "user") {
-    avatar.textContent = "👤";
-} else {
-    avatar.innerHTML = `<img src="/img/Ai.png" alt="فيصل المساعد الذكي">`;
-}
+        if (role === "user" && userAvatarSrc) {
+            const userImg = document.createElement("img");
+            userImg.src = userAvatarSrc;
+            userImg.alt = "المستخدم";
+            avatar.appendChild(userImg);
+        } else if (role === "user") {
+            avatar.textContent = "👤";
+        } else {
+            avatar.innerHTML = `<img src="/img/Ai.png" alt="فيصل المساعد الذكي">`;
+        }
         const bubble = document.createElement("div");
         bubble.className = "sf-ai-bubble " + (role === "user" ? "user" : role === "system" ? "system" : "bot");
-        bubble.innerHTML = escapeHtml(text || "");
+
+        if (role === "user") {
+            bubble.textContent = text || "";
+        } else {
+            bubble.innerHTML = parseMarkdown(text || "");
+        }
 
         // ✅ إضافة أزرار التقييم للإجابات فقط
         if (role === "bot" && chatId > 0) {
@@ -278,7 +358,7 @@ if (role === "user") {
             if (messages.childElementCount === 0) {
                 addMessage(
                     "bot",
-                    "هلا 👋\nأنا فيصل مساعدك الذكي داخل النظام.\nاسألني: كيف أضيف مستفيد؟ كيف أطبع؟ أين أجد التقرير؟\nملاحظة: المساعد الذكي لازال تحت التدريب في مرحلة الاطلاق التجريبي تأكد من صحة الأجوبة قبل الاعتماد عليها كلياً",
+                    buildWelcomeOpenMessage(),
                     [],
                     0
                 );
@@ -453,7 +533,9 @@ if (role === "user") {
                 pageUrl: window.location.pathname + window.location.search,
                 pageName: window.location.pathname.split("/").filter(Boolean).pop() || null,
                 culture: (document.documentElement.lang || "ar"),
-                userId: userId
+                userId: userId,
+                conversationId: conversationId,
+                clientId: clientId
             };
 
             const res = await fetch("/api/ai/chat", {
@@ -521,6 +603,70 @@ if (role === "user") {
         } catch (err) {
             console.error("❌ Failed to send feedback:", err);
         }
+    }
+
+    function parseMarkdown(text) {
+        if (!text) return "";
+
+        let lines = text.split("\n");
+        let html = "";
+        let inList = false;
+
+        for (let line of lines) {
+
+            // عنوان ##
+            if (line.startsWith("## ")) {
+                if (inList) {
+                    html += "</ol>";
+                    inList = false;
+                }
+                html += `<h2>${line.replace("## ", "")}</h2>`;
+                continue;
+            }
+
+            // عنوان ###
+            if (line.startsWith("### ")) {
+                if (inList) {
+                    html += "</ol>";
+                    inList = false;
+                }
+                html += `<h3>${line.replace("### ", "")}</h3>`;
+                continue;
+            }
+
+            // قائمة رقمية
+            if (/^\d+\)/.test(line)) {
+                if (!inList) {
+                    html += "<ol>";
+                    inList = true;
+                }
+
+                let item = line.replace(/^\d+\)\s*/, "");
+
+                // Bold
+                item = item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+                html += `<li>${item}</li>`;
+                continue;
+            }
+
+            // نص عادي
+            if (inList) {
+                html += "</ol>";
+                inList = false;
+            }
+
+            // Bold
+            line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+            if (line.trim() !== "") {
+                html += `<p>${line}</p>`;
+            }
+        }
+
+        if (inList) html += "</ol>";
+
+        return html;
     }
 
     window.aiAssistant = {

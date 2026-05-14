@@ -41,6 +41,8 @@
     [AssignPeriodID_FK]             BIGINT           NULL,
     [InAssignPeriod]                INT              NULL,
     [ExtendReasonTypeID_FK]         INT              NULL,
+    [OccupentDate]                  DATETIME         NULL,
+    [ExitDate]                      DATETIME         NULL,
     [IdaraId_FK]                    BIGINT           NULL,
     [entryDate]                     DATETIME         CONSTRAINT [DF_BuildingAction_entryDate] DEFAULT (getdate()) NULL,
     [entryData]                     NVARCHAR (20)    NULL,
@@ -54,6 +56,8 @@
     CONSTRAINT [FK_BuildingAction_BuildingStatus] FOREIGN KEY ([buildingStatusID_FK]) REFERENCES [Housing].[BuildingStatus] ([buildingStatusID]),
     CONSTRAINT [FK_BuildingAction_ResidentInfo] FOREIGN KEY ([residentInfoID_FK]) REFERENCES [Housing].[ResidentInfo] ([residentInfoID])
 );
+
+
 
 
 
@@ -400,3 +404,9 @@ BEGIN
   --  INNER JOIN deleted d ON i.buildingActionID = d.buildingActionID;
 
 END
+
+GO
+CREATE NONCLUSTERED INDEX [IX_BuildingAction_Type_Active]
+    ON [Housing].[BuildingAction]([buildingActionTypeID_FK] ASC, [buildingActionActive] ASC)
+    INCLUDE([buildingActionID], [buildingActionParentID], [IdaraId_FK], [residentInfoID_FK], [entryData], [buildingActionNote], [buildingActionDate], [buildingActionDecisionDate], [buildingActionDecisionNo], [buildingActionExtraType1], [buildingActionExtraType2], [entryDate]);
+

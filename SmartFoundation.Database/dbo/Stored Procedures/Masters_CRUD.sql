@@ -412,7 +412,7 @@ BEGIN
                   , @religionID_FK                   = @parameter_26
                   , @maritalStatusID_FK              = @parameter_27
                   , @educationID_FK                  = @parameter_28
-                  , @userNote                        = @parameter_20
+                  , @userNote                        = @parameter_35
                   , @distributorID                   = @parameter_36
                   , @idaraID_FK                      = @idaraID
                   , @entryData                       = @entrydata
@@ -450,7 +450,7 @@ BEGIN
                   , @religionID_FK                   = @parameter_26
                   , @maritalStatusID_FK              = @parameter_27
                   , @educationID_FK                  = @parameter_28
-                  , @userNote                        = @parameter_20
+                  , @userNote                        = @parameter_35
                   , @distributorID                   = @parameter_36
                   , @idaraID_FK                      = @idaraID
                   , @entryData                       = @entrydata
@@ -635,6 +635,7 @@ BEGIN
         ----------------------------------------------------------------
         -- BuildingUtilityType
         ----------------------------------------------------------------
+      
         ELSE IF @pageName_ = 'BuildingUtilityType'
         BEGIN
             IF (
@@ -2185,6 +2186,7 @@ BEGIN
                   , @ExtendStartDate              = @parameter_24
                   , @ExtendEndDate                = @parameter_25
                   , @ExtendTypeID                 = @parameter_27
+                  , @OccupentDate                 = @parameter_45
                   , @idaraID_FK                   = @idaraID
                   , @entryData                    = @entrydata
                   , @hostName                     = @hostName;
@@ -2217,6 +2219,7 @@ BEGIN
                   , @ExtendStartDate              = @parameter_24
                   , @ExtendEndDate                = @parameter_25
                   , @ExtendTypeID                 = @parameter_27
+                  , @OccupentDate                 = @parameter_45
                   , @idaraID_FK                   = @idaraID
                   , @entryData                    = @entrydata
                   , @hostName                     = @hostName;
@@ -2249,6 +2252,7 @@ BEGIN
                   , @ExtendStartDate              = @parameter_24
                   , @ExtendEndDate                = @parameter_25
                   , @ExtendTypeID                 = @parameter_27
+                  , @OccupentDate                 = @parameter_45
                   , @idaraID_FK                   = @idaraID
                   , @entryData                    = @entrydata
                   , @hostName                     = @hostName;
@@ -2280,6 +2284,7 @@ BEGIN
                   , @ExtendStartDate              = @parameter_24
                   , @ExtendEndDate                = @parameter_25
                   , @ExtendTypeID                 = @parameter_27
+                  , @OccupentDate                 = @parameter_45
                   , @idaraID_FK                   = @idaraID
                   , @entryData                    = @entrydata
                   , @hostName                     = @hostName;
@@ -2333,6 +2338,7 @@ BEGIN
                   , @ExtendStartDate              = @parameter_24
                   , @ExtendEndDate                = @parameter_25
                   , @ExtendTypeID                 = @parameter_27
+                  , @OccupentDate                 = @parameter_45
                   , @idaraID_FK                   = @idaraID
                   , @entryData                    = @entrydata
                   , @hostName                     = @hostName;
@@ -2373,6 +2379,7 @@ BEGIN
                   , @ExtendInsuranceType          = @parameter_27
                   , @ExtendInsuranceNote          = @parameter_26
                   , @ExtendInsuranceTypeID        = @parameter_34
+                  , @OccupentDate                 = @parameter_45
                   , @idaraID_FK                   = @idaraID
                   , @entryData                    = @entrydata
                   , @hostName                     = @hostName;
@@ -2432,6 +2439,8 @@ BEGIN
                   , @AssignPeriodID               = @parameter_20
                   , @LastActionID                 = @parameter_21
                   , @ExitDate                     = @parameter_22
+                  , @OccupentDate                 = @parameter_43
+                  , @FinalExitDate                = @parameter_44
                   , @idaraID_FK                   = @idaraID
                   , @entryData                    = @entrydata
                   , @hostName                     = @hostName;
@@ -2460,6 +2469,8 @@ BEGIN
                   , @LastActionID                 = @parameter_21
                   , @ExitDate                     = @parameter_22
                   , @LastActionTypeID             = @parameter_16
+                  , @OccupentDate                 = @parameter_43
+                  , @FinalExitDate                = @parameter_44
                   , @idaraID_FK                   = @idaraID
                   , @entryData                    = @entrydata
                   , @hostName                     = @hostName;
@@ -2487,6 +2498,8 @@ BEGIN
                   , @AssignPeriodID               = @parameter_20
                   , @LastActionID                 = @parameter_21
                   , @ExitDate                     = @parameter_22
+                  , @OccupentDate                 = @parameter_43
+                  , @FinalExitDate                = @parameter_44
                   , @idaraID_FK                   = @idaraID
                   , @entryData                    = @entrydata
                   , @hostName                     = @hostName;
@@ -2514,6 +2527,8 @@ BEGIN
                   , @LastActionID                 = @parameter_21
                   , @ExitDate                     = @parameter_22
                   , @LastActionTypeID             = @parameter_16
+                  , @OccupentDate                 = @parameter_43
+                  , @FinalExitDate                = @parameter_44
                   , @idaraID_FK                   = @idaraID
                   , @entryData                    = @entrydata
                   , @hostName                     = @hostName;
@@ -2562,6 +2577,8 @@ BEGIN
                   , @PenaltyPrice                 = @parameter_40
                   , @PenaltyReason                = @parameter_31
                   , @BillsID                      = @parameter_41
+                  , @OccupentDate                 = @parameter_43
+                  , @FinalExitDate                = @parameter_44
                   , @idaraID_FK                   = @idaraID
                   , @entryData                    = @entrydata
                   , @hostName                     = @hostName;
@@ -2610,6 +2627,8 @@ BEGIN
                   , @LastActionID                 = @parameter_21
                   , @ExitDate                     = @parameter_22
                   , @LastActionTypeID             = @parameter_16
+                  , @OccupentDate                 = @parameter_43
+                  , @FinalExitDate                = @parameter_44
                   , @idaraID_FK                   = @idaraID
                   , @entryData                    = @entrydata
                   , @hostName                     = @hostName;
@@ -2662,8 +2681,9 @@ BEGIN
                   , @buildingDetailsID                  = @parameter_03
                   , @LastActionID                       = @parameter_21
                   , @LastActionTypeID                   = @parameter_16
-                  , @ExitDate                           = @parameter_30
                   , @LastActionExtendReasonTypeID       = @parameter_40
+                  , @occupentDate                       = @parameter_35
+                  , @ExitDate                           = @parameter_36
                   , @idaraID_FK                         = @idaraID
                   , @entryData                          = @entrydata
                   , @hostName                           = @hostName;
@@ -3155,7 +3175,7 @@ BEGIN
 
 
        ----------------------------------------------------------------
-        -- Meters
+        -- AllMeterRead
         ----------------------------------------------------------------
         ELSE IF @pageName_ = 'AllMeterRead'
         BEGIN
@@ -3332,11 +3352,652 @@ BEGIN
             GOTO Finish;
         END
 
+         ----------------------------------------------------------------
+        -- MeterServiceTypeFixedAmount
+        ----------------------------------------------------------------
+        ELSE IF @pageName_ = 'MeterServiceTypeFixedAmount'
+        BEGIN
+            IF (
+                SELECT COUNT(*)
+                FROM  dbo.V_GetListUserPermission v
+                WHERE v.userID = @entrydata
+                  AND v.menuName_E = @pageName_
+                  AND v.permissionTypeName_E = @ActionType
+            ) <= 0
+            BEGIN
+                SET @ok = 0;
+                SET @msg = N'عفوا لاتملك صلاحية لهذه العملية';
+                GOTO Finish;
+            END
+
+            DELETE FROM @Result;
+                             
+
+
+              IF @ActionType = 'INSERTSERVICEFIXEDAMOUNT'
+            BEGIN
+                      INSERT INTO @Result(IsSuccessful, Message_)
+                EXEC [Housing].[MeterServiceTypeFixedAmountSP]
+                     @Action                               = @ActionType
+                    ,@MeterServiceTypeFixedAmountID        = @parameter_01
+                    ,@MeterServiceTypeID_FK                = @parameter_02
+                    ,@FixedAmount                          = @parameter_03
+                    ,@MeterServiceTypeFixedAmountStartDate = @parameter_04
+                    ,@IdaraId_FK                           = @idaraID
+                    ,@entryData                            = @entrydata
+                    ,@hostName                             = @hostName;
+                                 
+                                                           
+                                                           
+                                                           
+            END
 
 
 
+            ELSE IF @ActionType = 'EDITSERVICEFIXEDAMOUNT'
+            BEGIN
+                      INSERT INTO @Result(IsSuccessful, Message_)
+                EXEC [Housing].[MeterServiceTypeFixedAmountSP]
+                     @Action                               = @ActionType
+                    ,@MeterServiceTypeFixedAmountID        = @parameter_01
+                    ,@MeterServiceTypeID_FK                = @parameter_02
+                    ,@FixedAmount                          = @parameter_03
+                    ,@MeterServiceTypeFixedAmountStartDate = @parameter_04
+                    ,@IdaraId_FK                           = @idaraID
+                    ,@entryData                            = @entrydata
+                    ,@hostName                             = @hostName;
+                                                           
+                                                           
+                                                           
+            END
+                  
+               
+
+                ELSE IF @ActionType ='DELETESERVICEFIXEDAMOUNT'
+            BEGIN 
+            
+                     INSERT INTO @Result(IsSuccessful, Message_)
+                EXEC [Housing].[MeterServiceTypeFixedAmountSP]
+                     @Action                               = @ActionType
+                    ,@MeterServiceTypeFixedAmountID        = @parameter_01
+                    ,@MeterServiceTypeID_FK                = @parameter_02
+                    ,@FixedAmount                          = @parameter_03
+                    ,@MeterServiceTypeFixedAmountStartDate = @parameter_04
+                    ,@IdaraId_FK                           = @idaraID
+                    ,@entryData                            = @entrydata
+                    ,@hostName                             = @hostName;
+                                 
+                                                           
+
+            END
+                  
 
 
+            ELSE
+            BEGIN
+                SET @ok = 0;
+                SET @msg = N'نوع العملية المطلوبة غير معروف. ActionType';
+                GOTO Finish;
+            END
+
+            SELECT TOP 1 @ok = IsSuccessful, @msg = Message_ FROM @Result;
+            GOTO Finish;
+        END
+
+        ----------------------------------------------------------------
+        -- Tickets (TicketList / TicketDetails)
+        ----------------------------------------------------------------
+        ELSE IF @pageName_ IN ('TicketList', 'TicketDetails', 'Tickets')
+        BEGIN
+            IF (
+                SELECT COUNT(*) FROM dbo.V_GetListUserPermission v
+                WHERE v.userID = @entrydata
+                  AND v.menuName_E = N'TicketDetails'
+                  AND v.permissionTypeName_E = @ActionType
+            ) <= 0
+            BEGIN
+                SET @ok = 0;
+                SET @msg = N'عفوا لاتملك صلاحية لهذه العملية';
+                GOTO Finish;
+            END
+
+            DELETE FROM @Result;
+
+                        IF @ActionType = 'INSERT_TICKET'
+                        BEGIN
+                                INSERT INTO @Result(IsSuccessful, Message_)
+                                EXEC [Tickets].[TicketSP]
+                                            @Action                         = @ActionType
+                                        , @ticketClassID_FK               = @parameter_01
+                                        , @requesterTypeID_FK             = @parameter_02
+                                        , @requesterUserID_FK             = @parameter_03
+                                        , @requesterResidentID_FK         = @parameter_04
+                                        , @serviceID_FK                   = @parameter_05
+                                        , @title_A                        = @parameter_06
+                                        , @description_A                  = @parameter_07
+                                        , @suggestedPriorityID_FK         = @parameter_08
+                                        , @currentDSDID_FK                = @parameter_09
+                                        , @currentQueueDistributorID_FK   = @parameter_10
+                                        , @assignedUserID_FK              = @parameter_11
+                                        , @locationBuildingNo             = @parameter_12
+                                        , @locationUnitNo                 = @parameter_13
+                                        , @locationArea_A                 = @parameter_14
+                                        , @requiresQualityReview          = @parameter_15
+                                        , @isOtherService                 = @parameter_16
+                                        , @idaraID_FK                     = @idaraID
+                                        , @entryData                      = @entrydata
+                                        , @hostName                       = @hostName
+                                        , @performerUserID                = @entrydata;
+                        END
+                        ELSE IF @ActionType = 'CREATE_CHILD_TICKET'
+                        BEGIN
+                                INSERT INTO @Result(IsSuccessful, Message_)
+                                EXEC [Tickets].[TicketSP]
+                                            @Action                         = @ActionType
+                                        , @parentTicketID_FK              = @parameter_01
+                                        , @serviceID_FK                   = @parameter_02
+                                        , @ticketClassID_FK               = @parameter_03
+                                        , @requesterTypeID_FK             = @parameter_04
+                                        , @title_A                        = @parameter_07
+                                        , @description_A                  = @parameter_08
+                                        , @suggestedPriorityID_FK         = @parameter_09
+                                        , @currentDSDID_FK                = @parameter_10
+                                        , @idaraID_FK                     = @idaraID
+                                        , @entryData                      = @entrydata
+                                        , @hostName                       = @hostName
+                                        , @performerUserID                = @entrydata;
+                        END
+                        ELSE IF @ActionType = 'ROUTE_TICKET'
+                        BEGIN
+                                INSERT INTO @Result(IsSuccessful, Message_)
+                                EXEC [Tickets].[TicketSP]
+                                            @Action                         = @ActionType
+                                        , @ticketID                       = @parameter_01
+                                        , @currentDSDID_FK                = @parameter_03
+                                        , @idaraID_FK                     = @idaraID
+                                        , @entryData                      = @entrydata
+                                        , @hostName                       = @hostName
+                                        , @performerUserID                = @entrydata;
+                        END
+                        ELSE IF @ActionType = 'ASSIGN_TICKET'
+                        BEGIN
+                                INSERT INTO @Result(IsSuccessful, Message_)
+                                EXEC [Tickets].[TicketSP]
+                                            @Action                         = @ActionType
+                                        , @ticketID                       = @parameter_01
+                                        , @assignedUserID_FK              = @parameter_02
+                                        , @idaraID_FK                     = @idaraID
+                                        , @entryData                      = @entrydata
+                                        , @hostName                       = @hostName
+                                        , @performerUserID                = @entrydata;
+                        END
+                        ELSE IF @ActionType = 'REASSIGN_TICKET'
+                        BEGIN
+                            INSERT INTO @Result(IsSuccessful, Message_)
+                            EXEC [Tickets].[TicketSP]
+                                    @Action                         = @ActionType
+                                , @ticketID                       = @parameter_01
+                                , @assignedUserID_FK              = @parameter_02
+                                , @currentDSDID_FK                = @parameter_03
+                                , @idaraID_FK                     = @idaraID
+                                , @entryData                      = @entrydata
+                                , @hostName                       = @hostName
+                                , @performerUserID                = @entrydata;
+                        END
+                                ELSE IF @ActionType = 'UPDATE_PRIORITY'
+                                BEGIN
+                                    INSERT INTO @Result(IsSuccessful, Message_)
+                                    EXEC [Tickets].[TicketSP]
+                                            @Action                         = @ActionType
+                                        , @ticketID                       = @parameter_01
+                                        , @suggestedPriorityID_FK         = @parameter_02
+                                        , @notes_A                        = @parameter_03
+                                        , @idaraID_FK                     = @idaraID
+                                        , @entryData                      = @entrydata
+                                        , @hostName                       = @hostName
+                                        , @performerUserID                = @entrydata;
+                                END
+                        ELSE IF @ActionType IN ('START_WORK', 'RESOLVE_TICKET', 'RESUME_TICKET', 'CLOSE_TICKET', 'REOPEN_TICKET', 'REJECT_TICKET')
+                        BEGIN
+                                INSERT INTO @Result(IsSuccessful, Message_)
+                                EXEC [Tickets].[TicketSP]
+                                            @Action                         = @ActionType
+                                        , @ticketID                       = @parameter_01
+                                        , @notes_A                        = @parameter_02
+                                        , @idaraID_FK                     = @idaraID
+                                        , @entryData                      = @entrydata
+                                        , @hostName                       = @hostName
+                                        , @performerUserID                = @entrydata;
+                        END
+                        ELSE IF @ActionType = 'PAUSE_TICKET'
+                        BEGIN
+                                INSERT INTO @Result(IsSuccessful, Message_)
+                                EXEC [Tickets].[TicketSP]
+                                            @Action                         = @ActionType
+                                        , @ticketID                       = @parameter_01
+                                        , @pauseReasonID_FK               = @parameter_02
+                                        , @notes_A                        = @parameter_03
+                                        , @idaraID_FK                     = @idaraID
+                                        , @entryData                      = @entrydata
+                                        , @hostName                       = @hostName
+                                        , @performerUserID                = @entrydata;
+                        END
+                                ELSE IF @ActionType = 'REQUEST_CLARIFICATION'
+                                BEGIN
+                                    INSERT INTO @Result(IsSuccessful, Message_)
+                                    EXEC [Tickets].[TicketSP]
+                                            @Action                         = @ActionType
+                                        , @ticketID                       = @parameter_01
+                                        , @requestedFromUserID            = @parameter_02
+                                        , @requestedFromDSDID_FK          = @parameter_03
+                                        , @clarificationReasonID_FK       = @parameter_04
+                                        , @notes_A                        = @parameter_05
+                                        , @idaraID_FK                     = @idaraID
+                                        , @entryData                      = @entrydata
+                                        , @hostName                       = @hostName
+                                        , @performerUserID                = @entrydata;
+                                END
+                                ELSE IF @ActionType = 'RESPOND_CLARIFICATION'
+                                BEGIN
+                                    INSERT INTO @Result(IsSuccessful, Message_)
+                                    EXEC [Tickets].[TicketSP]
+                                            @Action                         = @ActionType
+                                        , @clarificationRequestID         = @parameter_01
+                                        , @notes_A                        = @parameter_02
+                                        , @idaraID_FK                     = @idaraID
+                                        , @entryData                      = @entrydata
+                                        , @hostName                       = @hostName
+                                        , @performerUserID                = @entrydata;
+                                END
+                        ELSE IF @ActionType = 'RAISE_ARBITRATION'
+                        BEGIN
+                                INSERT INTO @Result(IsSuccessful, Message_)
+                                EXEC [Tickets].[TicketSP]
+                                            @Action                         = @ActionType
+                                        , @ticketID                       = @parameter_01
+                                        , @arbitrationReasonID_FK         = @parameter_02
+                                        , @notes_A                        = @parameter_04
+                                        , @idaraID_FK                     = @idaraID
+                                        , @entryData                      = @entrydata
+                                        , @hostName                       = @hostName
+                                        , @performerUserID                = @entrydata;
+                        END
+                        ELSE IF @ActionType = 'SUBMIT_QUALITY_REVIEW'
+                        BEGIN
+                                INSERT INTO @Result(IsSuccessful, Message_)
+                                EXEC [Tickets].[TicketSP]
+                                            @Action                         = @ActionType
+                                        , @ticketID                       = @parameter_01
+                                        , @qualityReviewResultID_FK       = @parameter_02
+                                        , @reviewScope                    = @parameter_03
+                                        , @reviewNotes                    = @parameter_04
+                                        , @idaraID_FK                     = @idaraID
+                                        , @entryData                      = @entrydata
+                                        , @hostName                       = @hostName
+                                        , @performerUserID                = @entrydata;
+                        END
+                        ELSE IF @ActionType = 'FINALIZE_QUALITY_REVIEW'
+                        BEGIN
+                                INSERT INTO @Result(IsSuccessful, Message_)
+                                EXEC [Tickets].[TicketSP]
+                                            @Action                         = @ActionType
+                                        , @ticketID                       = @parameter_01
+                                        , @reviewNotes                    = @parameter_02
+                                        , @idaraID_FK                     = @idaraID
+                                        , @entryData                      = @entrydata
+                                        , @hostName                       = @hostName
+                                        , @performerUserID                = @entrydata;
+                        END
+                        ELSE IF @ActionType = 'UPLOAD_ATTACHMENT'
+                        BEGIN
+                                INSERT INTO @Result(IsSuccessful, Message_)
+                                EXEC [Tickets].[TicketSP]
+                                            @Action                         = @ActionType
+                                        , @ticketID                       = @parameter_01
+                                        , @fileName                       = @parameter_02
+                                        , @storedFileName                 = @parameter_03
+                                        , @filePath                       = @parameter_04
+                                        , @fileSizeBytes                  = @parameter_05
+                                        , @contentType                    = @parameter_06
+                                        , @attachmentType                 = @parameter_07
+                                        , @idaraID_FK                     = @idaraID
+                                        , @entryData                      = @entrydata
+                                        , @hostName                       = @hostName
+                                        , @performerUserID                = @entrydata;
+                        END
+                        ELSE
+                        BEGIN
+                                SET @ok = 0;
+                                SET @msg = N'نوع العملية المطلوبة غير معروف. ActionType';
+                                GOTO Finish;
+                        END
+
+            SELECT TOP 1 @ok = IsSuccessful, @msg = Message_ FROM @Result;
+            GOTO Finish;
+        END
+
+                ----------------------------------------------------------------
+                -- Service Catalogue
+                ----------------------------------------------------------------
+                ELSE IF @pageName_ = 'ServiceCatalogueList'
+                BEGIN
+                        DECLARE @ServiceRequiredPermission NVARCHAR(200) = CASE @ActionType
+                                WHEN 'INSERT_SERVICE' THEN 'INSERTSERVICE'
+                                WHEN 'UPDATE_SERVICE' THEN 'UPDATESERVICE'
+                                WHEN 'DELETE_SERVICE' THEN 'DELETESERVICE'
+                                WHEN 'INSERT_ROUTING_RULE' THEN 'MANAGEROUTINGRULES'
+                                WHEN 'CLOSE_ROUTING_RULE' THEN 'MANAGEROUTINGRULES'
+                                WHEN 'UPSERT_SLA_POLICY' THEN 'MANAGESLAPOLICIES'
+                                WHEN 'APPROVE_SERVICE_SUGGESTION' THEN 'APPROVESERVICESUGGESTION'
+                                ELSE @ActionType
+                        END;
+
+                        IF (
+                                SELECT COUNT(*) FROM dbo.V_GetListUserPermission v
+                                WHERE v.userID = @entrydata
+                                    AND v.menuName_E = @pageName_
+                                    AND v.permissionTypeName_E = @ServiceRequiredPermission
+                        ) <= 0
+                        BEGIN
+                                SET @ok = 0;
+                                SET @msg = N'عفوا لاتملك صلاحية لهذه العملية';
+                                GOTO Finish;
+                        END
+
+                        DELETE FROM @Result;
+
+                        IF @ActionType = 'INSERT_SERVICE'
+                        BEGIN
+                                INSERT INTO @Result(IsSuccessful, Message_)
+                                EXEC [Tickets].[ServiceSP]
+                                         @Action                 = @ActionType
+                                     , @serviceCode            = @parameter_02
+                                     , @serviceName_A          = @parameter_03
+                                     , @serviceName_E          = @parameter_04
+                                     , @serviceDesc            = @parameter_05
+                                     , @idaraID_FK             = @idaraID
+                                     , @ticketClassID_FK       = @parameter_06
+                                     , @defaultPriorityID_FK   = @parameter_07
+                                     , @requiresLocation       = @parameter_08
+                                     , @allowsChildTickets     = @parameter_09
+                                     , @requiresQualityReview  = @parameter_10
+                                     , @entryData              = @entrydata
+                                     , @hostName               = @hostName;
+                        END
+                        ELSE IF @ActionType = 'UPDATE_SERVICE'
+                        BEGIN
+                                INSERT INTO @Result(IsSuccessful, Message_)
+                                EXEC [Tickets].[ServiceSP]
+                                         @Action                 = @ActionType
+                                     , @serviceID              = @parameter_01
+                                     , @serviceCode            = @parameter_02
+                                     , @serviceName_A          = @parameter_03
+                                     , @serviceName_E          = @parameter_04
+                                     , @serviceDesc            = @parameter_05
+                                     , @ticketClassID_FK       = @parameter_06
+                                     , @defaultPriorityID_FK   = @parameter_07
+                                     , @requiresLocation       = @parameter_08
+                                     , @allowsChildTickets     = @parameter_09
+                                     , @requiresQualityReview  = @parameter_10
+                                     , @entryData              = @entrydata
+                                     , @hostName               = @hostName;
+                        END
+                        ELSE IF @ActionType = 'DELETE_SERVICE'
+                        BEGIN
+                                INSERT INTO @Result(IsSuccessful, Message_)
+                                EXEC [Tickets].[ServiceSP]
+                                         @Action                 = @ActionType
+                                     , @serviceID              = @parameter_01
+                                     , @entryData              = @entrydata
+                                     , @hostName               = @hostName;
+                        END
+                        ELSE IF @ActionType = 'INSERT_ROUTING_RULE'
+                        BEGIN
+                                INSERT INTO @Result(IsSuccessful, Message_)
+                                EXEC [Tickets].[ServiceSP]
+                                         @Action                 = @ActionType
+                                     , @serviceID              = @parameter_01
+                                     , @idaraID_FK             = @idaraID
+                                     , @targetDSDID_FK         = @parameter_02
+                                     , @queueDistributorID_FK  = @parameter_03
+                                     , @changeReason           = @parameter_04
+                                     , @approvedByUserID       = @entrydata
+                                     , @effectiveFrom          = @parameter_05
+                                     , @entryData              = @entrydata
+                                     , @hostName               = @hostName;
+                        END
+                        ELSE IF @ActionType = 'CLOSE_ROUTING_RULE'
+                        BEGIN
+                                INSERT INTO @Result(IsSuccessful, Message_)
+                                EXEC [Tickets].[ServiceSP]
+                                         @Action                 = @ActionType
+                                     , @serviceID              = @parameter_01
+                                     , @entryData              = @entrydata
+                                     , @hostName               = @hostName;
+                        END
+                        ELSE IF @ActionType = 'UPSERT_SLA_POLICY'
+                        BEGIN
+                                INSERT INTO @Result(IsSuccessful, Message_)
+                                EXEC [Tickets].[ServiceSP]
+                                         @Action                               = @ActionType
+                                     , @serviceID                            = @parameter_01
+                                     , @idaraID_FK                           = @idaraID
+                                     , @priorityID_FK                        = @parameter_02
+                                     , @firstResponseTargetMinutes           = @parameter_03
+                                     , @assignmentTargetMinutes              = @parameter_04
+                                     , @operationalCompletionTargetMinutes   = @parameter_05
+                                     , @finalClosureTargetMinutes            = @parameter_06
+                                     , @entryData                            = @entrydata
+                                     , @hostName                             = @hostName;
+                        END
+                        ELSE IF @ActionType = 'APPROVE_SERVICE_SUGGESTION'
+                        BEGIN
+                                INSERT INTO @Result(IsSuccessful, Message_)
+                                EXEC [Tickets].[ServiceSP]
+                                         @Action                               = @ActionType
+                                     , @serviceCatalogSuggestionID           = @parameter_01
+                                     , @approvedByUserID                     = @entrydata
+                                     , @approvalNotes_A                      = @parameter_02
+                                     , @approvalNotes                        = @parameter_03
+                                     , @entryData                            = @entrydata
+                                     , @hostName                             = @hostName;
+                        END
+                        ELSE
+                        BEGIN
+                                SET @ok = 0;
+                                SET @msg = N'نوع العملية المطلوبة غير معروف. ActionType';
+                                GOTO Finish;
+                        END
+
+                        SELECT TOP 1 @ok = IsSuccessful, @msg = Message_ FROM @Result;
+                        GOTO Finish;
+                END
+
+
+        ----------------------------------------------------------------
+          --نظام الدعم الفني للموقع 
+----------------------------------------------------------------
+
+       ----------------------------------------------------------------
+        -- SupportMyTickets
+        ----------------------------------------------------------------
+        ELSE IF @pageName_ = 'SupportMyTickets'
+        BEGIN
+            IF (
+                SELECT COUNT(*) FROM dbo.V_GetListUserPermission v
+                WHERE v.userID = @entrydata AND v.menuName_E = @pageName_ AND v.permissionTypeName_E = @ActionType
+            ) <= 0
+            BEGIN
+                SET @ok = 0; SET @msg = N'عفوا لاتملك صلاحية لهذه العملية'; GOTO Finish;
+            END
+
+            DELETE FROM @Result;
+
+            IF @ActionType = 'SMT_CREATE_TICKET'
+            BEGIN
+                INSERT INTO @Result(IsSuccessful, Message_)
+                EXEC [support].[SupportMyTicketsSP]
+                      @Action             = @ActionType
+                    , @ticketTypeID       = @parameter_01
+                    , @priorityID         = @parameter_02
+                    , @ticketTitle        = @parameter_03
+                    , @ticketDescription  = @parameter_04
+                    , @affectedPageName   = @parameter_05
+                    , @affectedPageUrl    = @parameter_06
+                    , @affectedActionName = @parameter_07
+                    , @errorDetails       = @parameter_08
+                    , @entryData          = @entrydata
+                    , @hostName           = @hostName;
+            END
+            ELSE
+            BEGIN
+                SET @ok = 0; SET @msg = N'نوع العملية المطلوبة غير معروف. ActionType'; GOTO Finish;
+            END
+
+            SELECT TOP 1 @ok = IsSuccessful, @msg = Message_ FROM @Result;
+            GOTO Finish;
+        END
+
+        ----------------------------------------------------------------
+        -- SupportTicketDetails
+        ----------------------------------------------------------------
+        ELSE IF @pageName_ = 'SupportPhoneTickets'
+        BEGIN
+            IF (
+                SELECT COUNT(*) FROM dbo.V_GetListUserPermission v
+                WHERE v.userID = @entrydata AND v.menuName_E = @pageName_ AND v.permissionTypeName_E = @ActionType
+            ) <= 0
+            BEGIN
+                SET @ok = 0; SET @msg = N'عفوا لاتملك صلاحية لهذه العملية'; GOTO Finish;
+            END
+
+            DELETE FROM @Result;
+
+            IF @ActionType = 'SPT_CREATE_TICKET'
+            BEGIN
+                INSERT INTO @Result(IsSuccessful, Message_)
+                EXEC [support].[SupportPhoneTicketsSP]
+                      @Action             = @ActionType
+                    , @ticketTypeID       = @parameter_01
+                    , @priorityID         = @parameter_02
+                    , @ticketTitle        = @parameter_03
+                    , @ticketDescription  = @parameter_04
+                    , @affectedPageName   = @parameter_05
+                    , @affectedPageUrl    = @parameter_06
+                    , @affectedActionName = @parameter_07
+                    , @errorDetails       = @parameter_08
+                    , @callerUserID       = @parameter_09
+                    , @entryData          = @entrydata
+                    , @hostName           = @hostName;
+            END
+            ELSE
+            BEGIN
+                SET @ok = 0; SET @msg = N'نوع العملية المطلوبة غير معروف. ActionType'; GOTO Finish;
+            END
+
+            SELECT TOP 1 @ok = IsSuccessful, @msg = Message_ FROM @Result;
+            GOTO Finish;
+        END
+
+        ----------------------------------------------------------------
+        -- SupportTicketDetails
+        ----------------------------------------------------------------
+        ELSE IF @pageName_ = 'SupportTicketDetails'
+        BEGIN
+            IF (
+                SELECT COUNT(*) FROM dbo.V_GetListUserPermission v
+                WHERE v.userID = @entrydata AND v.menuName_E = @pageName_ AND v.permissionTypeName_E = @ActionType
+            ) <= 0
+            BEGIN
+                SET @ok = 0; SET @msg = N'عفوا لاتملك صلاحية لهذه العملية'; GOTO Finish;
+            END
+
+            DELETE FROM @Result;
+
+            INSERT INTO @Result(IsSuccessful, Message_)
+            EXEC [support].[SupportTicketDetailsSP]
+                  @Action               = @ActionType
+                , @ticketID             = @parameter_01
+                , @replyText            = @parameter_02
+                , @isInternal           = @parameter_03
+                , @statusID             = @parameter_04
+                , @assignToTeamMemberID = @parameter_05
+                , @assignmentNote       = @parameter_06
+                , @taskTitle            = @parameter_07
+                , @taskDescription      = @parameter_08
+                , @taskPriorityID       = @parameter_09
+                , @taskAssignToMemberID = @parameter_10
+                , @taskDueDate          = @parameter_11
+                , @taskID               = @parameter_12
+                , @taskStatusID         = @parameter_13
+                , @entryData            = @entrydata
+                , @hostName             = @hostName;
+
+            SELECT TOP 1 @ok = IsSuccessful, @msg = Message_ FROM @Result;
+            GOTO Finish;
+        END
+
+        ----------------------------------------------------------------
+        -- SupportInbox
+        ----------------------------------------------------------------
+        ELSE IF @pageName_ = 'SupportInbox'
+        BEGIN
+            IF (
+                SELECT COUNT(*) FROM dbo.V_GetListUserPermission v
+                WHERE v.userID = @entrydata AND v.menuName_E = @pageName_ AND v.permissionTypeName_E = @ActionType
+            ) <= 0
+            BEGIN
+                SET @ok = 0; SET @msg = N'عفوا لاتملك صلاحية لهذه العملية'; GOTO Finish;
+            END
+
+            DELETE FROM @Result;
+
+            INSERT INTO @Result(IsSuccessful, Message_)
+            EXEC [support].[SupportInboxSP]
+                  @Action               = @ActionType
+                , @ticketID             = @parameter_01
+                , @statusID             = @parameter_02
+                , @assignToTeamMemberID = @parameter_03
+                , @assignmentNote       = @parameter_04
+                , @ticketIDsCsv         = @parameter_05
+                , @entryData            = @entrydata
+                , @hostName             = @hostName;
+
+            SELECT TOP 1 @ok = IsSuccessful, @msg = Message_ FROM @Result;
+            GOTO Finish;
+        END
+
+        ----------------------------------------------------------------
+        -- SupportTeamManagement
+        ----------------------------------------------------------------
+        ELSE IF @pageName_ = 'SupportTeamManagement'
+        BEGIN
+            IF (
+                SELECT COUNT(*) FROM dbo.V_GetListUserPermission v
+                WHERE v.userID = @entrydata AND v.menuName_E = @pageName_ AND v.permissionTypeName_E = @ActionType
+            ) <= 0
+            BEGIN
+                SET @ok = 0; SET @msg = N'عفوا لاتملك صلاحية لهذه العملية'; GOTO Finish;
+            END
+
+            DELETE FROM @Result;
+
+            INSERT INTO @Result(IsSuccessful, Message_)
+            EXEC [support].[SupportTeamManagementSP]
+                  @Action            = @ActionType
+                , @teamMemberID      = @parameter_01
+                , @userID            = @parameter_02
+                , @canReceiveTickets = @parameter_03
+                , @canAssignTickets  = @parameter_04
+                , @memberActive      = @parameter_05
+                , @teamMemberRoleID  = @parameter_06
+                , @roleID            = @parameter_07
+                , @entryData         = @entrydata
+                , @hostName          = @hostName;
+
+            SELECT TOP 1 @ok = IsSuccessful, @msg = Message_ FROM @Result;
+            GOTO Finish;
+        END
 
 
 
@@ -3350,7 +4011,7 @@ ELSE IF @pageName_ = 'Custody_Close'
 BEGIN
     IF (
         SELECT COUNT(*)
-        FROM DATACOREV.dbo.V_GetListUserPermission v
+        FROM DATACORE.dbo.V_GetListUserPermission v
         WHERE v.userID = @entrydata
           AND v.menuName_E = @pageName_
           AND v.permissionTypeName_E = @ActionType
@@ -3392,7 +4053,7 @@ ELSE IF @pageName_ = 'Custody_Create'
 BEGIN
     IF (
         SELECT COUNT(*)
-        FROM DATACOREV.dbo.V_GetListUserPermission v
+        FROM DATACORE.dbo.V_GetListUserPermission v
         WHERE v.userID = @entrydata
           AND v.menuName_E = @pageName_
           AND v.permissionTypeName_E = @ActionType
@@ -3442,7 +4103,7 @@ ELSE IF @pageName_ = 'Custody_Transfer'
 BEGIN
     IF (
         SELECT COUNT(*)
-        FROM DATACOREV.dbo.V_GetListUserPermission v
+        FROM DATACORE.dbo.V_GetListUserPermission v
         WHERE v.userID = @entrydata
           AND v.menuName_E = @pageName_
           AND v.permissionTypeName_E = @ActionType
@@ -3493,7 +4154,7 @@ ELSE IF @pageName_ = 'Handover_Create'
 BEGIN
     IF (
         SELECT COUNT(*)
-        FROM DATACOREV.dbo.V_GetListUserPermission v
+        FROM DATACORE.dbo.V_GetListUserPermission v
         WHERE v.userID = @entrydata
           AND v.menuName_E = @pageName_
           AND v.permissionTypeName_E = @ActionType
@@ -3589,7 +4250,7 @@ ELSE IF @pageName_ = 'MaintenanceDetails_Delete'
 BEGIN
     IF (
         SELECT COUNT(*)
-        FROM DATACOREV.dbo.V_GetListUserPermission v
+        FROM DATACORE.dbo.V_GetListUserPermission v
         WHERE v.userID = @entrydata
           AND v.menuName_E = @pageName_
           AND v.permissionTypeName_E = @ActionType
@@ -3629,7 +4290,7 @@ ELSE IF @pageName_ = 'MaintenanceTemplate_Delete'
 BEGIN
     IF (
         SELECT COUNT(*)
-        FROM DATACOREV.dbo.V_GetListUserPermission v
+        FROM DATACORE.dbo.V_GetListUserPermission v
         WHERE v.userID = @entrydata
           AND v.menuName_E = @pageName_
           AND v.permissionTypeName_E = @ActionType
@@ -3667,7 +4328,7 @@ ELSE IF @pageName_ = 'MaintenanceTemplate_Upsert'
 BEGIN
     IF (
         SELECT COUNT(*)
-        FROM DATACOREV.dbo.V_GetListUserPermission v
+        FROM DATACORE.dbo.V_GetListUserPermission v
         WHERE v.userID = @entrydata
           AND v.menuName_E = @pageName_
           AND v.permissionTypeName_E = @ActionType
@@ -3722,7 +4383,7 @@ ELSE IF @pageName_ = 'MaintenanceDetails_Upsert'
 BEGIN
     IF (
         SELECT COUNT(*)
-        FROM DATACOREV.dbo.V_GetListUserPermission v
+        FROM DATACORE.dbo.V_GetListUserPermission v
         WHERE v.userID = @entrydata
           AND v.menuName_E = @pageName_
           AND v.permissionTypeName_E = @ActionType
@@ -3791,7 +4452,7 @@ ELSE IF @pageName_ = 'MaintenanceOrder_Close'
 BEGIN
     IF (
         SELECT COUNT(*)
-        FROM DATACOREV.dbo.V_GetListUserPermission v
+        FROM DATACORE.dbo.V_GetListUserPermission v
         WHERE v.userID = @entrydata
           AND v.menuName_E = @pageName_
           AND v.permissionTypeName_E = @ActionType
@@ -3832,7 +4493,7 @@ ELSE IF @pageName_ = 'MaintenanceOrder_Upsert'
 BEGIN
     IF (
         SELECT COUNT(*)
-        FROM DATACOREV.dbo.V_GetListUserPermission v
+        FROM DATACORE.dbo.V_GetListUserPermission v
         WHERE v.userID = @entrydata
           AND v.menuName_E = @pageName_
           AND v.permissionTypeName_E = @ActionType
@@ -4027,7 +4688,7 @@ ELSE IF @pageName_ = 'Scrap_Action'
 BEGIN
     IF (
         SELECT COUNT(*)
-        FROM DATACOREV.dbo.V_GetListUserPermission v
+        FROM DATACORE.dbo.V_GetListUserPermission v
         WHERE v.userID = @entrydata
           AND v.menuName_E = @pageName_
           AND v.permissionTypeName_E = @ActionType
@@ -4070,7 +4731,7 @@ ELSE IF @pageName_ = 'Scrap_Upsert'
 BEGIN
     IF (
         SELECT COUNT(*)
-        FROM DATACOREV.dbo.V_GetListUserPermission v
+        FROM DATACORE.dbo.V_GetListUserPermission v
         WHERE v.userID = @entrydata
           AND v.menuName_E = @pageName_
           AND v.permissionTypeName_E = @ActionType
@@ -4519,7 +5180,7 @@ ELSE IF @pageName_ = 'Vehicle_Upsert'
 BEGIN
     IF (
         SELECT COUNT(*)
-        FROM DATACOREV.dbo.V_GetListUserPermission v
+        FROM DATACORE.dbo.V_GetListUserPermission v
         WHERE v.userID = @entrydata
           AND v.menuName_E = @pageName_
           AND v.permissionTypeName_E = @ActionType
@@ -5169,9 +5830,12 @@ Finish:
 
         IF @IdCatch IS NOT NULL
             SELECT 0 AS IsSuccessful,
-                   N'حصل خطأ غير معروف رمز الخطأ : ' + CAST(@IdCatch AS NVARCHAR(200)) AS Message_;
+                   N'خطأ برمجي رقم ' + CAST(@ErrNumber AS NVARCHAR(20))
+                   + N' (سجل: ' + CAST(@IdCatch AS NVARCHAR(200))
+                   + N'): ' + LEFT(@ErrMsg, 500) AS Message_;
         ELSE
             SELECT 0 AS IsSuccessful,
-                   N'حصل خطأ غير معروف ولم يتم تسجيله في ErrorLog' AS Message_;
+                   N'خطأ برمجي رقم ' + CAST(@ErrNumber AS NVARCHAR(20))
+                   + N': ' + LEFT(@ErrMsg, 500) AS Message_;
     END CATCH
 END

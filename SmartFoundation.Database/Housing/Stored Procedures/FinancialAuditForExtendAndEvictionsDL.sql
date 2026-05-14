@@ -74,16 +74,19 @@ BEGIN
                 ,fr.IdaraName IdaraName
                 ,w.buildingDetailsID
                 ,w.buildingDetailsNo
-                ,r.buildingRentAmount
+                ,isnull(r.buildingRentAmount,0.00) buildingRentAmount
                 ,w.LastActionID
                 ,w.LastActionTypeID
                 ,w.ActionID
                 ,convert(nvarchar(10),w.LastActionDate,23) LastActionDate
                 ,w.LastActionExtendReasonTypeID
+                ,convert(nvarchar(10),w.OccupentDate,23) OccupentDate
+                ,convert(nvarchar(10),w.ExitDate,23) ExitDate
+
                 
            FROM [DATACORE].[Housing].V_WaitingList w
            inner join [DATACORE].[Housing].V_GetFullResidentDetails fr on fr.residentInfoID = w.residentInfoID
-           inner join Housing.V_buildingWithRent r on w.buildingDetailsID = r.buildingDetailsID
+           left join Housing.V_buildingWithRent r on w.buildingDetailsID = r.buildingDetailsID
            where w.LastActionTypeID in (51,57) 
            and fr.residentInfoID = @residentInfoID
            and fr.IdaraID = @idaraID
@@ -196,7 +199,7 @@ END
         t.billPaymentTypeID,
         t.billPaymentTypeName_A
         from Housing.billPaymentType t 
-        where t.billPaymentTypeID in(1,2,5)
+        where t.billPaymentTypeID in(1,2)
 
         ---------------------------------8-------------------------------------------------------------------------------------------------------------------
     Select e.BillChargeTypeID,e.BillChargeTypeName_A 
@@ -219,9 +222,13 @@ END
 
 
         ----------------------------------9------------------------------------------------------------------------------------------------------------------
-      Select e.ExtendReasonTypeID,e.ExtendReasonTypeName_A 
-      from Housing.ExtendReasonType e
-      where e.Active = 1
+      --Select e.ExtendReasonTypeID,e.ExtendReasonTypeName_A 
+      --from Housing.ExtendReasonType e
+      --where e.Active = 1
+
+      Select e.BillChargeTypeID,e.BillChargeTypeName_A 
+      from Housing.BillChargeType e
+      where e.BillChargeTypeActive  = 1 and e.BillChargeTypeID <> 6
 
        
         ----------------------------------10------------------------------------------------------------------------------------------------------------------
@@ -239,8 +246,8 @@ END
     end as Remaining,
     --SUM(e.Remaining) AS Remaining,
     CASE 
-        WHEN SUM(e.Remaining) > 0 THEN N'مطالب بمبالغ للادارة'
-        WHEN SUM(e.Remaining) < 0 THEN N'يوجد مبالغ زائدة للمستفيد'
+        WHEN SUM(e.Remaining) > 0 THEN N'المستفيد مطالب بمبالغ مستحقة للادارة'
+        WHEN SUM(e.Remaining) < 0 THEN N'يوجد مبالغ فائضة للمستفيد'
         ELSE N'لايوجد مطالبات'
     END AS BillsStatus,
     CASE 
@@ -288,6 +295,7 @@ AND (e.buildingDetailsID = @buildingDetailsID OR e.buildingDetailsID IS NULL)
 
      end
 
-
-
+       ------------------------------------11----------------------------------------------------------------------------------------------------------------
+      
+       
 END

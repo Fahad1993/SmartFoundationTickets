@@ -153,7 +153,9 @@ namespace SmartFoundation.UI.ViewModels.SmartTable
     public enum TableActionPlacement
     {
         Button,       // زر مباشر في التولبار (الافتراضي)
-        ActionsMenu   // داخل قائمة "الإجراءات"
+        ActionsMenu,  // داخل قائمة "الإجراءات"
+        RowEnd,       // زر مباشر داخل عمود الإجراءات لكل صف
+        RowEndMenu    // داخل منيو زر واحد في عمود الإجراءات لكل صف
     }
 
     public class TableAction

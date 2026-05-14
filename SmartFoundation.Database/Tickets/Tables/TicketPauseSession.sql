@@ -9,6 +9,7 @@ CREATE TABLE [Tickets].[TicketPauseSession] (
     [pauseStart]                    DATETIME        NOT NULL,
     [pauseEnd]                      DATETIME        NULL,
     [slaPauseFlag]                  BIT             NULL,
+    [pauseNotes_A]                  NVARCHAR (2000) NULL,
     [pauseNotes]                    NVARCHAR (2000) NULL,
     [ticketPauseSessionActive]      BIT             NULL,
     [entryDate]                     DATETIME        CONSTRAINT [DF_Tickets_TicketPauseSession_entryDate] DEFAULT (GETDATE()) NULL,

@@ -1,0 +1,168 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e4]:
+      - button "Toggle sidebar" [ref=e6] [cursor=pointer]:
+        - img [ref=e7]
+      - generic [ref=e9]:
+        - navigation "روابط سريعة" [ref=e10]:
+          - link "الشاشة التفاعلية" [ref=e11] [cursor=pointer]:
+            - /url: /HousingCommandCenterDashboard/Index
+            - generic [ref=e13]: الشاشة التفاعلية
+        - navigation "روابط سريعة" [ref=e14]:
+          - link "الصفحة الرئيسية" [ref=e15] [cursor=pointer]:
+            - /url: /Home
+            - generic [ref=e17]: الصفحة الرئيسية
+        - navigation "روابط سريعة" [ref=e18]:
+          - button "تغيير كلمة المرور" [ref=e19] [cursor=pointer]:
+            - generic [ref=e21]: تغيير كلمة المرور
+        - button "عرض الإشعارات 2" [ref=e23]:
+          - generic [ref=e24]: عرض الإشعارات
+          - generic [ref=e25]:
+            - img [ref=e26]
+            - generic [ref=e28]: "2"
+        - button "الإعدادات" [ref=e31] [cursor=pointer]:
+          - generic [ref=e33]: الإعدادات
+  - navigation "Breadcrumb" [ref=e37]:
+    - list [ref=e39]:
+      - listitem [ref=e40]:
+        - link "الرئيسية" [ref=e41] [cursor=pointer]:
+          - /url: /Home
+      - listitem [ref=e42]: ◂
+      - listitem [ref=e43]: "???? ???????"
+      - listitem [ref=e44]: ◂
+      - listitem [ref=e45]: "?????? ???????"
+  - complementary "Sidebar" [ref=e46]:
+    - generic [ref=e47]:
+      - link "KFMC Logo البوابة الموحدة" [ref=e49] [cursor=pointer]:
+        - /url: /Dashboard
+        - img "KFMC Logo" [ref=e50]
+        - generic [ref=e51]: البوابة الموحدة
+      - generic [ref=e53]:
+        - generic [ref=e54]:
+          - img "user" [ref=e56]
+          - generic [ref=e57]: سامي محمد العمري
+          - generic [ref=e58]: "1064184763"
+          - generic [ref=e59]: ادارة مدينة الملك فيصل العسكرية
+          - generic [ref=e60]: أنت مدير النظام بالكامل
+        - generic [ref=e62]:
+          - generic [ref=e63]: بحث في القائمة
+          - textbox "بحث في القائمة" [ref=e65]:
+            - /placeholder: ابحث في القائمة ...
+        - list [ref=e66]:
+          - listitem [ref=e67]:
+            - button "لوحة التحكم" [ref=e69]:
+              - generic [ref=e71]: لوحة التحكم
+              - img [ref=e72]
+          - listitem [ref=e74]:
+            - button "الاسكان والممتلكات" [ref=e76]:
+              - generic [ref=e78]: الاسكان والممتلكات
+              - img [ref=e79]
+          - listitem [ref=e81]:
+            - button "نظام الايرادات المالية" [ref=e83]:
+              - generic [ref=e85]: نظام الايرادات المالية
+              - img [ref=e86]
+          - listitem [ref=e88]:
+            - button "نظام الفوترة الالكترونية" [ref=e90]:
+              - generic [ref=e92]: نظام الفوترة الالكترونية
+              - img [ref=e93]
+          - listitem [ref=e95]:
+            - button "صيانة العربات" [ref=e97]:
+              - generic [ref=e99]: صيانة العربات
+              - img [ref=e100]
+          - listitem [ref=e102]:
+            - button "الدعم الفني للنظام" [ref=e104]:
+              - generic [ref=e106]: الدعم الفني للنظام
+              - img [ref=e107]
+          - listitem [ref=e109]:
+            - button "???? ???????" [ref=e111]:
+              - generic [ref=e113]: "???? ???????"
+              - img [ref=e114]
+  - generic [ref=e116]:
+    - main [ref=e117]:
+      - generic [ref=e118]:
+        - generic [ref=e120]:
+          - generic [ref=e121]:
+            - link "رجوع" [ref=e122] [cursor=pointer]:
+              - /url: /Ticket/TicketList
+              - text: رجوع
+            - heading "TKT-2026-00001" [level=2] [ref=e124]
+            - generic [ref=e125]: "Ù‚ÙŠØ¯ Ø§Ù„ØªÙ†Ù\x81ÙŠØ°"
+            - generic [ref=e126]: "Ù…Ø±ØªÙ\x81Ø¹"
+          - paragraph [ref=e127]: "ØµÙ†Ø¨ÙˆØ± Ù…ÙŠØ§Ù‡ Ù…ÙƒØ³ÙˆØ± Ù\x81ÙŠ Ø§Ù„Ù…Ø·Ø¨Ø®"
+        - generic [ref=e128]:
+          - generic [ref=e129]:
+            - generic [ref=e131]:
+              - heading "Description" [level=3] [ref=e132]
+              - paragraph [ref=e133]: Kitchen faucet is leaking badly â€” water damage risk
+            - generic [ref=e135]:
+              - heading "Audit Trail" [level=3] [ref=e136]: Audit Trail
+              - generic [ref=e139]:
+                - generic [ref=e142]:
+                  - generic [ref=e143]:
+                    - generic [ref=e144]: Ticket Created
+                    - generic [ref=e145]: Ø¬Ø¯ÙŠØ¯
+                  - paragraph [ref=e146]: Ticket created by resident
+                  - paragraph [ref=e147]: System · Apr 19, 01:46 PM
+                - generic [ref=e150]:
+                  - generic [ref=e151]:
+                    - generic [ref=e152]: Routed to Queue
+                    - generic [ref=e153]: Ù…ÙˆØ¬Ù‘Ù‡
+                  - paragraph [ref=e154]: Auto-routed by service catalogue
+                  - paragraph [ref=e155]: خالد طامي علي الشهراني · Apr 19, 01:46 PM
+                - generic [ref=e158]:
+                  - generic [ref=e159]:
+                    - generic [ref=e160]: Assigned
+                    - generic [ref=e161]: "Ù…Ù\x8fØ³Ù†ÙŽØ¯"
+                  - paragraph [ref=e162]: Assigned to technician by supervisor
+                  - paragraph [ref=e163]: محمد سلمان هادي الفيفي · Apr 19, 01:46 PM
+                - generic [ref=e166]:
+                  - generic [ref=e167]:
+                    - generic [ref=e168]: Work Started
+                    - generic [ref=e169]: "Ù‚ÙŠØ¯ Ø§Ù„ØªÙ†Ù\x81ÙŠØ°"
+                  - paragraph [ref=e170]: Technician started work
+                  - paragraph [ref=e171]: مشعل منصور مشعل العتيبي · Apr 19, 01:46 PM
+          - generic [ref=e172]:
+            - generic [ref=e175]:
+              - heading "Ticket Information" [level=4] [ref=e176]
+              - generic [ref=e177]:
+                - generic [ref=e178]:
+                  - term [ref=e179]: Service
+                  - definition [ref=e180]: Ø¥ØµÙ„Ø§Ø ØµÙ†Ø¨ÙˆØ± Ù…ÙŠØ§Ù‡
+                - generic [ref=e181]:
+                  - term [ref=e182]: Requester
+                  - definition
+                - generic [ref=e183]:
+                  - term [ref=e184]: Requester Type
+                  - definition [ref=e185]: "Ù…Ù‚ÙŠÙ… / Ù…Ø³ØªÙ\x81ÙŠØ¯"
+                - generic [ref=e186]:
+                  - term [ref=e187]: Classification
+                  - definition [ref=e188]: ØµÙŠØ§Ù†Ø©
+              - separator [ref=e189]
+              - generic [ref=e191]:
+                - term [ref=e192]: Assigned To
+                - definition [ref=e193]: مشعل منصور مشعل العتيبي
+              - separator [ref=e194]
+              - generic [ref=e197]:
+                - paragraph [ref=e198]: Location
+                - paragraph [ref=e199]: Building B-12, Unit 3A, ØÙŠ Ø§Ù„Ù†Ø²Ù‡Ø©
+            - generic [ref=e201]:
+              - heading "Pause Sessions" [level=4] [ref=e202]: Pause Sessions
+              - generic [ref=e204]:
+                - generic [ref=e205]:
+                  - generic [ref=e207]: ØªØ£Ø®ÙŠØ± Ù…Ø³ØªÙˆØ¯Ø¹
+                  - paragraph [ref=e208]: Paused waiting for plumbing parts from store
+                  - paragraph [ref=e209]: "Started: Mar 20, 11:00 AM -- Ended: Mar 21, 08:00 AM"
+                - generic [ref=e210]:
+                  - generic [ref=e212]: "Ø·Ù„Ø¨ ØªÙˆØ¶ÙŠØ Ø¬Ø§Ø±Ù\x8d"
+                  - paragraph [ref=e213]: Paused for location clarification
+                  - paragraph [ref=e214]: "Started: Mar 20, 08:30 AM -- Ended: Mar 20, 09:00 AM"
+            - generic [ref=e216]:
+              - heading "Dates" [level=4] [ref=e217]
+              - generic [ref=e219]:
+                - term [ref=e220]: Created
+                - definition [ref=e221]: Apr 19, 01:46 PM
+    - contentinfo [ref=e222]:
+      - generic [ref=e224]: إدارة مدينة الملك فيصل العسكرية © 2026
+  - button "فيصل المساعد الذكي فيصل المساعد الذكي" [ref=e226] [cursor=pointer]:
+    - img "فيصل المساعد الذكي" [ref=e228]
+    - generic [ref=e229]: فيصل المساعد الذكي

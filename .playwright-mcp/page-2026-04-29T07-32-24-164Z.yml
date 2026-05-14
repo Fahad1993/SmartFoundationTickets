@@ -1,0 +1,161 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e4]:
+      - button "Toggle sidebar" [ref=e6] [cursor=pointer]:
+        - img [ref=e7]
+      - generic [ref=e9]:
+        - navigation "روابط سريعة" [ref=e10]:
+          - link "الشاشة التفاعلية" [ref=e11] [cursor=pointer]:
+            - /url: /HousingCommandCenterDashboard/Index
+            - generic [ref=e13]: الشاشة التفاعلية
+        - navigation "روابط سريعة" [ref=e14]:
+          - link "الصفحة الرئيسية" [ref=e15] [cursor=pointer]:
+            - /url: /Home
+            - generic [ref=e17]: الصفحة الرئيسية
+        - navigation "روابط سريعة" [ref=e18]:
+          - button "تغيير كلمة المرور" [ref=e19] [cursor=pointer]:
+            - generic [ref=e21]: تغيير كلمة المرور
+        - button "عرض الإشعارات 2" [ref=e23]:
+          - generic [ref=e24]: عرض الإشعارات
+          - generic [ref=e25]:
+            - img [ref=e26]
+            - generic [ref=e28]: "2"
+        - button "الإعدادات" [ref=e31] [cursor=pointer]:
+          - generic [ref=e33]: الإعدادات
+  - navigation "Breadcrumb" [ref=e37]:
+    - list [ref=e39]:
+      - listitem [ref=e40]:
+        - link "الرئيسية" [ref=e41] [cursor=pointer]:
+          - /url: /Home
+      - listitem [ref=e42]: ◂
+      - listitem [ref=e43]: نظام التذاكر
+      - listitem [ref=e44]: ◂
+      - listitem [ref=e45]: التذاكر
+  - complementary "Sidebar" [ref=e46]:
+    - generic [ref=e47]:
+      - link "KFMC Logo البوابة الموحدة" [ref=e49] [cursor=pointer]:
+        - /url: /Dashboard
+        - img "KFMC Logo" [ref=e50]
+        - generic [ref=e51]: البوابة الموحدة
+      - generic [ref=e53]:
+        - generic [ref=e54]:
+          - img "user" [ref=e56]
+          - generic [ref=e57]: سامي محمد العمري
+          - generic [ref=e58]: "1064184763"
+          - generic [ref=e59]: ادارة مدينة الملك فيصل العسكرية
+          - generic [ref=e60]: أنت مدير النظام بالكامل
+        - generic [ref=e62]:
+          - generic [ref=e63]: بحث في القائمة
+          - textbox "بحث في القائمة" [ref=e65]:
+            - /placeholder: ابحث في القائمة ...
+        - list [ref=e66]:
+          - listitem [ref=e67]:
+            - button "لوحة التحكم" [ref=e69]:
+              - generic [ref=e71]: لوحة التحكم
+              - img [ref=e72]
+          - listitem [ref=e74]:
+            - button "الاسكان والممتلكات" [ref=e76]:
+              - generic [ref=e78]: الاسكان والممتلكات
+              - img [ref=e79]
+          - listitem [ref=e81]:
+            - button "نظام الايرادات المالية" [ref=e83]:
+              - generic [ref=e85]: نظام الايرادات المالية
+              - img [ref=e86]
+          - listitem [ref=e88]:
+            - button "نظام الفوترة الالكترونية" [ref=e90]:
+              - generic [ref=e92]: نظام الفوترة الالكترونية
+              - img [ref=e93]
+          - listitem [ref=e95]:
+            - button "صيانة العربات" [ref=e97]:
+              - generic [ref=e99]: صيانة العربات
+              - img [ref=e100]
+          - listitem [ref=e102]:
+            - button "الدعم الفني للنظام" [ref=e104]:
+              - generic [ref=e106]: الدعم الفني للنظام
+              - img [ref=e107]
+          - listitem [ref=e109]:
+            - button "نظام التذاكر" [expanded] [ref=e111]:
+              - generic [ref=e113]: نظام التذاكر
+              - img [ref=e114]
+            - list [ref=e116]:
+              - listitem [ref=e117]:
+                - link "التذاكر" [ref=e118] [cursor=pointer]:
+                  - /url: /Ticket/TicketList
+                  - generic [ref=e119]: التذاكر
+              - listitem [ref=e120]:
+                - link "قائمة التذاكر" [ref=e122] [cursor=pointer]:
+                  - /url: /Ticket/TicketDetails
+                  - generic [ref=e123]: قائمة التذاكر
+              - listitem [ref=e124]:
+                - link "تفاصيل التذكرة" [ref=e126] [cursor=pointer]:
+                  - /url: /Ticket/TicketAdmin
+                  - generic [ref=e127]: تفاصيل التذكرة
+              - listitem [ref=e128]:
+                - link "إدارة التذاكر" [ref=e130] [cursor=pointer]:
+                  - /url: /Ticket/#
+                  - generic [ref=e131]: إدارة التذاكر
+  - generic [ref=e132]:
+    - main [ref=e133]:
+      - generic [ref=e135]:
+        - heading "قائمة التذاكر" [level=3] [ref=e137]:
+          - generic [ref=e140]: قائمة التذاكر
+        - generic [ref=e143]:
+          - generic [ref=e144]:
+            - searchbox "بحث" [ref=e146]
+            - generic [ref=e147]:
+              - generic [ref=e148]:
+                - button "فلترة" [ref=e149] [cursor=pointer]:
+                  - generic [ref=e152]: فلترة
+                - button "الأعمدة" [ref=e154] [cursor=pointer]:
+                  - generic [ref=e157]: الأعمدة
+                - generic [ref=e158]:
+                  - generic [ref=e159]: عرض
+                  - combobox "عرض" [ref=e160]:
+                    - option "10" [selected]
+                    - option "25"
+                    - option "50"
+                    - option "100"
+              - generic [ref=e161]:
+                - button "تذكرة جديدة" [ref=e162] [cursor=pointer]:
+                  - generic [ref=e164]: تذكرة جديدة
+                - button "رفض" [disabled]:
+                  - generic: رفض
+                - button "تعيين" [disabled]:
+                  - generic: تعيين
+                - button "بدء العمل" [disabled]:
+                  - generic: بدء العمل
+                - generic [ref=e165]:
+                  - button "الإجراءات" [ref=e166] [cursor=pointer]: الإجراءات
+                  - text: يتطلب اختيار صف يتطلب اختيار صف يتطلب اختيار صف يتطلب اختيار صف
+          - table [ref=e169]:
+            - rowgroup [ref=e170]:
+              - row "IsSuccessful Message_ الإجراءات" [ref=e171]:
+                - columnheader [ref=e172]
+                - columnheader "IsSuccessful" [ref=e173]:
+                  - generic [ref=e175]: IsSuccessful
+                - columnheader "Message_" [ref=e176]:
+                  - generic [ref=e178]: Message_
+                - columnheader "الإجراءات" [ref=e179]:
+                  - generic [ref=e180]: الإجراءات
+            - rowgroup [ref=e181]:
+              - 'row "0 حصل خطأ غير معروف رمز الخطأ : 2954 الإجراءات" [ref=e182] [cursor=pointer]':
+                - cell [ref=e183]:
+                  - checkbox [ref=e184]
+                - cell "0" [ref=e185]
+                - 'cell "حصل خطأ غير معروف رمز الخطأ : 2954" [ref=e186]'
+                - cell "الإجراءات" [ref=e187]:
+                  - button "الإجراءات" [ref=e190]: الإجراءات
+          - text: ": :"
+          - generic [ref=e192]:
+            - generic [ref=e194]: 1 - 1 من 1
+            - generic "ترقيم الصفحات" [ref=e195]:
+              - button "الصفحة الأولى" [disabled] [ref=e196]: الأولى
+              - button "الصفحة السابقة" [disabled] [ref=e197]: السابق
+              - button "الصفحة 1" [ref=e198] [cursor=pointer]: "1"
+              - button "الصفحة التالية" [disabled] [ref=e199]: التالي
+              - button "الصفحة الأخيرة" [disabled] [ref=e200]: الأخيرة
+    - contentinfo [ref=e201]:
+      - generic [ref=e203]: إدارة مدينة الملك فيصل العسكرية © 2026
+  - button "فيصل المساعد الذكي فيصل المساعد الذكي" [ref=e205] [cursor=pointer]:
+    - img "فيصل المساعد الذكي" [ref=e207]
+    - generic [ref=e208]: فيصل المساعد الذكي

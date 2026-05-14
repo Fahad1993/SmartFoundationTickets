@@ -196,6 +196,7 @@ BEGIN
             END
             from Housing.V_WaitingList w
             where w.residentInfoID = @residentInfoID
+            and w.ActionID = @ActionID
 
             IF 
             (

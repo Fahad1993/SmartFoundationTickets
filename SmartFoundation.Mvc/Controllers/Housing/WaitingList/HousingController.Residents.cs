@@ -230,7 +230,7 @@ namespace SmartFoundation.Mvc.Controllers.Housing
 
 
                         // الصفوف
-                        foreach (DataRow r in dt1.Rows)
+                foreach (DataRow r in dt1!.Rows)
                         {
                             var dict = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
 
@@ -321,8 +321,8 @@ namespace SmartFoundation.Mvc.Controllers.Housing
             // hidden fields
             addFields.Insert(0, new FieldConfig { Name = "__RequestVerificationToken",Type ="hidden", Value = (Request.Headers["RequestVerificationToken"].FirstOrDefault() ?? "") });
             addFields.Insert(0, new FieldConfig { Name = "hostname",Type="hidden",Value = Request.Host.Value });
-            addFields.Insert(0, new FieldConfig { Name = "entrydata",Type="hidden",Value =usersId.ToString() });
-            addFields.Insert(0, new FieldConfig { Name = "idaraID",Type="hidden",Value =IdaraId.ToString() });
+            addFields.Insert(0, new FieldConfig { Name = "entrydata",Type="hidden",Value =usersId?.ToString() });
+            addFields.Insert(0, new FieldConfig { Name = "idaraID",Type="hidden",Value =IdaraId?.ToString() });
             addFields.Insert(0, new FieldConfig { Name = "ActionType",Type="hidden",Value="INSERT" });
             addFields.Insert(0, new FieldConfig { Name = "pageName_",Type ="hidden",Value=PageName });
             addFields.Insert(0, new FieldConfig { Name = "redirectAction",Type="hidden", Value=PageName });
@@ -335,8 +335,8 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                 new FieldConfig { Name = "redirectController",Type = "hidden", Value = ControllerName},
                 new FieldConfig { Name = "pageName_",Type="hidden", Value = PageName },
                 new FieldConfig { Name = "ActionType",Type="hidden", Value = "UPDATE" },
-                new FieldConfig { Name = "idaraID",Type ="hidden", Value = IdaraId.ToString() },
-                new FieldConfig { Name = "entrydata",Type="hidden", Value = usersId.ToString() },
+                new FieldConfig { Name = "idaraID",Type ="hidden", Value = IdaraId?.ToString() },
+                new FieldConfig { Name = "entrydata",Type="hidden", Value = usersId?.ToString() },
                 new FieldConfig { Name = "hostname",Type="hidden", Value = Request.Host.Value },
                 new FieldConfig { Name = "__RequestVerificationToken", Type = "hidden", Value = (Request.Headers["RequestVerificationToken"].FirstOrDefault() ?? "") },
                 new FieldConfig { Name = rowIdField,Type="hidden" },
@@ -378,9 +378,9 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                 new FieldConfig { Name = "redirectController",Type="hidden", Value = ControllerName },
                 new FieldConfig { Name = "pageName_",Type="hidden",Value=PageName },
                 new FieldConfig { Name = "ActionType",Type="hidden",Value="DELETE" },
-                new FieldConfig { Name = "idaraID",Type="hidden",Value= IdaraId.ToString() },
+                new FieldConfig { Name = "idaraID",Type="hidden",Value= IdaraId?.ToString() },
                 new FieldConfig { Name = "hostname",Type ="hidden",Value = Request.Host.Value },
-                new FieldConfig { Name = "entrydata",Type="hidden", Value = usersId.ToString() },
+                new FieldConfig { Name = "entrydata",Type="hidden", Value = usersId?.ToString() },
                 new FieldConfig { Name = "__RequestVerificationToken",Type="hidden",Value = (Request.Headers["RequestVerificationToken"].FirstOrDefault() ?? "") },
                 new FieldConfig { Name = rowIdField,Type = "hidden" },
                 new FieldConfig { Name = "p01", Type = "hidden", MirrorName = "residentInfoID" },
@@ -705,7 +705,7 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                             new TableAction
                             {
                                 Label = "عرض التفاصيل",
-                                ModalTitle = "<i class='fa-solid fa-circle-info text-emerald-600 text-xl mr-2'></i> تفاصيل المستفيد",
+                                ModalTitle = "<i class='mr-2 text-xl fa-solid fa-circle-info text-emerald-600'></i> تفاصيل المستفيد",
                                 Icon = "fa-regular fa-file",
                                 Placement = TableActionPlacement.ActionsMenu,
                                 OpenModal = true,
@@ -843,6 +843,7 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                     Delete1 = new TableAction
                     {
                         Label = "بيانات إضافية",
+                        
                         Icon = "fa-solid fa-database",
                         Color = "secondary",
                         OpenModal = true,
@@ -904,7 +905,7 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                         Icon = "fa fa-plus",
                         Color = "success",
                         OpenModal = true,
-                        ModalTitle = "<i class='fa-solid fa-user-plus text-emerald-600 text-xl mr-2'></i> إدخال بيانات مستفيد جديد",
+                        ModalTitle = "<i class='mr-2 text-xl fa-solid fa-user-plus text-emerald-600'></i> إدخال بيانات مستفيد جديد",
 
                         OpenForm = new FormConfig
                         {
@@ -930,7 +931,7 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                         //Placement = TableActionPlacement.ActionsMenu,
                         IsEdit = true,
                         OpenModal = true,
-                        ModalTitle = "<i class='fa-solid fa-user-pen text-emerald-600 text-xl mr-2'></i> تعديل بيانات مستفيد",
+                        ModalTitle = "<i class='mr-2 text-xl fa-solid fa-user-pen text-emerald-600'></i> تعديل بيانات مستفيد",
                         OpenForm = new FormConfig
                         {
                             FormId = "BuildingTypeEditForm",
@@ -955,7 +956,7 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                         //Placement = TableActionPlacement.ActionsMenu,
                         IsEdit = true,
                         OpenModal = true,
-                        ModalTitle = "<i class='fa fa-exclamation-triangle text-red-600 text-xl mr-2'></i> تحذير",
+                        ModalTitle = "<i class='mr-2 text-xl text-red-600 fa fa-exclamation-triangle'></i> تحذير",
                         ModalMessage = "هل أنت متأكد من حذف بيانات المستفيد؟",
                         ModalMessageClass = "bg-red-100 text-red-700",
                         OpenForm = new FormConfig
@@ -1074,7 +1075,7 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                    //footerFields: new(),
                    footerFields: new Dictionary<string, string>
                    {
-                       ["تمت الطباعة بواسطة"] = FullName,
+                       ["تمت الطباعة بواسطة"] = FullName ?? "",
                        ["ملاحظة"] = " هذا التقرير للاستخدام الرسمي",
                        ["عدد السجلات"] = dt1.Rows.Count.ToString(),
                        ["تاريخ ووقت الطباعة"] = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss")

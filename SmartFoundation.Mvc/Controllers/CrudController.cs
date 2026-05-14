@@ -235,6 +235,7 @@ namespace SmartFoundation.Mvc.Controllers
 
                 var ds = await _mastersServies.GetCrudDataSetAsync(parameters);
                 var (code, message) = ExtractResult(ds);
+
                 SetToastTempData(code, message);
 
                 var redirectAction = f.TryGetValue("redirectAction", out var ra) ? ra.ToString() : null;
@@ -532,6 +533,13 @@ namespace SmartFoundation.Mvc.Controllers
             var items = new List<object>();
             if (table is not null && table.Rows.Count > 0)
             {
+                if (string.IsNullOrWhiteSpace(ValueCol) || !table.Columns.Contains(ValueCol)
+                    || string.IsNullOrWhiteSpace(textcol) || !table.Columns.Contains(textcol))
+                {
+                    items.Add(new { Value = "-1", Text = "لاتوجد خيارات" });
+                    return Json(items);
+                }
+
                 if (!string.IsNullOrEmpty(FirstOption))
                 {
                     items.Add(new { Value = "-1", Text = FirstOption });

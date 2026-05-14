@@ -131,6 +131,7 @@ BEGIN
             END
             from Housing.V_WaitingList w
             where w.residentInfoID = @residentInfoID
+            and w.ActionID = @ActionID
 
             IF 
             (
@@ -281,6 +282,7 @@ BEGIN
                 , buildingActionExtraText2
                 , buildingActionExtraText3
                 , buildingActionDate
+                , OccupentDate
                 , buildingActionActive
                 , buildingActionNote
                 , buildingActionParentID
@@ -301,6 +303,7 @@ BEGIN
                 , @buildingDetailsNo
                 , @OccupentLetterDate
                 , @OccupentLetterNo
+                , @OccupentDate
                 , @OccupentDate
                 , 1
                 , @Notes
@@ -344,6 +347,7 @@ BEGIN
              INSERT INTO [DATACORE].[Housing].[Bills]
             (
                   [residentInfoID_FK]
+                 ,[generalNo_FK]
                  ,[buildingDetailsID]
                  ,[BillChargeTypeID_FK]
                  ,[buildingRentTypeID_FK]
@@ -361,6 +365,7 @@ BEGIN
             )
             SELECT 
             @residentInfoID,
+            @GeneralNo,
             @buildingDetailsID,
             1,
             1,

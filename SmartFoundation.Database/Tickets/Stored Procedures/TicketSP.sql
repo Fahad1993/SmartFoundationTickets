@@ -1,4 +1,4 @@
-CREATE PROCEDURE [Tickets].[TicketSP]
+﻿CREATE PROCEDURE [Tickets].[TicketSP]
 (
       @Action                      NVARCHAR(200)
     , @ticketID                    BIGINT          = NULL
@@ -8,7 +8,9 @@ CREATE PROCEDURE [Tickets].[TicketSP]
     , @requesterTypeID_FK          INT             = NULL
     , @requesterUserID_FK          INT             = NULL
     , @requesterResidentID_FK      BIGINT          = NULL
+    , @title_A                     NVARCHAR(500)   = NULL
     , @title                       NVARCHAR(500)   = NULL
+    , @description_A               NVARCHAR(4000)  = NULL
     , @description_                NVARCHAR(4000)  = NULL
     , @suggestedPriorityID_FK      INT             = NULL
     , @ticketStatusID_FK           INT             = NULL
@@ -17,12 +19,38 @@ CREATE PROCEDURE [Tickets].[TicketSP]
     , @assignedUserID_FK           INT             = NULL
     , @locationBuildingNo          NVARCHAR(100)   = NULL
     , @locationUnitNo              NVARCHAR(50)    = NULL
+    , @locationArea_A              NVARCHAR(200)   = NULL
     , @locationArea                NVARCHAR(200)   = NULL
     , @requiresQualityReview       BIT             = NULL
     , @isOtherService              BIT             = NULL
     , @idaraID_FK                  INT             = NULL
     , @entryData                   NVARCHAR(20)    = NULL
     , @hostName                    NVARCHAR(200)   = NULL
+    , @notes_A                     NVARCHAR(4000)  = NULL
+    , @notes                       NVARCHAR(4000)  = NULL
+    , @pauseNotes_A                NVARCHAR(2000)  = NULL
+    , @pauseReasonID_FK            INT             = NULL
+    , @reviewScope                 NVARCHAR(100)   = NULL
+    , @qualityReviewResultID_FK    INT             = NULL
+    , @reviewNotes                 NVARCHAR(4000)  = NULL
+    , @returnToUserID              INT             = NULL
+    , @arbitrationReasonID_FK      INT             = NULL
+    , @arbitratorDistributorID     INT             = NULL
+    , @decisionType                NVARCHAR(50)    = NULL
+    , @decisionTargetDSDID_FK      INT             = NULL
+    , @decisionNotes               NVARCHAR(4000)  = NULL
+    , @arbitrationCaseID           BIGINT          = NULL
+    , @fileName                    NVARCHAR(500)   = NULL
+    , @storedFileName              NVARCHAR(500)   = NULL
+    , @filePath                    NVARCHAR(1000)  = NULL
+    , @fileSizeBytes               BIGINT          = NULL
+    , @contentType                 NVARCHAR(200)   = NULL
+    , @attachmentType              NVARCHAR(50)    = NULL
+    , @performerUserID             INT             = NULL
+    , @clarificationRequestID       BIGINT          = NULL
+    , @clarificationReasonID_FK     INT             = NULL
+    , @requestedFromUserID          INT             = NULL
+    , @requestedFromDSDID_FK        INT             = NULL
 )
 AS
 BEGIN
@@ -33,37 +61,40 @@ BEGIN
     DECLARE @NewID BIGINT = NULL;
     DECLARE @Note NVARCHAR(MAX) = NULL;
     DECLARE @NewTicketNo NVARCHAR(50) = NULL;
+    DECLARE @titleToSave NVARCHAR(500) = COALESCE(@title_A, @title);
+    DECLARE @descriptionToSave NVARCHAR(4000) = COALESCE(@description_A, @description_);
+    DECLARE @locationAreaToSave NVARCHAR(200) = COALESCE(@locationArea_A, @locationArea);
+    DECLARE @notesToSave NVARCHAR(4000) = COALESCE(@notes_A, @notes);
+    DECLARE @pauseNotesToSave NVARCHAR(2000) = COALESCE(@pauseNotes_A, @notes_A, @notes);
+    DECLARE @ParentTicketToUpdate BIGINT = NULL;
+    DECLARE @RemainingOpenChildren INT = 0;
+    DECLARE @ParentCurrentStatus INT = NULL;
+    DECLARE @PausedStatusID INT = NULL;
+    DECLARE @ResumeStatusID INT = NULL;
 
     BEGIN TRY
         IF @tc = 0 BEGIN TRAN;
 
         IF NULLIF(LTRIM(RTRIM(@Action)), N'') IS NULL
-        BEGIN ;THROW 50001, N'Action is required', 1; END
+        BEGIN ;THROW 50001, N'نوع الإجراء مطلوب', 1; END
 
         ----------------------------------------------------------------
         -- INSERT_TICKET
         ----------------------------------------------------------------
         IF @Action = N'INSERT_TICKET'
         BEGIN
-            -- BR: title is required
-            IF NULLIF(LTRIM(RTRIM(@title)), N'') IS NULL
-            BEGIN ;THROW 50001, N'Ticket title is required', 1; END
+          IF NULLIF(LTRIM(RTRIM(@titleToSave)), N'') IS NULL
+            BEGIN ;THROW 50001, N'عنوان التذكرة مطلوب', 1; END
 
-            -- BR: idaraID is required
             IF @idaraID_FK IS NULL
-            BEGIN ;THROW 50001, N'IdaraID is required', 1; END
+            BEGIN ;THROW 50001, N'معرف الإدارة مطلوب', 1; END
 
-            -- BR: ticketClassID is required
             IF @ticketClassID_FK IS NULL
-            BEGIN ;THROW 50001, N'TicketClassID is required', 1; END
+            BEGIN ;THROW 50001, N'معرف فئة التذكرة مطلوب', 1; END
 
-            -- BR: requesterTypeID is required
             IF @requesterTypeID_FK IS NULL
-            BEGIN ;THROW 50001, N'RequesterTypeID is required', 1; END
+            BEGIN ;THROW 50001, N'معرف نوع مقدم الطلب مطلوب', 1; END
 
-            -- BR-01: Mutual exclusivity — resident vs internal user
-            -- RESIDENT (code=1) must have requesterResidentID_FK and no requesterUserID_FK
-            -- INTERNAL (code=2+) must have requesterUserID_FK and no requesterResidentID_FK
             DECLARE @reqCode NVARCHAR(50);
             SELECT @reqCode = [requesterTypeCode]
             FROM [Tickets].[RequesterType]
@@ -72,26 +103,24 @@ BEGIN
             IF @reqCode = N'RESIDENT'
             BEGIN
                 IF @requesterResidentID_FK IS NULL
-                BEGIN ;THROW 50001, N'Resident tickets require a requesterResidentID', 1; END
+                BEGIN ;THROW 50001, N'تذاكر السكان تتطلب معرف ساكن لمقدم الطلب', 1; END
                 IF @requesterUserID_FK IS NOT NULL
-                BEGIN ;THROW 50001, N'Resident tickets must not have a requesterUserID', 1; END
+                BEGIN ;THROW 50001, N'تذاكر السكان يجب ألا تحتوي على معرف مستخدم لمقدم الطلب', 1; END
             END
             ELSE IF @reqCode IN (N'INTERNAL', N'SUPERVISOR', N'MANAGER')
             BEGIN
                 IF @requesterUserID_FK IS NULL
-                BEGIN ;THROW 50001, N'Internal tickets require a requesterUserID', 1; END
+                BEGIN ;THROW 50001, N'التذاكر الداخلية تتطلب معرف مستخدم لمقدم الطلب', 1; END
                 IF @requesterResidentID_FK IS NOT NULL
-                BEGIN ;THROW 50001, N'Internal tickets must not have a requesterResidentID', 1; END
+                BEGIN ;THROW 50001, N'التذاكر الداخلية يجب ألا تحتوي على معرف ساكن لمقدم الطلب', 1; END
             END
 
-            -- BR-02: Other tickets do not require ServiceID_FK
             IF @isOtherService IS NULL OR @isOtherService = 0
             BEGIN
                 IF @serviceID_FK IS NULL
-                BEGIN ;THROW 50001, N'ServiceID is required for non-Other tickets', 1; END
+                BEGIN ;THROW 50001, N'معرف الخدمة مطلوب للتذاكر غير المصنفة كأخرى', 1; END
             END
 
-            -- Generate ticketNo: TKT-YYYY-NNNNN
             DECLARE @yr NVARCHAR(4) = CONVERT(NVARCHAR(4), YEAR(GETDATE()));
             DECLARE @seq INT;
             SELECT @seq = ISNULL(MAX(CAST(RIGHT([ticketNo], 5) AS INT)), 0) + 1
@@ -100,35 +129,24 @@ BEGIN
 
             SET @NewTicketNo = N'TKT-' + @yr + N'-' + RIGHT(N'00000' + CAST(@seq AS NVARCHAR(10)), 5);
 
-            -- Determine initial status = NEW (lookup by code)
             DECLARE @statusNewID INT;
             SELECT @statusNewID = [ticketStatusID]
             FROM [Tickets].[TicketStatus]
             WHERE [ticketStatusCode] = N'NEW' AND [ticketStatusActive] = 1;
 
             IF @statusNewID IS NULL
-            BEGIN ;THROW 50002, N'Cannot resolve NEW status from TicketStatus lookup', 1; END
+            BEGIN ;THROW 50002, N'تعذر العثور على حالة NEW في جدول حالات التذاكر', 1; END
 
-            -- Resolve service-related defaults when serviceID is provided
             DECLARE @svcDSDID INT = @currentDSDID_FK;
             DECLARE @svcRequiresQR BIT = ISNULL(@requiresQualityReview, 0);
 
             IF @serviceID_FK IS NOT NULL
             BEGIN
-                SELECT
-                      @svcDSDID = ISNULL(@svcDSDID, s.[defaultPriorityID_FK])
+                SELECT @svcRequiresQR = ISNULL(@svcRequiresQR, ISNULL(s.[requiresQualityReview], 0))
                 FROM [Tickets].[Service] s
                 WHERE s.[serviceID] = @serviceID_FK AND s.[serviceActive] = 1;
-
-                IF @svcRequiresQR = 0
-                BEGIN
-                    SELECT @svcRequiresQR = ISNULL(s.[requiresQualityReview], 0)
-                    FROM [Tickets].[Service] s
-                    WHERE s.[serviceID] = @serviceID_FK;
-                END
             END
 
-            -- Resolve effective priority: use suggested if provided, else service default
             DECLARE @effectivePriorityID INT = @suggestedPriorityID_FK;
             IF @effectivePriorityID IS NULL AND @serviceID_FK IS NOT NULL
             BEGIN
@@ -137,142 +155,1992 @@ BEGIN
                 WHERE s.[serviceID] = @serviceID_FK;
             END
 
-            -- T037: rootTicketID_FK — for top-level tickets, set to own ID after insert (done below)
-            -- For child tickets, parentTicketID_FK and rootTicketID_FK should be passed in
-            -- (handled by CREATE_CHILD_TICKET action in later phases)
-            -- INSERT without parent => rootTicketID_FK will be set to SCOPE_IDENTITY() after insert
             IF @parentTicketID_FK IS NOT NULL AND @parentTicketID_FK > 0
             BEGIN
-                ;THROW 50001, N'Use CREATE_CHILD_TICKET to create child tickets', 1;
+                ;THROW 50001, N'استخدم CREATE_CHILD_TICKET لإنشاء التذاكر الفرعية', 1;
             END
 
             SET @parentTicketID_FK = NULL;
 
             INSERT INTO [Tickets].[Ticket]
             (
-                  [ticketNo]
-                , [idaraID_FK]
-                , [parentTicketID_FK]
-                , [rootTicketID_FK]
-                , [serviceID_FK]
-                , [ticketClassID_FK]
-                , [requesterTypeID_FK]
-                , [requesterUserID_FK]
-                , [requesterResidentID_FK]
-                , [title]
-                , [description_]
-                , [suggestedPriorityID_FK]
-                , [effectivePriorityID_FK]
-                , [ticketStatusID_FK]
-                , [currentDSDID_FK]
-                , [currentQueueDistributorID_FK]
-                , [assignedUserID_FK]
-                , [locationBuildingNo]
-                , [locationUnitNo]
-                , [locationArea]
-                , [operationalResolutionDate]
-                , [finalClosureDate]
-                , [requiresQualityReview]
-                , [isOtherService]
-                , [isParentBlocked]
-                , [ticketActive]
-                , [entryData]
-                , [hostName]
+                  [ticketNo], [idaraID_FK], [parentTicketID_FK], [rootTicketID_FK]
+                , [serviceID_FK], [ticketClassID_FK], [requesterTypeID_FK]
+                , [requesterUserID_FK], [requesterResidentID_FK]
+                , [title], [title_A], [description_], [description_A]
+                , [suggestedPriorityID_FK], [effectivePriorityID_FK], [ticketStatusID_FK]
+                , [currentDSDID_FK], [currentQueueDistributorID_FK], [assignedUserID_FK]
+                , [locationBuildingNo], [locationUnitNo], [locationArea], [locationArea_A]
+                , [operationalResolutionDate], [finalClosureDate]
+                , [requiresQualityReview], [isOtherService], [isParentBlocked], [ticketActive]
+                , [entryData], [hostName]
             )
             VALUES
             (
-                  @NewTicketNo
-                , @idaraID_FK
-                , @parentTicketID_FK
-                , NULL
-                , @serviceID_FK
-                , @ticketClassID_FK
-                , @requesterTypeID_FK
-                , @requesterUserID_FK
-                , @requesterResidentID_FK
-                , @title
-                , @description_
-                , @suggestedPriorityID_FK
-                , @effectivePriorityID
-                , @statusNewID
-                , @svcDSDID
-                , @currentQueueDistributorID_FK
-                , @assignedUserID_FK
-                , @locationBuildingNo
-                , @locationUnitNo
-                , @locationArea
-                , NULL
-                , NULL
-                , @svcRequiresQR
-                , ISNULL(@isOtherService, 0)
-                , 0
-                , 1
-                , @entryData
-                , @hostName
+                  @NewTicketNo, @idaraID_FK, @parentTicketID_FK, NULL
+                , @serviceID_FK, @ticketClassID_FK, @requesterTypeID_FK
+                , @requesterUserID_FK, @requesterResidentID_FK
+                , @titleToSave, @titleToSave, @descriptionToSave, @descriptionToSave
+                , @suggestedPriorityID_FK, @effectivePriorityID, @statusNewID
+                , @svcDSDID, @currentQueueDistributorID_FK, @assignedUserID_FK
+                , @locationBuildingNo, @locationUnitNo, @locationAreaToSave, @locationAreaToSave
+                , NULL, NULL
+                , @svcRequiresQR, ISNULL(@isOtherService, 0), 0, 1
+                , @entryData, @hostName
             );
 
             SET @NewID = SCOPE_IDENTITY();
             IF @NewID IS NULL OR @NewID <= 0
-            BEGIN ;THROW 50002, N'Failed to create ticket - identity error', 1; END
+            BEGIN ;THROW 50002, N'فشل إنشاء التذكرة بسبب خطأ في توليد المعرف', 1; END
 
-            -- T037: Set rootTicketID_FK = own ID for top-level tickets
             UPDATE [Tickets].[Ticket]
             SET [rootTicketID_FK] = @NewID
             WHERE [ticketID] = @NewID AND [rootTicketID_FK] IS NULL;
 
-            -- T038: Insert TicketHistory creation event
             INSERT INTO [Tickets].[TicketHistory]
-            (
-                  [ticketID_FK]
-                , [idaraID_FK]
-                , [actionTypeCode]
-                , [oldStatusID_FK]
-                , [newStatusID_FK]
-                , [oldDSDID_FK]
-                , [newDSDID_FK]
-                , [oldAssignedUserID]
-                , [newAssignedUserID]
-                , [performerUserID]
-                , [notes]
-                , [entryData]
-                , [hostName]
-            )
+            ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+            , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+            , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
             VALUES
-            (
-                  @NewID
-                , @idaraID_FK
-                , N'CREATED'
-                , NULL
-                , @statusNewID
-                , NULL
-                , @svcDSDID
-                , NULL
-                , NULL
-                , @requesterUserID_FK
-                , N'Ticket created'
-                , @entryData
-                , @hostName
-            );
+            ( @NewID, @idaraID_FK, N'CREATED', NULL, @statusNewID
+            , NULL, @svcDSDID, NULL, NULL
+            , @requesterUserID_FK, N'تم إنشاء التذكرة', COALESCE(@notes_A, N'تم إنشاء التذكرة'), @entryData, @hostName );
 
-            -- T039: Audit log
-            SET @Note = N'{'
-                + N'"ticketID":"' + CAST(@NewID AS NVARCHAR(20)) + N'"'
-                + N',"ticketNo":"' + ISNULL(@NewTicketNo, N'') + N'"'
-                + N',"idaraID_FK":"' + CAST(@idaraID_FK AS NVARCHAR(20)) + N'"'
-                + N',"requesterTypeID_FK":"' + CAST(@requesterTypeID_FK AS NVARCHAR(20)) + N'"'
-                + N',"serviceID_FK":"' + ISNULL(CAST(@serviceID_FK AS NVARCHAR(20)), N'null') + N'"'
-                + N',"isOtherService":"' + CAST(ISNULL(@isOtherService, 0) AS NVARCHAR(5)) + N'"'
-                + N',"rootTicketID_FK":"' + CAST(@NewID AS NVARCHAR(20)) + N'"'
-                + N'}';
+            SET @Note = N'{"ticketID":"' + CAST(@NewID AS NVARCHAR(20))
+                + N'","ticketNo":"' + ISNULL(@NewTicketNo, N'') + N'"}';
 
             INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
             VALUES (N'[Tickets].[Ticket]', N'INSERT_TICKET', @NewID, @entryData, @Note);
 
             SELECT 1 AS IsSuccessful
-                 , N'Ticket created successfully: ' + @NewTicketNo AS Message_
-                 , @NewID AS NewTicketID
-                 , @NewTicketNo AS NewTicketNo;
-            RETURN;
+                 , N'تم إنشاء التذكرة بنجاح: ' + @NewTicketNo AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- ROUTE_TICKET
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'ROUTE_TICKET'
+        BEGIN
+            IF @ticketID IS NULL
+            BEGIN ;THROW 50001, N'معرف التذكرة مطلوب', 1; END
+
+            DECLARE @rtOldStatus INT, @rtOldDSD INT;
+            SELECT @rtOldStatus = [ticketStatusID_FK], @rtOldDSD = [currentDSDID_FK]
+            FROM [Tickets].[Ticket] WHERE [ticketID] = @ticketID AND [ticketActive] = 1;
+
+            IF @rtOldStatus IS NULL
+            BEGIN ;THROW 50001, N'لم يتم العثور على تذكرة نشطة', 1; END
+
+            DECLARE @statusRoutedID INT;
+            SELECT @statusRoutedID = [ticketStatusID] FROM [Tickets].[TicketStatus]
+            WHERE [ticketStatusCode] = N'ROUTED' AND [ticketStatusActive] = 1;
+
+            IF @statusRoutedID IS NULL
+            BEGIN ;THROW 50002, N'تعذر العثور على حالة ROUTED', 1; END
+
+            IF @rtOldStatus NOT IN (
+                SELECT [ticketStatusID] FROM [Tickets].[TicketStatus]
+                WHERE [ticketStatusCode] IN (N'NEW', N'REOPENED') AND [ticketStatusActive] = 1
+            )
+            BEGIN ;THROW 50001, N'لا يمكن توجيه التذكرة من حالتها الحالية', 1; END
+
+            DECLARE @routeDSDID INT = @currentDSDID_FK;
+            DECLARE @routeQDID INT = @currentQueueDistributorID_FK;
+
+            IF @routeDSDID IS NULL AND @serviceID_FK IS NOT NULL
+            BEGIN
+                SELECT TOP 1 @routeDSDID = rr.[targetDSDID_FK], @routeQDID = ISNULL(@routeQDID, rr.[queueDistributorID_FK])
+                FROM [Tickets].[ServiceRoutingRule] rr
+                WHERE rr.[serviceID_FK] = @serviceID_FK
+                  AND rr.[serviceRoutingRuleActive] = 1
+                  AND rr.[effectiveFrom] <= GETDATE()
+                  AND (rr.[effectiveTo] IS NULL OR rr.[effectiveTo] > GETDATE())
+                ORDER BY rr.[serviceRoutingRuleID] DESC;
+            END
+
+            UPDATE [Tickets].[Ticket]
+            SET [ticketStatusID_FK] = @statusRoutedID
+              , [currentDSDID_FK] = @routeDSDID
+              , [currentQueueDistributorID_FK] = @routeQDID
+              , [entryData] = @entryData
+              , [hostName]  = @hostName
+            WHERE [ticketID] = @ticketID;
+
+            INSERT INTO [Tickets].[TicketHistory]
+            ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+            , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+            , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, N'ROUTED', @rtOldStatus, @statusRoutedID
+            , @rtOldDSD, @routeDSDID, NULL, NULL
+            , @performerUserID, ISNULL(@notes, N'تم توجيه التذكرة'), COALESCE(@notes_A, ISNULL(@notes, N'تم توجيه التذكرة')), @entryData, @hostName );
+
+            SET @Note = N'{"ticketID":"' + CAST(@ticketID AS NVARCHAR(20)) + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[Ticket]', N'ROUTE_TICKET', @ticketID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful, N'تم توجيه التذكرة بنجاح' AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- ASSIGN_TICKET
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'ASSIGN_TICKET'
+        BEGIN
+            IF @ticketID IS NULL
+            BEGIN ;THROW 50001, N'معرف التذكرة مطلوب', 1; END
+            IF @assignedUserID_FK IS NULL
+            BEGIN ;THROW 50001, N'معرف المستخدم المعيّن مطلوب', 1; END
+
+          DECLARE @asOldStatus INT, @asOldAssigned INT;
+          DECLARE @asCurrentQueueDistributorID BIGINT, @asCurrentDSDID BIGINT;
+          SELECT @asOldStatus = [ticketStatusID_FK]
+             , @asOldAssigned = [assignedUserID_FK]
+             , @asCurrentQueueDistributorID = [currentQueueDistributorID_FK]
+             , @asCurrentDSDID = [currentDSDID_FK]
+            FROM [Tickets].[Ticket] WHERE [ticketID] = @ticketID AND [ticketActive] = 1;
+
+            IF @asOldStatus IS NULL
+            BEGIN ;THROW 50001, N'لم يتم العثور على تذكرة نشطة', 1; END
+
+          IF @asCurrentQueueDistributorID IS NULL AND @asCurrentDSDID IS NULL
+          BEGIN ;THROW 50001, N'لا يمكن إسناد التذكرة بدون مسار توزيع أو هيكل تنظيمي حالي', 1; END
+
+          IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.[UserDistributor] ud
+            INNER JOIN dbo.[Distributor] d
+              ON d.[distributorID] = ud.[distributorID_FK]
+            WHERE ud.[userID_FK] = @assignedUserID_FK
+              AND ISNULL(ud.[UDActive], 1) = 1
+              AND (ud.[UDStartDate] IS NULL OR CAST(ud.[UDStartDate] AS date) <= CAST(GETDATE() AS date))
+              AND (ud.[UDEndDate] IS NULL OR CAST(ud.[UDEndDate] AS date) >= CAST(GETDATE() AS date))
+              AND ISNULL(d.[distributorActive], 1) = 1
+              AND (
+                (@asCurrentQueueDistributorID IS NOT NULL AND ud.[distributorID_FK] = @asCurrentQueueDistributorID)
+               OR (@asCurrentDSDID IS NOT NULL AND d.[DSDID_FK] = @asCurrentDSDID)
+              )
+          )
+          BEGIN ;THROW 50001, N'المستخدم المحدد غير مؤهل لاستلام التذكرة في المسار الحالي', 1; END
+
+            DECLARE @statusAssignedID INT;
+            SELECT @statusAssignedID = [ticketStatusID] FROM [Tickets].[TicketStatus]
+            WHERE [ticketStatusCode] = N'ASSIGNED' AND [ticketStatusActive] = 1;
+
+            IF @statusAssignedID IS NULL
+            BEGIN ;THROW 50002, N'تعذر العثور على حالة ASSIGNED', 1; END
+
+            UPDATE [Tickets].[Ticket]
+            SET [ticketStatusID_FK] = @statusAssignedID
+              , [assignedUserID_FK] = @assignedUserID_FK
+              , [entryData] = @entryData
+              , [hostName]  = @hostName
+            WHERE [ticketID] = @ticketID;
+
+            INSERT INTO [Tickets].[TicketHistory]
+            ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+            , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+            , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, N'ASSIGNED', @asOldStatus, @statusAssignedID
+            , NULL, NULL, @asOldAssigned, @assignedUserID_FK
+            , @performerUserID, ISNULL(@notes, N'تم إسناد التذكرة'), COALESCE(@notes_A, ISNULL(@notes, N'تم إسناد التذكرة')), @entryData, @hostName );
+
+            SET @Note = N'{"ticketID":"' + CAST(@ticketID AS NVARCHAR(20))
+                + N'","assignedUserID":"' + CAST(@assignedUserID_FK AS NVARCHAR(20)) + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[Ticket]', N'ASSIGN_TICKET', @ticketID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful, N'تم إسناد التذكرة بنجاح' AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- REASSIGN_TICKET
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'REASSIGN_TICKET'
+        BEGIN
+            IF @ticketID IS NULL
+            BEGIN ;THROW 50001, N'معرف التذكرة مطلوب', 1; END
+            IF @assignedUserID_FK IS NULL
+            BEGIN ;THROW 50001, N'معرف المستخدم الجديد المعيّن مطلوب', 1; END
+
+          DECLARE @raOldStatus INT, @raOldAssigned INT, @raOldDSD BIGINT;
+          DECLARE @raCurrentQueueDistributorID BIGINT, @raTargetDSDID BIGINT;
+          SELECT @raOldStatus = [ticketStatusID_FK]
+             , @raOldAssigned = [assignedUserID_FK]
+             , @raOldDSD = [currentDSDID_FK]
+             , @raCurrentQueueDistributorID = [currentQueueDistributorID_FK]
+            FROM [Tickets].[Ticket] WHERE [ticketID] = @ticketID AND [ticketActive] = 1;
+
+            IF @raOldStatus IS NULL
+            BEGIN ;THROW 50001, N'لم يتم العثور على تذكرة نشطة', 1; END
+
+          SET @raTargetDSDID = ISNULL(@currentDSDID_FK, @raOldDSD);
+
+          IF @raCurrentQueueDistributorID IS NULL AND @raTargetDSDID IS NULL
+          BEGIN ;THROW 50001, N'لا يمكن إعادة إسناد التذكرة بدون مسار توزيع أو هيكل تنظيمي حالي', 1; END
+
+          IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.[UserDistributor] ud
+            INNER JOIN dbo.[Distributor] d
+              ON d.[distributorID] = ud.[distributorID_FK]
+            WHERE ud.[userID_FK] = @assignedUserID_FK
+              AND ISNULL(ud.[UDActive], 1) = 1
+              AND (ud.[UDStartDate] IS NULL OR CAST(ud.[UDStartDate] AS date) <= CAST(GETDATE() AS date))
+              AND (ud.[UDEndDate] IS NULL OR CAST(ud.[UDEndDate] AS date) >= CAST(GETDATE() AS date))
+              AND ISNULL(d.[distributorActive], 1) = 1
+              AND (
+                (@currentDSDID_FK IS NOT NULL AND d.[DSDID_FK] = @raTargetDSDID)
+               OR (
+                  @currentDSDID_FK IS NULL
+                AND (
+                    (@raCurrentQueueDistributorID IS NOT NULL AND ud.[distributorID_FK] = @raCurrentQueueDistributorID)
+                   OR (@raTargetDSDID IS NOT NULL AND d.[DSDID_FK] = @raTargetDSDID)
+                )
+               )
+              )
+          )
+          BEGIN ;THROW 50001, N'المستخدم المحدد غير مؤهل لاستلام التذكرة في المسار المستهدف', 1; END
+
+            UPDATE [Tickets].[Ticket]
+            SET [assignedUserID_FK] = @assignedUserID_FK
+              , [currentDSDID_FK] = ISNULL(@currentDSDID_FK, [currentDSDID_FK])
+              , [entryData] = @entryData
+              , [hostName]  = @hostName
+            WHERE [ticketID] = @ticketID;
+
+            INSERT INTO [Tickets].[TicketHistory]
+            ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+            , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+            , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, N'REASSIGNED', @raOldStatus, @raOldStatus
+            , @raOldDSD, ISNULL(@currentDSDID_FK, @raOldDSD), @raOldAssigned, @assignedUserID_FK
+            , @performerUserID, ISNULL(@notes, N'تمت إعادة إسناد التذكرة'), COALESCE(@notes_A, ISNULL(@notes, N'تمت إعادة إسناد التذكرة')), @entryData, @hostName );
+
+            SET @Note = N'{"ticketID":"' + CAST(@ticketID AS NVARCHAR(20))
+                + N'","newAssignedUserID":"' + CAST(@assignedUserID_FK AS NVARCHAR(20)) + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[Ticket]', N'REASSIGN_TICKET', @ticketID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful, N'تم إعادة إسناد التذكرة بنجاح' AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- UPDATE_PRIORITY
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'UPDATE_PRIORITY'
+        BEGIN
+            IF @ticketID IS NULL
+            BEGIN ;THROW 50001, N'معرف التذكرة مطلوب', 1; END
+            IF @suggestedPriorityID_FK IS NULL
+            BEGIN ;THROW 50001, N'الأولوية الجديدة مطلوبة', 1; END
+
+            DECLARE @upOldStatus INT, @upOldSuggestedPriority INT, @upOldEffectivePriority INT;
+            SELECT
+                  @upOldStatus = [ticketStatusID_FK]
+                , @upOldSuggestedPriority = [suggestedPriorityID_FK]
+                , @upOldEffectivePriority = [effectivePriorityID_FK]
+            FROM [Tickets].[Ticket]
+            WHERE [ticketID] = @ticketID
+              AND [ticketActive] = 1;
+
+            IF @upOldStatus IS NULL
+            BEGIN ;THROW 50001, N'لم يتم العثور على تذكرة نشطة', 1; END
+
+            IF @upOldStatus IN
+            (
+                SELECT [ticketStatusID]
+                FROM [Tickets].[TicketStatus]
+                WHERE [ticketStatusCode] IN (N'CLOSED', N'REJECTED')
+                  AND [ticketStatusActive] = 1
+            )
+            BEGIN ;THROW 50001, N'لا يمكن تعديل أولوية التذكرة في حالتها الحالية', 1; END
+
+            IF NOT EXISTS
+            (
+                SELECT 1
+                FROM [Tickets].[Priority]
+                WHERE [priorityID] = @suggestedPriorityID_FK
+                  AND [priorityActive] = 1
+            )
+            BEGIN ;THROW 50001, N'الأولوية المحددة غير صالحة أو غير نشطة', 1; END
+
+            UPDATE [Tickets].[Ticket]
+            SET [suggestedPriorityID_FK] = @suggestedPriorityID_FK
+              , [effectivePriorityID_FK] = @suggestedPriorityID_FK
+              , [entryData] = @entryData
+              , [hostName]  = @hostName
+            WHERE [ticketID] = @ticketID;
+
+            INSERT INTO [Tickets].[TicketHistory]
+            ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+            , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+            , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, N'UPDATE_PRIORITY', @upOldStatus, @upOldStatus
+            , NULL, NULL, NULL, NULL
+            , @performerUserID, ISNULL(@notes, N'تم تعديل أولوية التذكرة'), COALESCE(@notes_A, ISNULL(@notes, N'تم تعديل أولوية التذكرة')), @entryData, @hostName );
+
+            SET @Note = N'{"ticketID":"' + CAST(@ticketID AS NVARCHAR(20))
+                + N'","oldSuggestedPriorityID":"' + COALESCE(CAST(@upOldSuggestedPriority AS NVARCHAR(20)), N'')
+                + N'","oldEffectivePriorityID":"' + COALESCE(CAST(@upOldEffectivePriority AS NVARCHAR(20)), N'')
+                + N'","newPriorityID":"' + CAST(@suggestedPriorityID_FK AS NVARCHAR(20)) + N'"}';
+
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[Ticket]', N'UPDATE_PRIORITY', @ticketID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful, N'تم تحديث أولوية التذكرة بنجاح' AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- START_WORK
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'START_WORK'
+        BEGIN
+            IF @ticketID IS NULL
+            BEGIN ;THROW 50001, N'معرف التذكرة مطلوب', 1; END
+
+            DECLARE @swOldStatus INT;
+            SELECT @swOldStatus = [ticketStatusID_FK] FROM [Tickets].[Ticket]
+            WHERE [ticketID] = @ticketID AND [ticketActive] = 1;
+
+            IF @swOldStatus IS NULL
+            BEGIN ;THROW 50001, N'لم يتم العثور على تذكرة نشطة', 1; END
+
+            DECLARE @statusInProgressID INT;
+            SELECT @statusInProgressID = [ticketStatusID] FROM [Tickets].[TicketStatus]
+            WHERE [ticketStatusCode] = N'IN_PROGRESS' AND [ticketStatusActive] = 1;
+
+            IF @statusInProgressID IS NULL
+            BEGIN ;THROW 50002, N'تعذر العثور على حالة IN_PROGRESS', 1; END
+
+            IF @swOldStatus NOT IN (
+                SELECT [ticketStatusID] FROM [Tickets].[TicketStatus]
+                WHERE [ticketStatusCode] IN (N'ASSIGNED', N'REOPENED') AND [ticketStatusActive] = 1
+            )
+            BEGIN ;THROW 50001, N'يمكن بدء العمل على التذكرة فقط من حالتي ASSIGNED أو REOPENED', 1; END
+
+            UPDATE [Tickets].[Ticket]
+            SET [ticketStatusID_FK] = @statusInProgressID
+              , [entryData] = @entryData
+              , [hostName]  = @hostName
+            WHERE [ticketID] = @ticketID;
+
+            INSERT INTO [Tickets].[TicketHistory]
+            ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+            , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+            , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, N'STARTED', @swOldStatus, @statusInProgressID
+            , NULL, NULL, NULL, NULL
+            , @performerUserID, ISNULL(@notes, N'تم بدء العمل'), COALESCE(@notes_A, ISNULL(@notes, N'تم بدء العمل')), @entryData, @hostName );
+
+            SET @Note = N'{"ticketID":"' + CAST(@ticketID AS NVARCHAR(20)) + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[Ticket]', N'START_WORK', @ticketID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful, N'تم بدء العمل بنجاح' AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- RESOLVE_TICKET
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'RESOLVE_TICKET'
+        BEGIN
+            IF @ticketID IS NULL
+            BEGIN ;THROW 50001, N'معرف التذكرة مطلوب', 1; END
+
+            DECLARE @rvOldStatus INT, @rvRequiresQR BIT;
+            SELECT @rvOldStatus = [ticketStatusID_FK], @rvRequiresQR = ISNULL([requiresQualityReview], 0)
+            FROM [Tickets].[Ticket] WHERE [ticketID] = @ticketID AND [ticketActive] = 1;
+
+            IF @rvOldStatus IS NULL
+            BEGIN ;THROW 50001, N'لم يتم العثور على تذكرة نشطة', 1; END
+
+            IF @rvOldStatus NOT IN (
+                SELECT [ticketStatusID] FROM [Tickets].[TicketStatus]
+                WHERE [ticketStatusCode] IN (N'IN_PROGRESS', N'CLARIFICATION') AND [ticketStatusActive] = 1
+            )
+            BEGIN ;THROW 50001, N'يمكن حل التذكرة فقط من حالتي IN_PROGRESS أو CLARIFICATION', 1; END
+
+            IF EXISTS (
+              SELECT 1
+              FROM [Tickets].[ClarificationRequest] cr
+              WHERE cr.[ticketID_FK] = @ticketID
+                AND ISNULL(cr.[clarificationActive], 1) = 1
+                AND cr.[clarificationStatus] = N'OPEN'
+            )
+            BEGIN ;THROW 50001, N'لا يمكن حل التذكرة مع وجود طلب توضيح مفتوح', 1; END
+
+            IF @rvRequiresQR = 0
+               AND EXISTS (
+                    SELECT 1
+                    FROM [Tickets].[Ticket] child
+                    WHERE child.[parentTicketID_FK] = @ticketID
+                      AND child.[ticketActive] = 1
+                      AND child.[ticketStatusID_FK] NOT IN (
+                            SELECT [ticketStatusID]
+                            FROM [Tickets].[TicketStatus]
+                            WHERE [ticketStatusCode] IN (N'RESOLVED', N'CLOSED', N'REJECTED')
+                              AND [ticketStatusActive] = 1
+                      )
+               )
+            BEGIN ;THROW 50001, N'لا يمكن الإغلاق النهائي مع وجود تذاكر فرعية مفتوحة', 1; END
+
+            IF @rvRequiresQR = 1
+            BEGIN
+                DECLARE @statusResolvedID INT;
+                SELECT @statusResolvedID = [ticketStatusID] FROM [Tickets].[TicketStatus]
+                WHERE [ticketStatusCode] = N'RESOLVED' AND [ticketStatusActive] = 1;
+
+                UPDATE [Tickets].[Ticket]
+                SET [ticketStatusID_FK] = @statusResolvedID
+                  , [operationalResolutionDate] = GETDATE()
+                  , [entryData] = @entryData
+                  , [hostName]  = @hostName
+                WHERE [ticketID] = @ticketID;
+
+                INSERT INTO [Tickets].[TicketHistory]
+                ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+                , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+                , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+                VALUES
+                ( @ticketID, @idaraID_FK, N'RESOLVED', @rvOldStatus, @statusResolvedID
+                , NULL, NULL, NULL, NULL
+                , @performerUserID, ISNULL(@notes, N'تم حل التذكرة - بانتظار مراجعة الجودة'), COALESCE(@notes_A, ISNULL(@notes, N'تم حل التذكرة - بانتظار مراجعة الجودة')), @entryData, @hostName );
+
+                SELECT 1 AS IsSuccessful, N'تم حل التذكرة - بانتظار مراجعة الجودة' AS Message_;
+            END
+            ELSE
+            BEGIN
+                DECLARE @statusClosedID INT;
+                SELECT @statusClosedID = [ticketStatusID] FROM [Tickets].[TicketStatus]
+                WHERE [ticketStatusCode] = N'CLOSED' AND [ticketStatusActive] = 1;
+
+                UPDATE [Tickets].[Ticket]
+                SET [ticketStatusID_FK] = @statusClosedID
+                  , [operationalResolutionDate] = GETDATE()
+                  , [finalClosureDate] = GETDATE()
+                  , [entryData] = @entryData
+                  , [hostName]  = @hostName
+                WHERE [ticketID] = @ticketID;
+
+                INSERT INTO [Tickets].[TicketHistory]
+                ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+                , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+                , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+                VALUES
+                ( @ticketID, @idaraID_FK, N'CLOSED', @rvOldStatus, @statusClosedID
+                , NULL, NULL, NULL, NULL
+                , @performerUserID, ISNULL(@notes, N'تم حل التذكرة وإغلاقها'), COALESCE(@notes_A, ISNULL(@notes, N'تم حل التذكرة وإغلاقها')), @entryData, @hostName );
+
+                SELECT 1 AS IsSuccessful, N'تم حل التذكرة وإغلاقها' AS Message_;
+            END
+
+            SET @ParentTicketToUpdate = NULL;
+            SET @RemainingOpenChildren = 0;
+            SET @ParentCurrentStatus = NULL;
+            SET @PausedStatusID = NULL;
+            SET @ResumeStatusID = NULL;
+
+            SELECT @ParentTicketToUpdate = [parentTicketID_FK]
+            FROM [Tickets].[Ticket]
+            WHERE [ticketID] = @ticketID;
+
+            IF @ParentTicketToUpdate IS NOT NULL
+            BEGIN
+                SELECT @RemainingOpenChildren = COUNT(*)
+                FROM [Tickets].[Ticket] child
+                WHERE child.[parentTicketID_FK] = @ParentTicketToUpdate
+                  AND child.[ticketActive] = 1
+                  AND child.[ticketStatusID_FK] NOT IN (
+                        SELECT [ticketStatusID]
+                        FROM [Tickets].[TicketStatus]
+                        WHERE [ticketStatusCode] IN (N'RESOLVED', N'CLOSED', N'REJECTED')
+                          AND [ticketStatusActive] = 1
+                  );
+
+                IF ISNULL(@RemainingOpenChildren, 0) = 0
+                BEGIN
+                    UPDATE [Tickets].[Ticket]
+                    SET [isParentBlocked] = 0
+                      , [entryData] = @entryData
+                      , [hostName]  = @hostName
+                    WHERE [ticketID] = @ParentTicketToUpdate;
+
+                    UPDATE [Tickets].[TicketPauseSession]
+                    SET [pauseEnd] = GETDATE()
+                      , [ticketPauseSessionActive] = 0
+                      , [entryData] = @entryData
+                      , [hostName]  = @hostName
+                    WHERE [ticketID_FK] = @ParentTicketToUpdate
+                      AND [relatedChildTicketID_FK] IS NOT NULL
+                      AND [pauseEnd] IS NULL;
+
+                    SELECT @ParentCurrentStatus = [ticketStatusID_FK]
+                    FROM [Tickets].[Ticket]
+                    WHERE [ticketID] = @ParentTicketToUpdate;
+
+                    SELECT @PausedStatusID = [ticketStatusID]
+                    FROM [Tickets].[TicketStatus]
+                    WHERE [ticketStatusCode] = N'PAUSED'
+                      AND [ticketStatusActive] = 1;
+
+                    IF @ParentCurrentStatus = @PausedStatusID
+                       AND NOT EXISTS (
+                            SELECT 1
+                            FROM [Tickets].[TicketPauseSession]
+                            WHERE [ticketID_FK] = @ParentTicketToUpdate
+                              AND [pauseEnd] IS NULL
+                              AND [ticketPauseSessionActive] = 1
+                       )
+                    BEGIN
+                        SELECT TOP 1 @ResumeStatusID = [oldStatusID_FK]
+                        FROM [Tickets].[TicketHistory]
+                        WHERE [ticketID_FK] = @ParentTicketToUpdate
+                          AND [actionTypeCode] = N'PAUSED'
+                        ORDER BY [ticketHistoryID] DESC;
+
+                        UPDATE [Tickets].[Ticket]
+                        SET [ticketStatusID_FK] = ISNULL(@ResumeStatusID, @ParentCurrentStatus)
+                          , [entryData] = @entryData
+                          , [hostName]  = @hostName
+                        WHERE [ticketID] = @ParentTicketToUpdate;
+
+                        INSERT INTO [Tickets].[TicketHistory]
+                        ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+                        , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+                        , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+                        VALUES
+                        ( @ParentTicketToUpdate, @idaraID_FK, N'RESUMED', @ParentCurrentStatus, ISNULL(@ResumeStatusID, @ParentCurrentStatus)
+                        , NULL, NULL, NULL, NULL
+                        , @performerUserID, N'تم استئناف التذكرة الأصلية تلقائياً بعد اكتمال التذاكر الفرعية', N'تم استئناف التذكرة الأصلية تلقائياً بعد اكتمال التذاكر الفرعية', @entryData, @hostName );
+                    END
+                END
+            END
+
+            SET @Note = N'{"ticketID":"' + CAST(@ticketID AS NVARCHAR(20)) + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[Ticket]', N'RESOLVE_TICKET', @ticketID, @entryData, @Note);
+        END
+
+        ----------------------------------------------------------------
+        -- CLOSE_TICKET
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'CLOSE_TICKET'
+        BEGIN
+            IF @ticketID IS NULL
+            BEGIN ;THROW 50001, N'معرف التذكرة مطلوب', 1; END
+
+            DECLARE @clOldStatus INT;
+            SELECT @clOldStatus = [ticketStatusID_FK] FROM [Tickets].[Ticket]
+            WHERE [ticketID] = @ticketID AND [ticketActive] = 1;
+
+            IF @clOldStatus IS NULL
+            BEGIN ;THROW 50001, N'لم يتم العثور على تذكرة نشطة', 1; END
+
+            IF @clOldStatus NOT IN (
+                SELECT [ticketStatusID] FROM [Tickets].[TicketStatus]
+                WHERE [ticketStatusCode] = N'RESOLVED' AND [ticketStatusActive] = 1
+            )
+            BEGIN ;THROW 50001, N'يمكن إغلاق التذكرة فقط من حالة RESOLVED', 1; END
+
+            IF EXISTS (
+                SELECT 1
+                FROM [Tickets].[Ticket] child
+                WHERE child.[parentTicketID_FK] = @ticketID
+                  AND child.[ticketActive] = 1
+                  AND child.[ticketStatusID_FK] NOT IN (
+                        SELECT [ticketStatusID]
+                        FROM [Tickets].[TicketStatus]
+                        WHERE [ticketStatusCode] IN (N'RESOLVED', N'CLOSED', N'REJECTED')
+                          AND [ticketStatusActive] = 1
+                  )
+            )
+            BEGIN ;THROW 50001, N'لا يمكن إغلاق التذكرة مع وجود تذاكر فرعية مفتوحة', 1; END
+
+            DECLARE @clStatusClosedID INT;
+            SELECT @clStatusClosedID = [ticketStatusID] FROM [Tickets].[TicketStatus]
+            WHERE [ticketStatusCode] = N'CLOSED' AND [ticketStatusActive] = 1;
+
+            UPDATE [Tickets].[Ticket]
+            SET [ticketStatusID_FK] = @clStatusClosedID
+              , [finalClosureDate] = GETDATE()
+              , [operationalResolutionDate] = ISNULL([operationalResolutionDate], GETDATE())
+              , [entryData] = @entryData
+              , [hostName]  = @hostName
+            WHERE [ticketID] = @ticketID;
+
+            INSERT INTO [Tickets].[TicketHistory]
+            ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+            , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+            , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, N'CLOSED', @clOldStatus, @clStatusClosedID
+            , NULL, NULL, NULL, NULL
+            , @performerUserID, ISNULL(@notes, N'تم إغلاق التذكرة'), COALESCE(@notes_A, ISNULL(@notes, N'تم إغلاق التذكرة')), @entryData, @hostName );
+
+            SET @ParentTicketToUpdate = NULL;
+            SET @RemainingOpenChildren = 0;
+            SET @ParentCurrentStatus = NULL;
+            SET @PausedStatusID = NULL;
+            SET @ResumeStatusID = NULL;
+
+            SELECT @ParentTicketToUpdate = [parentTicketID_FK]
+            FROM [Tickets].[Ticket]
+            WHERE [ticketID] = @ticketID;
+
+            IF @ParentTicketToUpdate IS NOT NULL
+            BEGIN
+                SELECT @RemainingOpenChildren = COUNT(*)
+                FROM [Tickets].[Ticket] child
+                WHERE child.[parentTicketID_FK] = @ParentTicketToUpdate
+                  AND child.[ticketActive] = 1
+                  AND child.[ticketStatusID_FK] NOT IN (
+                        SELECT [ticketStatusID]
+                        FROM [Tickets].[TicketStatus]
+                        WHERE [ticketStatusCode] IN (N'RESOLVED', N'CLOSED', N'REJECTED')
+                          AND [ticketStatusActive] = 1
+                  );
+
+                IF ISNULL(@RemainingOpenChildren, 0) = 0
+                BEGIN
+                    UPDATE [Tickets].[Ticket]
+                    SET [isParentBlocked] = 0
+                      , [entryData] = @entryData
+                      , [hostName]  = @hostName
+                    WHERE [ticketID] = @ParentTicketToUpdate;
+
+                    UPDATE [Tickets].[TicketPauseSession]
+                    SET [pauseEnd] = GETDATE()
+                      , [ticketPauseSessionActive] = 0
+                      , [entryData] = @entryData
+                      , [hostName]  = @hostName
+                    WHERE [ticketID_FK] = @ParentTicketToUpdate
+                      AND [relatedChildTicketID_FK] IS NOT NULL
+                      AND [pauseEnd] IS NULL;
+
+                    SELECT @ParentCurrentStatus = [ticketStatusID_FK]
+                    FROM [Tickets].[Ticket]
+                    WHERE [ticketID] = @ParentTicketToUpdate;
+
+                    SELECT @PausedStatusID = [ticketStatusID]
+                    FROM [Tickets].[TicketStatus]
+                    WHERE [ticketStatusCode] = N'PAUSED'
+                      AND [ticketStatusActive] = 1;
+
+                    IF @ParentCurrentStatus = @PausedStatusID
+                       AND NOT EXISTS (
+                            SELECT 1
+                            FROM [Tickets].[TicketPauseSession]
+                            WHERE [ticketID_FK] = @ParentTicketToUpdate
+                              AND [pauseEnd] IS NULL
+                              AND [ticketPauseSessionActive] = 1
+                       )
+                    BEGIN
+                        SELECT TOP 1 @ResumeStatusID = [oldStatusID_FK]
+                        FROM [Tickets].[TicketHistory]
+                        WHERE [ticketID_FK] = @ParentTicketToUpdate
+                          AND [actionTypeCode] = N'PAUSED'
+                        ORDER BY [ticketHistoryID] DESC;
+
+                        UPDATE [Tickets].[Ticket]
+                        SET [ticketStatusID_FK] = ISNULL(@ResumeStatusID, @ParentCurrentStatus)
+                          , [entryData] = @entryData
+                          , [hostName]  = @hostName
+                        WHERE [ticketID] = @ParentTicketToUpdate;
+
+                        INSERT INTO [Tickets].[TicketHistory]
+                        ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+                        , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+                        , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+                        VALUES
+                        ( @ParentTicketToUpdate, @idaraID_FK, N'RESUMED', @ParentCurrentStatus, ISNULL(@ResumeStatusID, @ParentCurrentStatus)
+                        , NULL, NULL, NULL, NULL
+                        , @performerUserID, N'تم استئناف التذكرة الأصلية تلقائياً بعد اكتمال التذاكر الفرعية', N'تم استئناف التذكرة الأصلية تلقائياً بعد اكتمال التذاكر الفرعية', @entryData, @hostName );
+                    END
+                END
+            END
+
+            SET @Note = N'{"ticketID":"' + CAST(@ticketID AS NVARCHAR(20)) + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[Ticket]', N'CLOSE_TICKET', @ticketID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful, N'تم إغلاق التذكرة بنجاح' AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- REJECT_TICKET
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'REJECT_TICKET'
+        BEGIN
+            IF @ticketID IS NULL
+            BEGIN ;THROW 50001, N'معرف التذكرة مطلوب', 1; END
+
+            DECLARE @rjOldStatus INT;
+            SELECT @rjOldStatus = [ticketStatusID_FK] FROM [Tickets].[Ticket]
+            WHERE [ticketID] = @ticketID AND [ticketActive] = 1;
+
+            IF @rjOldStatus IS NULL
+            BEGIN ;THROW 50001, N'لم يتم العثور على تذكرة نشطة', 1; END
+
+            IF @rjOldStatus NOT IN (
+                SELECT [ticketStatusID] FROM [Tickets].[TicketStatus]
+                WHERE [ticketStatusCode] IN (N'NEW', N'REOPENED') AND [ticketStatusActive] = 1
+            )
+            BEGIN ;THROW 50001, N'يمكن رفض التذكرة فقط من حالتي NEW أو REOPENED', 1; END
+
+            DECLARE @statusRejectedID INT;
+            SELECT @statusRejectedID = [ticketStatusID] FROM [Tickets].[TicketStatus]
+            WHERE [ticketStatusCode] = N'REJECTED' AND [ticketStatusActive] = 1;
+
+            IF @statusRejectedID IS NULL
+            BEGIN ;THROW 50002, N'تعذر العثور على حالة REJECTED', 1; END
+
+            UPDATE [Tickets].[Ticket]
+            SET [ticketStatusID_FK] = @statusRejectedID
+              , [entryData] = @entryData
+              , [hostName]  = @hostName
+            WHERE [ticketID] = @ticketID;
+
+            INSERT INTO [Tickets].[TicketHistory]
+            ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+            , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+            , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, N'REJECTED', @rjOldStatus, @statusRejectedID
+            , NULL, NULL, NULL, NULL
+            , @performerUserID, ISNULL(@notes, N'تم رفض التذكرة'), COALESCE(@notes_A, ISNULL(@notes, N'تم رفض التذكرة')), @entryData, @hostName );
+
+            SET @ParentTicketToUpdate = NULL;
+            SET @RemainingOpenChildren = 0;
+
+            SELECT @ParentTicketToUpdate = [parentTicketID_FK]
+            FROM [Tickets].[Ticket]
+            WHERE [ticketID] = @ticketID;
+
+            IF @ParentTicketToUpdate IS NOT NULL
+            BEGIN
+                SELECT @RemainingOpenChildren = COUNT(*)
+                FROM [Tickets].[Ticket] child
+                WHERE child.[parentTicketID_FK] = @ParentTicketToUpdate
+                  AND child.[ticketActive] = 1
+                  AND child.[ticketStatusID_FK] NOT IN (
+                        SELECT [ticketStatusID]
+                        FROM [Tickets].[TicketStatus]
+                        WHERE [ticketStatusCode] IN (N'RESOLVED', N'CLOSED', N'REJECTED')
+                          AND [ticketStatusActive] = 1
+                  );
+
+                IF ISNULL(@RemainingOpenChildren, 0) = 0
+                BEGIN
+                    UPDATE [Tickets].[Ticket]
+                    SET [isParentBlocked] = 0
+                      , [entryData] = @entryData
+                      , [hostName]  = @hostName
+                    WHERE [ticketID] = @ParentTicketToUpdate;
+
+                    UPDATE [Tickets].[TicketPauseSession]
+                    SET [pauseEnd] = GETDATE()
+                      , [ticketPauseSessionActive] = 0
+                      , [entryData] = @entryData
+                      , [hostName]  = @hostName
+                    WHERE [ticketID_FK] = @ParentTicketToUpdate
+                      AND [relatedChildTicketID_FK] IS NOT NULL
+                      AND [pauseEnd] IS NULL;
+                END
+            END
+
+            SET @Note = N'{"ticketID":"' + CAST(@ticketID AS NVARCHAR(20)) + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[Ticket]', N'REJECT_TICKET', @ticketID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful, N'تم رفض التذكرة' AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- REOPEN_TICKET
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'REOPEN_TICKET'
+        BEGIN
+            IF @ticketID IS NULL
+            BEGIN ;THROW 50001, N'معرف التذكرة مطلوب', 1; END
+
+            DECLARE @roOldStatus INT;
+            SELECT @roOldStatus = [ticketStatusID_FK] FROM [Tickets].[Ticket]
+            WHERE [ticketID] = @ticketID AND [ticketActive] = 1;
+
+            IF @roOldStatus IS NULL
+            BEGIN ;THROW 50001, N'لم يتم العثور على تذكرة نشطة', 1; END
+
+            IF @roOldStatus NOT IN (
+                SELECT [ticketStatusID] FROM [Tickets].[TicketStatus]
+                WHERE [ticketStatusCode] IN (N'CLOSED', N'RESOLVED') AND [ticketStatusActive] = 1
+            )
+            BEGIN ;THROW 50001, N'يمكن إعادة فتح التذكرة فقط من حالتي CLOSED أو RESOLVED', 1; END
+
+            DECLARE @statusReopenedID INT;
+            SELECT @statusReopenedID = [ticketStatusID] FROM [Tickets].[TicketStatus]
+            WHERE [ticketStatusCode] = N'REOPENED' AND [ticketStatusActive] = 1;
+
+            IF @statusReopenedID IS NULL
+            BEGIN ;THROW 50002, N'تعذر العثور على حالة REOPENED', 1; END
+
+            UPDATE [Tickets].[Ticket]
+            SET [ticketStatusID_FK] = @statusReopenedID
+              , [finalClosureDate] = NULL
+              , [operationalResolutionDate] = NULL
+              , [entryData] = @entryData
+              , [hostName]  = @hostName
+            WHERE [ticketID] = @ticketID;
+
+            INSERT INTO [Tickets].[TicketHistory]
+            ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+            , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+            , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, N'REOPENED', @roOldStatus, @statusReopenedID
+            , NULL, NULL, NULL, NULL
+            , @performerUserID, ISNULL(@notes, N'تمت إعادة فتح التذكرة'), COALESCE(@notes_A, ISNULL(@notes, N'تمت إعادة فتح التذكرة')), @entryData, @hostName );
+
+            SET @ParentTicketToUpdate = NULL;
+            SET @ParentCurrentStatus = NULL;
+            SET @PausedStatusID = NULL;
+
+            SELECT @ParentTicketToUpdate = [parentTicketID_FK]
+            FROM [Tickets].[Ticket]
+            WHERE [ticketID] = @ticketID;
+
+            IF @ParentTicketToUpdate IS NOT NULL
+            BEGIN
+                UPDATE [Tickets].[Ticket]
+                SET [isParentBlocked] = 1
+                  , [entryData] = @entryData
+                  , [hostName]  = @hostName
+                WHERE [ticketID] = @ParentTicketToUpdate;
+
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM [Tickets].[TicketPauseSession]
+                    WHERE [ticketID_FK] = @ParentTicketToUpdate
+                      AND [relatedChildTicketID_FK] = @ticketID
+                      AND [pauseEnd] IS NULL
+                      AND [ticketPauseSessionActive] = 1
+                )
+                BEGIN
+                    INSERT INTO [Tickets].[TicketPauseSession]
+                    ( [ticketID_FK], [idaraID_FK], [pauseReasonID_FK], [relatedChildTicketID_FK]
+                    , [pauseStart], [pauseEnd], [slaPauseFlag], [pauseNotes], [pauseNotes_A]
+                    , [ticketPauseSessionActive], [entryData], [hostName] )
+                    VALUES
+                    ( @ParentTicketToUpdate, @idaraID_FK, 1, @ticketID
+                    , GETDATE(), NULL, 1, N'إيقاف تلقائي: تمت إعادة فتح تذكرة فرعية', N'إيقاف تلقائي: تمت إعادة فتح تذكرة فرعية'
+                    , 1, @entryData, @hostName );
+                END
+
+                SELECT @ParentCurrentStatus = [ticketStatusID_FK]
+                FROM [Tickets].[Ticket]
+                WHERE [ticketID] = @ParentTicketToUpdate;
+
+                SELECT @PausedStatusID = [ticketStatusID]
+                FROM [Tickets].[TicketStatus]
+                WHERE [ticketStatusCode] = N'PAUSED'
+                  AND [ticketStatusActive] = 1;
+
+                IF @PausedStatusID IS NOT NULL
+                   AND @ParentCurrentStatus IS NOT NULL
+                   AND @ParentCurrentStatus <> @PausedStatusID
+                BEGIN
+                    UPDATE [Tickets].[Ticket]
+                    SET [ticketStatusID_FK] = @PausedStatusID
+                      , [entryData] = @entryData
+                      , [hostName]  = @hostName
+                    WHERE [ticketID] = @ParentTicketToUpdate;
+
+                    INSERT INTO [Tickets].[TicketHistory]
+                    ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+                    , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+                    , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+                    VALUES
+                    ( @ParentTicketToUpdate, @idaraID_FK, N'PAUSED', @ParentCurrentStatus, @PausedStatusID
+                    , NULL, NULL, NULL, NULL
+                    , @performerUserID, N'تم إيقاف التذكرة الأصلية تلقائياً بعد إعادة فتح تذكرة فرعية', N'تم إيقاف التذكرة الأصلية تلقائياً بعد إعادة فتح تذكرة فرعية', @entryData, @hostName );
+                END
+            END
+
+            SET @Note = N'{"ticketID":"' + CAST(@ticketID AS NVARCHAR(20)) + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[Ticket]', N'REOPEN_TICKET', @ticketID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful, N'تمت إعادة فتح التذكرة' AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- PAUSE_TICKET
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'PAUSE_TICKET'
+        BEGIN
+            IF @ticketID IS NULL
+            BEGIN ;THROW 50001, N'معرف التذكرة مطلوب', 1; END
+            IF @pauseReasonID_FK IS NULL
+            BEGIN ;THROW 50001, N'معرف سبب الإيقاف مطلوب', 1; END
+
+            DECLARE @pOldStatus INT;
+            SELECT @pOldStatus = [ticketStatusID_FK] FROM [Tickets].[Ticket]
+            WHERE [ticketID] = @ticketID AND [ticketActive] = 1;
+
+            IF @pOldStatus IS NULL
+            BEGIN ;THROW 50001, N'لم يتم العثور على تذكرة نشطة', 1; END
+
+            IF EXISTS (SELECT 1 FROM [Tickets].[TicketPauseSession]
+                       WHERE [ticketID_FK] = @ticketID AND [pauseEnd] IS NULL AND [ticketPauseSessionActive] = 1)
+            BEGIN ;THROW 50001, N'التذكرة موقفة بالفعل', 1; END
+
+            DECLARE @statusPausedID INT;
+            SELECT @statusPausedID = [ticketStatusID] FROM [Tickets].[TicketStatus]
+            WHERE [ticketStatusCode] = N'PAUSED' AND [ticketStatusActive] = 1;
+
+            IF @statusPausedID IS NULL
+            BEGIN ;THROW 50002, N'تعذر العثور على حالة PAUSED', 1; END
+
+            INSERT INTO [Tickets].[TicketPauseSession]
+            ( [ticketID_FK], [idaraID_FK], [pauseReasonID_FK]
+            , [pauseStart], [pauseEnd], [slaPauseFlag], [pauseNotes], [pauseNotes_A]
+            , [ticketPauseSessionActive], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, @pauseReasonID_FK
+            , GETDATE(), NULL, 1, @pauseNotesToSave, @pauseNotesToSave
+            , 1, @entryData, @hostName );
+
+            UPDATE [Tickets].[Ticket]
+            SET [ticketStatusID_FK] = @statusPausedID
+              , [entryData] = @entryData
+              , [hostName]  = @hostName
+            WHERE [ticketID] = @ticketID;
+
+            INSERT INTO [Tickets].[TicketHistory]
+            ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+            , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+            , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, N'PAUSED', @pOldStatus, @statusPausedID
+            , NULL, NULL, NULL, NULL
+            , @performerUserID, ISNULL(@notes, N'تم إيقاف التذكرة'), COALESCE(@notes_A, ISNULL(@notes, N'تم إيقاف التذكرة')), @entryData, @hostName );
+
+            SET @Note = N'{"ticketID":"' + CAST(@ticketID AS NVARCHAR(20))
+                + N'","pauseReasonID":"' + CAST(@pauseReasonID_FK AS NVARCHAR(20)) + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[Ticket]', N'PAUSE_TICKET', @ticketID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful, N'تم إيقاف التذكرة بنجاح' AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- RESUME_TICKET
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'RESUME_TICKET'
+        BEGIN
+            IF @ticketID IS NULL
+            BEGIN ;THROW 50001, N'معرف التذكرة مطلوب', 1; END
+
+            DECLARE @rmOldStatus INT;
+            SELECT @rmOldStatus = [ticketStatusID_FK] FROM [Tickets].[Ticket]
+            WHERE [ticketID] = @ticketID AND [ticketActive] = 1;
+
+            IF @rmOldStatus IS NULL
+            BEGIN ;THROW 50001, N'لم يتم العثور على تذكرة نشطة', 1; END
+
+            DECLARE @openPauseID BIGINT, @prevStatusID INT, @openPauseClarificationRequestID BIGINT;
+            SELECT TOP 1 @openPauseID = [ticketPauseSessionID]
+                         , @openPauseClarificationRequestID = [relatedClarificationRequestID_FK]
+            FROM [Tickets].[TicketPauseSession]
+            WHERE [ticketID_FK] = @ticketID AND [pauseEnd] IS NULL AND [ticketPauseSessionActive] = 1
+            ORDER BY [ticketPauseSessionID] DESC;
+
+            IF @openPauseID IS NULL
+            BEGIN ;THROW 50001, N'لم يتم العثور على جلسة إيقاف مفتوحة لهذه التذكرة', 1; END
+
+            IF @openPauseClarificationRequestID IS NOT NULL
+            BEGIN ;THROW 50001, N'استخدم إجراء الرد على التوضيح لإنهاء هذا الإيقاف', 1; END
+
+            SELECT TOP 1 @prevStatusID = [oldStatusID_FK]
+            FROM [Tickets].[TicketHistory]
+            WHERE [ticketID_FK] = @ticketID AND [actionTypeCode] = N'PAUSED'
+            ORDER BY [ticketHistoryID] DESC;
+
+            IF @prevStatusID IS NULL
+            BEGIN
+                SET @prevStatusID = @rmOldStatus;
+            END
+
+            UPDATE [Tickets].[TicketPauseSession]
+            SET [pauseEnd] = GETDATE()
+              , [ticketPauseSessionActive] = 0
+            WHERE [ticketPauseSessionID] = @openPauseID;
+
+            UPDATE [Tickets].[Ticket]
+            SET [ticketStatusID_FK] = @prevStatusID
+              , [entryData] = @entryData
+              , [hostName]  = @hostName
+            WHERE [ticketID] = @ticketID;
+
+            INSERT INTO [Tickets].[TicketHistory]
+            ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+            , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+            , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, N'RESUMED', @rmOldStatus, @prevStatusID
+            , NULL, NULL, NULL, NULL
+            , @performerUserID, ISNULL(@notes, N'تم استئناف التذكرة'), COALESCE(@notes_A, ISNULL(@notes, N'تم استئناف التذكرة')), @entryData, @hostName );
+
+            SET @Note = N'{"ticketID":"' + CAST(@ticketID AS NVARCHAR(20)) + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[Ticket]', N'RESUME_TICKET', @ticketID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful, N'تم استئناف التذكرة بنجاح' AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- REQUEST_CLARIFICATION
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'REQUEST_CLARIFICATION'
+        BEGIN
+            IF @ticketID IS NULL
+            BEGIN ;THROW 50001, N'معرف التذكرة مطلوب', 1; END
+            IF @clarificationReasonID_FK IS NULL
+            BEGIN ;THROW 50001, N'سبب طلب التوضيح مطلوب', 1; END
+            IF @requestedFromUserID IS NULL AND @requestedFromDSDID_FK IS NULL
+            BEGIN ;THROW 50001, N'يجب تحديد المستخدم أو الجهة المطلوب منها التوضيح', 1; END
+            IF NULLIF(LTRIM(RTRIM(@notesToSave)), N'') IS NULL
+            BEGIN ;THROW 50001, N'ملاحظات طلب التوضيح مطلوبة', 1; END
+
+            DECLARE @crOldStatus INT;
+            DECLARE @statusClarificationID INT;
+            DECLARE @clarificationPauseReasonID INT;
+
+            SELECT @crOldStatus = [ticketStatusID_FK]
+            FROM [Tickets].[Ticket]
+            WHERE [ticketID] = @ticketID
+              AND [ticketActive] = 1;
+
+            IF @crOldStatus IS NULL
+            BEGIN ;THROW 50001, N'لم يتم العثور على تذكرة نشطة', 1; END
+
+            SELECT @statusClarificationID = [ticketStatusID]
+            FROM [Tickets].[TicketStatus]
+            WHERE [ticketStatusCode] = N'CLARIFICATION'
+              AND [ticketStatusActive] = 1;
+
+            IF @statusClarificationID IS NULL
+            BEGIN ;THROW 50002, N'تعذر العثور على حالة CLARIFICATION', 1; END
+
+            IF @crOldStatus IN (
+                SELECT [ticketStatusID]
+                FROM [Tickets].[TicketStatus]
+                WHERE [ticketStatusCode] IN (N'RESOLVED', N'CLOSED', N'REJECTED')
+                  AND [ticketStatusActive] = 1
+            )
+            BEGIN ;THROW 50001, N'لا يمكن طلب توضيح لتذكرة منتهية أو مغلقة', 1; END
+
+            IF @crOldStatus = @statusClarificationID
+            BEGIN ;THROW 50001, N'التذكرة في حالة طلب توضيح بالفعل', 1; END
+
+            IF EXISTS (
+                SELECT 1
+                FROM [Tickets].[ClarificationRequest]
+                WHERE [ticketID_FK] = @ticketID
+                  AND ISNULL([clarificationActive], 1) = 1
+                  AND [clarificationStatus] = N'OPEN'
+            )
+            BEGIN ;THROW 50001, N'يوجد طلب توضيح مفتوح لهذه التذكرة بالفعل', 1; END
+
+            IF EXISTS (
+                SELECT 1
+                FROM [Tickets].[TicketPauseSession]
+                WHERE [ticketID_FK] = @ticketID
+                  AND [pauseEnd] IS NULL
+                  AND [ticketPauseSessionActive] = 1
+            )
+            BEGIN ;THROW 50001, N'لا يمكن طلب توضيح بينما التذكرة موقفة بالفعل', 1; END
+
+            IF NOT EXISTS (
+                SELECT 1
+                FROM [Tickets].[ClarificationReason]
+                WHERE [clarificationReasonID] = @clarificationReasonID_FK
+                  AND [clarificationReasonActive] = 1
+            )
+            BEGIN ;THROW 50001, N'سبب طلب التوضيح المحدد غير صالح', 1; END
+
+            IF @requestedFromDSDID_FK IS NOT NULL
+               AND NOT EXISTS (
+                    SELECT 1
+                    FROM dbo.[V_GetFullStructureForDSD] f
+                    WHERE f.[DSDID] = @requestedFromDSDID_FK
+                      AND (@idaraID_FK IS NULL OR f.[IdaraID] = @idaraID_FK)
+               )
+            BEGIN ;THROW 50001, N'الجهة المطلوب منها التوضيح غير صالحة', 1; END
+
+            SELECT @clarificationPauseReasonID = [pauseReasonID]
+            FROM [Tickets].[PauseReason]
+            WHERE [pauseReasonCode] = N'CLARIFICATION'
+              AND [pauseReasonActive] = 1;
+
+            IF @clarificationPauseReasonID IS NULL
+            BEGIN ;THROW 50002, N'تعذر العثور على سبب الإيقاف CLARIFICATION', 1; END
+
+            INSERT INTO [Tickets].[ClarificationRequest]
+            ( [ticketID_FK], [idaraID_FK], [requestedByUserID], [requestedFromUserID], [requestedFromDSDID_FK]
+            , [clarificationReasonID_FK], [requestNotes], [responseNotes], [clarificationStatus], [clarificationActive], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, @performerUserID, @requestedFromUserID, @requestedFromDSDID_FK
+            , @clarificationReasonID_FK, @notesToSave, NULL, N'OPEN', 1, @entryData, @hostName );
+
+            SET @NewID = SCOPE_IDENTITY();
+
+            INSERT INTO [Tickets].[TicketPauseSession]
+            ( [ticketID_FK], [idaraID_FK], [pauseReasonID_FK], [relatedClarificationRequestID_FK]
+            , [pauseStart], [pauseEnd], [slaPauseFlag], [pauseNotes], [pauseNotes_A]
+            , [ticketPauseSessionActive], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, @clarificationPauseReasonID, @NewID
+            , GETDATE(), NULL, 1, @pauseNotesToSave, @pauseNotesToSave
+            , 1, @entryData, @hostName );
+
+            UPDATE [Tickets].[Ticket]
+            SET [ticketStatusID_FK] = @statusClarificationID
+              , [entryData] = @entryData
+              , [hostName]  = @hostName
+            WHERE [ticketID] = @ticketID;
+
+            INSERT INTO [Tickets].[TicketHistory]
+            ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+            , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+            , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, N'CLARIFICATION_REQUESTED', @crOldStatus, @statusClarificationID
+            , NULL, NULL, NULL, NULL
+            , @performerUserID, ISNULL(@notes, N'تم طلب توضيح للتذكرة'), COALESCE(@notes_A, ISNULL(@notes, N'تم طلب توضيح للتذكرة')), @entryData, @hostName );
+
+            SET @Note = N'{"ticketID":"' + CAST(@ticketID AS NVARCHAR(20))
+                + N'","clarificationRequestID":"' + CAST(@NewID AS NVARCHAR(20)) + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[ClarificationRequest]', N'REQUEST_CLARIFICATION', @NewID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful, N'تم إرسال طلب التوضيح بنجاح' AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- RESPOND_CLARIFICATION
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'RESPOND_CLARIFICATION'
+        BEGIN
+            IF @clarificationRequestID IS NULL
+            BEGIN ;THROW 50001, N'معرف طلب التوضيح مطلوب', 1; END
+            IF NULLIF(LTRIM(RTRIM(@notesToSave)), N'') IS NULL
+            BEGIN ;THROW 50001, N'ملاحظات الرد على التوضيح مطلوبة', 1; END
+
+            DECLARE @responseTicketID BIGINT;
+            DECLARE @responseClarificationStatus NVARCHAR(50);
+            DECLARE @responseTicketStatus INT;
+            DECLARE @responseResumeStatusID INT;
+            DECLARE @responseOtherOpenClarifications INT;
+            DECLARE @responseOtherOpenPauses INT;
+            DECLARE @responseAssignedUserID INT;
+            DECLARE @responseClarificationStatusID INT;
+            DECLARE @responsePausedStatusID INT;
+            DECLARE @responseAssignedStatusID INT;
+            DECLARE @responseRoutedStatusID INT;
+
+            SELECT @responseTicketID = [ticketID_FK]
+                 , @responseClarificationStatus = [clarificationStatus]
+            FROM [Tickets].[ClarificationRequest]
+            WHERE [clarificationRequestID] = @clarificationRequestID
+              AND ISNULL([clarificationActive], 1) = 1;
+
+            IF @responseTicketID IS NULL
+            BEGIN ;THROW 50001, N'لم يتم العثور على طلب التوضيح', 1; END
+
+            IF @responseClarificationStatus <> N'OPEN'
+            BEGIN ;THROW 50001, N'طلب التوضيح ليس في حالة OPEN', 1; END
+
+            SELECT @responseClarificationStatusID = [ticketStatusID]
+            FROM [Tickets].[TicketStatus]
+            WHERE [ticketStatusCode] = N'CLARIFICATION'
+              AND [ticketStatusActive] = 1;
+
+            IF @responseClarificationStatusID IS NULL
+            BEGIN ;THROW 50002, N'تعذر العثور على حالة CLARIFICATION', 1; END
+
+            SELECT @responseTicketStatus = [ticketStatusID_FK]
+                 , @responseAssignedUserID = [assignedUserID_FK]
+            FROM [Tickets].[Ticket]
+            WHERE [ticketID] = @responseTicketID
+              AND [ticketActive] = 1;
+
+            IF @responseTicketStatus IS NULL
+            BEGIN ;THROW 50001, N'لم يتم العثور على التذكرة المرتبطة بطلب التوضيح', 1; END
+
+            UPDATE [Tickets].[ClarificationRequest]
+            SET [responseNotes] = @notesToSave
+              , [responseDate] = GETDATE()
+              , [clarificationStatus] = N'RESPONDED'
+              , [entryData] = @entryData
+              , [hostName]  = @hostName
+            WHERE [clarificationRequestID] = @clarificationRequestID;
+
+            UPDATE [Tickets].[TicketPauseSession]
+            SET [pauseEnd] = GETDATE()
+              , [ticketPauseSessionActive] = 0
+              , [entryData] = @entryData
+              , [hostName]  = @hostName
+            WHERE [ticketID_FK] = @responseTicketID
+              AND [relatedClarificationRequestID_FK] = @clarificationRequestID
+              AND [pauseEnd] IS NULL
+              AND [ticketPauseSessionActive] = 1;
+
+            SELECT @responseOtherOpenClarifications = COUNT(*)
+            FROM [Tickets].[ClarificationRequest]
+            WHERE [ticketID_FK] = @responseTicketID
+              AND [clarificationRequestID] <> @clarificationRequestID
+              AND ISNULL([clarificationActive], 1) = 1
+              AND [clarificationStatus] = N'OPEN';
+
+            SELECT @responseOtherOpenPauses = COUNT(*)
+            FROM [Tickets].[TicketPauseSession]
+            WHERE [ticketID_FK] = @responseTicketID
+              AND [pauseEnd] IS NULL
+              AND [ticketPauseSessionActive] = 1;
+
+            SET @responseResumeStatusID = @responseTicketStatus;
+
+            IF ISNULL(@responseOtherOpenClarifications, 0) = 0
+               AND @responseTicketStatus = @responseClarificationStatusID
+            BEGIN
+                IF ISNULL(@responseOtherOpenPauses, 0) > 0
+                BEGIN
+                    SELECT @responsePausedStatusID = [ticketStatusID]
+                    FROM [Tickets].[TicketStatus]
+                    WHERE [ticketStatusCode] = N'PAUSED'
+                      AND [ticketStatusActive] = 1;
+
+                    SET @responseResumeStatusID = ISNULL(@responsePausedStatusID, @responseTicketStatus);
+                END
+                ELSE
+                BEGIN
+                    SELECT TOP 1 @responseResumeStatusID = [oldStatusID_FK]
+                    FROM [Tickets].[TicketHistory]
+                    WHERE [ticketID_FK] = @responseTicketID
+                      AND [actionTypeCode] = N'CLARIFICATION_REQUESTED'
+                      AND [oldStatusID_FK] IS NOT NULL
+                      AND [oldStatusID_FK] <> @responseClarificationStatusID
+                    ORDER BY [ticketHistoryID] DESC;
+
+                    IF @responseResumeStatusID IS NULL
+                    BEGIN
+                        SELECT @responseAssignedStatusID = [ticketStatusID]
+                        FROM [Tickets].[TicketStatus]
+                        WHERE [ticketStatusCode] = N'ASSIGNED'
+                          AND [ticketStatusActive] = 1;
+
+                        SELECT @responseRoutedStatusID = [ticketStatusID]
+                        FROM [Tickets].[TicketStatus]
+                        WHERE [ticketStatusCode] = N'ROUTED'
+                          AND [ticketStatusActive] = 1;
+
+                        SET @responseResumeStatusID = CASE
+                            WHEN @responseAssignedUserID IS NOT NULL THEN @responseAssignedStatusID
+                            ELSE @responseRoutedStatusID
+                        END;
+                    END
+                END
+
+                UPDATE [Tickets].[Ticket]
+                SET [ticketStatusID_FK] = ISNULL(@responseResumeStatusID, @responseTicketStatus)
+                  , [entryData] = @entryData
+                  , [hostName]  = @hostName
+                WHERE [ticketID] = @responseTicketID;
+            END
+
+            INSERT INTO [Tickets].[TicketHistory]
+            ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+            , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+            , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+            VALUES
+            ( @responseTicketID, @idaraID_FK, N'CLARIFICATION_RESPONDED', @responseTicketStatus, ISNULL(@responseResumeStatusID, @responseTicketStatus)
+            , NULL, NULL, NULL, NULL
+            , @performerUserID, ISNULL(@notes, N'تم الرد على طلب التوضيح'), COALESCE(@notes_A, ISNULL(@notes, N'تم الرد على طلب التوضيح')), @entryData, @hostName );
+
+            SET @Note = N'{"ticketID":"' + CAST(@responseTicketID AS NVARCHAR(20))
+                + N'","clarificationRequestID":"' + CAST(@clarificationRequestID AS NVARCHAR(20)) + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[ClarificationRequest]', N'RESPOND_CLARIFICATION', @clarificationRequestID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful, N'تم تسجيل الرد على طلب التوضيح بنجاح' AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- CREATE_CHILD_TICKET
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'CREATE_CHILD_TICKET'
+        BEGIN
+            IF @parentTicketID_FK IS NULL OR @parentTicketID_FK <= 0
+            BEGIN ;THROW 50001, N'معرف التذكرة الأصلية مطلوب للتذاكر الفرعية', 1; END
+
+          IF NULLIF(LTRIM(RTRIM(@titleToSave)), N'') IS NULL
+            BEGIN ;THROW 50001, N'العنوان مطلوب', 1; END
+
+            IF @idaraID_FK IS NULL
+            BEGIN ;THROW 50001, N'معرف الإدارة مطلوب', 1; END
+
+            DECLARE @parentExists BIT = 0;
+            DECLARE @parentRootID BIGINT;
+            DECLARE @parentSvcID BIGINT;
+            DECLARE @parentAllowsChild BIT = 0;
+
+            SELECT @parentExists = 1
+                 , @parentRootID = [rootTicketID_FK]
+                 , @parentSvcID = [serviceID_FK]
+            FROM [Tickets].[Ticket]
+            WHERE [ticketID] = @parentTicketID_FK AND [ticketActive] = 1;
+
+            IF @parentExists = 0
+            BEGIN ;THROW 50001, N'لم يتم العثور على التذكرة الأصلية أو أنها غير نشطة', 1; END
+
+            SELECT @parentAllowsChild = ISNULL([allowsChildTickets], 0)
+            FROM [Tickets].[Service]
+            WHERE [serviceID] = @parentSvcID AND [serviceActive] = 1;
+
+            IF @parentAllowsChild = 0
+            BEGIN ;THROW 50001, N'خدمة التذكرة الأصلية لا تسمح بإنشاء تذاكر فرعية', 1; END
+
+            DECLARE @childYr NVARCHAR(4) = CONVERT(NVARCHAR(4), YEAR(GETDATE()));
+            DECLARE @childSeq INT;
+            SELECT @childSeq = ISNULL(MAX(CAST(RIGHT([ticketNo], 5) AS INT)), 0) + 1
+            FROM [Tickets].[Ticket]
+            WHERE [ticketNo] LIKE N'TKT-' + @childYr + N'-%';
+
+            SET @NewTicketNo = N'TKT-' + @childYr + N'-' + RIGHT(N'00000' + CAST(@childSeq AS NVARCHAR(10)), 5);
+
+            DECLARE @childStatusNewID INT;
+            SELECT @childStatusNewID = [ticketStatusID] FROM [Tickets].[TicketStatus]
+            WHERE [ticketStatusCode] = N'NEW' AND [ticketStatusActive] = 1;
+
+            INSERT INTO [Tickets].[Ticket]
+            (
+                  [ticketNo], [idaraID_FK], [parentTicketID_FK], [rootTicketID_FK]
+                , [serviceID_FK], [ticketClassID_FK], [requesterTypeID_FK]
+                , [requesterUserID_FK], [requesterResidentID_FK]
+                , [title], [title_A], [description_], [description_A]
+                , [suggestedPriorityID_FK], [effectivePriorityID_FK], [ticketStatusID_FK]
+                , [currentDSDID_FK], [currentQueueDistributorID_FK], [assignedUserID_FK]
+                , [locationBuildingNo], [locationUnitNo], [locationArea], [locationArea_A]
+                , [operationalResolutionDate], [finalClosureDate]
+                , [requiresQualityReview], [isOtherService], [isParentBlocked], [ticketActive]
+                , [entryData], [hostName]
+            )
+            VALUES
+            (
+                  @NewTicketNo, @idaraID_FK, @parentTicketID_FK, @parentRootID
+                , @serviceID_FK, @ticketClassID_FK, @requesterTypeID_FK
+                , @requesterUserID_FK, @requesterResidentID_FK
+                , @titleToSave, @titleToSave, @descriptionToSave, @descriptionToSave
+                , @suggestedPriorityID_FK, @suggestedPriorityID_FK, @childStatusNewID
+                , @currentDSDID_FK, @currentQueueDistributorID_FK, @assignedUserID_FK
+                , @locationBuildingNo, @locationUnitNo, @locationAreaToSave, @locationAreaToSave
+                , NULL, NULL
+                , 0, 0, 0, 1
+                , @entryData, @hostName
+            );
+
+            SET @NewID = SCOPE_IDENTITY();
+            IF @NewID IS NULL OR @NewID <= 0
+            BEGIN ;THROW 50002, N'فشل إنشاء التذكرة الفرعية', 1; END
+
+            SELECT @ParentCurrentStatus = [ticketStatusID_FK]
+            FROM [Tickets].[Ticket]
+            WHERE [ticketID] = @parentTicketID_FK;
+
+            SELECT @PausedStatusID = [ticketStatusID]
+            FROM [Tickets].[TicketStatus]
+            WHERE [ticketStatusCode] = N'PAUSED'
+              AND [ticketStatusActive] = 1;
+
+            UPDATE [Tickets].[Ticket]
+            SET [isParentBlocked] = 1
+              , [entryData] = @entryData
+              , [hostName]  = @hostName
+            WHERE [ticketID] = @parentTicketID_FK;
+
+            IF @PausedStatusID IS NOT NULL
+               AND @ParentCurrentStatus IS NOT NULL
+               AND @ParentCurrentStatus <> @PausedStatusID
+            BEGIN
+                UPDATE [Tickets].[Ticket]
+                SET [ticketStatusID_FK] = @PausedStatusID
+                  , [entryData] = @entryData
+                  , [hostName]  = @hostName
+                WHERE [ticketID] = @parentTicketID_FK;
+
+                INSERT INTO [Tickets].[TicketHistory]
+                ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+                , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+                , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+                VALUES
+                ( @parentTicketID_FK, @idaraID_FK, N'PAUSED', @ParentCurrentStatus, @PausedStatusID
+                , NULL, NULL, NULL, NULL
+                , @performerUserID, N'تم إيقاف التذكرة الأصلية تلقائياً بسبب إنشاء تذكرة فرعية', N'تم إيقاف التذكرة الأصلية تلقائياً بسبب إنشاء تذكرة فرعية', @entryData, @hostName );
+            END
+
+            INSERT INTO [Tickets].[TicketPauseSession]
+            ( [ticketID_FK], [idaraID_FK], [pauseReasonID_FK], [relatedChildTicketID_FK]
+            , [pauseStart], [pauseEnd], [slaPauseFlag], [pauseNotes], [pauseNotes_A]
+            , [ticketPauseSessionActive], [entryData], [hostName] )
+            VALUES
+            ( @parentTicketID_FK, @idaraID_FK, 1, @NewID
+            , GETDATE(), NULL, 1, N'إيقاف تلقائي: تم إنشاء تذكرة فرعية', N'إيقاف تلقائي: تم إنشاء تذكرة فرعية'
+            , 1, @entryData, @hostName );
+
+            INSERT INTO [Tickets].[TicketHistory]
+            ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+            , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+            , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+            VALUES
+            ( @NewID, @idaraID_FK, N'CREATED', NULL, @childStatusNewID
+            , NULL, @currentDSDID_FK, NULL, NULL
+            , @performerUserID, N'تم إنشاء تذكرة فرعية', COALESCE(@notes_A, N'تم إنشاء تذكرة فرعية'), @entryData, @hostName );
+
+            SET @Note = N'{"ticketID":"' + CAST(@NewID AS NVARCHAR(20))
+                + N'","ticketNo":"' + ISNULL(@NewTicketNo, N'') + N''
+                + N'","parentTicketID":"' + CAST(@parentTicketID_FK AS NVARCHAR(20)) + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[Ticket]', N'CREATE_CHILD_TICKET', @NewID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful
+                 , N'تم إنشاء تذكرة فرعية: ' + @NewTicketNo AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- SUBMIT_QUALITY_REVIEW
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'SUBMIT_QUALITY_REVIEW'
+        BEGIN
+            IF @ticketID IS NULL
+            BEGIN ;THROW 50001, N'معرف التذكرة مطلوب', 1; END
+            IF @qualityReviewResultID_FK IS NULL
+            BEGIN ;THROW 50001, N'معرف نتيجة مراجعة الجودة مطلوب', 1; END
+
+            IF NOT EXISTS (SELECT 1 FROM [Tickets].[Ticket] WHERE [ticketID] = @ticketID AND [ticketActive] = 1)
+            BEGIN ;THROW 50001, N'لم يتم العثور على تذكرة نشطة', 1; END
+
+            INSERT INTO [Tickets].[QualityReview]
+            ( [ticketID_FK], [idaraID_FK], [reviewerUserID], [reviewScope]
+            , [qualityReviewResultID_FK], [reviewNotes], [returnToUserID], [finalized]
+            , [qualityReviewActive], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, @performerUserID, @reviewScope
+            , @qualityReviewResultID_FK, @reviewNotes, @returnToUserID, 0
+            , 1, @entryData, @hostName );
+
+            SET @NewID = SCOPE_IDENTITY();
+
+            INSERT INTO [Tickets].[TicketHistory]
+            ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+            , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+            , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, N'QUALITY_REVIEW', NULL, NULL
+            , NULL, NULL, NULL, NULL
+            , @performerUserID, ISNULL(@reviewNotes, N'تم إرسال مراجعة الجودة'), COALESCE(@notes_A, ISNULL(@reviewNotes, N'تم إرسال مراجعة الجودة')), @entryData, @hostName );
+
+            SET @Note = N'{"ticketID":"' + CAST(@ticketID AS NVARCHAR(20))
+                + N'","qualityReviewID":"' + CAST(@NewID AS NVARCHAR(20)) + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[QualityReview]', N'SUBMIT_QUALITY_REVIEW', @NewID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful, N'تم إرسال مراجعة الجودة' AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- FINALIZE_QUALITY_REVIEW
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'FINALIZE_QUALITY_REVIEW'
+        BEGIN
+            IF @ticketID IS NULL
+            BEGIN ;THROW 50001, N'معرف التذكرة مطلوب', 1; END
+
+            DECLARE @qrID BIGINT, @qrResultID INT, @qrReturnTo INT;
+            SELECT TOP 1 @qrID = [qualityReviewID], @qrResultID = [qualityReviewResultID_FK], @qrReturnTo = [returnToUserID]
+            FROM [Tickets].[QualityReview]
+            WHERE [ticketID_FK] = @ticketID AND [finalized] = 0 AND [qualityReviewActive] = 1
+            ORDER BY [qualityReviewID] DESC;
+
+            IF @qrID IS NULL
+            BEGIN ;THROW 50001, N'لم يتم العثور على مراجعة جودة معلقة لهذه التذكرة', 1; END
+
+            DECLARE @qrOldStatus INT;
+            SELECT @qrOldStatus = [ticketStatusID_FK] FROM [Tickets].[Ticket]
+            WHERE [ticketID] = @ticketID AND [ticketActive] = 1;
+
+            DECLARE @qrResultCode NVARCHAR(50);
+            SELECT @qrResultCode = [qualityReviewResultCode] FROM [Tickets].[QualityReviewResult]
+            WHERE [qualityReviewResultID] = @qrResultID;
+
+            UPDATE [Tickets].[QualityReview]
+            SET [finalized] = 1
+              , [reviewNotes] = ISNULL(@reviewNotes, [reviewNotes])
+              , [entryData] = @entryData
+              , [hostName]  = @hostName
+            WHERE [qualityReviewID] = @qrID;
+
+            IF @qrResultCode = N'APPROVED'
+            BEGIN
+                IF EXISTS (
+                    SELECT 1
+                    FROM [Tickets].[Ticket] child
+                    WHERE child.[parentTicketID_FK] = @ticketID
+                      AND child.[ticketActive] = 1
+                      AND child.[ticketStatusID_FK] NOT IN (
+                            SELECT [ticketStatusID]
+                            FROM [Tickets].[TicketStatus]
+                            WHERE [ticketStatusCode] IN (N'RESOLVED', N'CLOSED', N'REJECTED')
+                              AND [ticketStatusActive] = 1
+                      )
+                )
+                BEGIN ;THROW 50001, N'لا يمكن اعتماد مراجعة الجودة مع وجود تذاكر فرعية مفتوحة', 1; END
+
+                DECLARE @qrCloseID INT;
+                SELECT @qrCloseID = [ticketStatusID] FROM [Tickets].[TicketStatus]
+                WHERE [ticketStatusCode] = N'CLOSED' AND [ticketStatusActive] = 1;
+
+                UPDATE [Tickets].[Ticket]
+                SET [ticketStatusID_FK] = @qrCloseID, [finalClosureDate] = GETDATE()
+                  , [entryData] = @entryData
+                  , [hostName]  = @hostName
+                WHERE [ticketID] = @ticketID;
+
+                INSERT INTO [Tickets].[TicketHistory]
+                ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+                , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+                , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+                VALUES
+                ( @ticketID, @idaraID_FK, N'QUALITY_APPROVED', @qrOldStatus, @qrCloseID
+                , NULL, NULL, NULL, NULL
+                , @performerUserID, N'تم اعتماد مراجعة الجودة - تم إغلاق التذكرة', COALESCE(@notes_A, N'تم اعتماد مراجعة الجودة - تم إغلاق التذكرة'), @entryData, @hostName );
+
+                SET @ParentTicketToUpdate = NULL;
+                SET @RemainingOpenChildren = 0;
+                SET @ParentCurrentStatus = NULL;
+                SET @PausedStatusID = NULL;
+                SET @ResumeStatusID = NULL;
+
+                SELECT @ParentTicketToUpdate = [parentTicketID_FK]
+                FROM [Tickets].[Ticket]
+                WHERE [ticketID] = @ticketID;
+
+                IF @ParentTicketToUpdate IS NOT NULL
+                BEGIN
+                    SELECT @RemainingOpenChildren = COUNT(*)
+                    FROM [Tickets].[Ticket] child
+                    WHERE child.[parentTicketID_FK] = @ParentTicketToUpdate
+                      AND child.[ticketActive] = 1
+                      AND child.[ticketStatusID_FK] NOT IN (
+                            SELECT [ticketStatusID]
+                            FROM [Tickets].[TicketStatus]
+                            WHERE [ticketStatusCode] IN (N'RESOLVED', N'CLOSED', N'REJECTED')
+                              AND [ticketStatusActive] = 1
+                      );
+
+                    IF ISNULL(@RemainingOpenChildren, 0) = 0
+                    BEGIN
+                        UPDATE [Tickets].[Ticket]
+                        SET [isParentBlocked] = 0
+                          , [entryData] = @entryData
+                          , [hostName]  = @hostName
+                        WHERE [ticketID] = @ParentTicketToUpdate;
+
+                        UPDATE [Tickets].[TicketPauseSession]
+                        SET [pauseEnd] = GETDATE()
+                          , [ticketPauseSessionActive] = 0
+                          , [entryData] = @entryData
+                          , [hostName]  = @hostName
+                        WHERE [ticketID_FK] = @ParentTicketToUpdate
+                          AND [relatedChildTicketID_FK] IS NOT NULL
+                          AND [pauseEnd] IS NULL;
+
+                        SELECT @ParentCurrentStatus = [ticketStatusID_FK]
+                        FROM [Tickets].[Ticket]
+                        WHERE [ticketID] = @ParentTicketToUpdate;
+
+                        SELECT @PausedStatusID = [ticketStatusID]
+                        FROM [Tickets].[TicketStatus]
+                        WHERE [ticketStatusCode] = N'PAUSED'
+                          AND [ticketStatusActive] = 1;
+
+                        IF @ParentCurrentStatus = @PausedStatusID
+                           AND NOT EXISTS (
+                                SELECT 1
+                                FROM [Tickets].[TicketPauseSession]
+                                WHERE [ticketID_FK] = @ParentTicketToUpdate
+                                  AND [pauseEnd] IS NULL
+                                  AND [ticketPauseSessionActive] = 1
+                           )
+                        BEGIN
+                            SELECT TOP 1 @ResumeStatusID = [oldStatusID_FK]
+                            FROM [Tickets].[TicketHistory]
+                            WHERE [ticketID_FK] = @ParentTicketToUpdate
+                              AND [actionTypeCode] = N'PAUSED'
+                            ORDER BY [ticketHistoryID] DESC;
+
+                            UPDATE [Tickets].[Ticket]
+                            SET [ticketStatusID_FK] = ISNULL(@ResumeStatusID, @ParentCurrentStatus)
+                              , [entryData] = @entryData
+                              , [hostName]  = @hostName
+                            WHERE [ticketID] = @ParentTicketToUpdate;
+
+                            INSERT INTO [Tickets].[TicketHistory]
+                            ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+                            , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+                            , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+                            VALUES
+                            ( @ParentTicketToUpdate, @idaraID_FK, N'RESUMED', @ParentCurrentStatus, ISNULL(@ResumeStatusID, @ParentCurrentStatus)
+                            , NULL, NULL, NULL, NULL
+                            , @performerUserID, N'تم استئناف التذكرة الأصلية تلقائياً بعد اكتمال التذاكر الفرعية', N'تم استئناف التذكرة الأصلية تلقائياً بعد اكتمال التذاكر الفرعية', @entryData, @hostName );
+                        END
+                    END
+                END
+            END
+            ELSE IF @qrResultCode IN (N'RETURN_CORRECTION', N'REJECTED')
+            BEGIN
+                DECLARE @qrInProgressID INT;
+                SELECT @qrInProgressID = [ticketStatusID] FROM [Tickets].[TicketStatus]
+                WHERE [ticketStatusCode] = N'IN_PROGRESS' AND [ticketStatusActive] = 1;
+
+                UPDATE [Tickets].[Ticket]
+                SET [ticketStatusID_FK] = @qrInProgressID
+                  , [assignedUserID_FK] = ISNULL(@qrReturnTo, [assignedUserID_FK])
+                  , [entryData] = @entryData
+                  , [hostName]  = @hostName
+                WHERE [ticketID] = @ticketID;
+
+                INSERT INTO [Tickets].[TicketHistory]
+                ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+                , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+                , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+                VALUES
+                ( @ticketID, @idaraID_FK, N'QUALITY_RETURNED', @qrOldStatus, @qrInProgressID
+                , NULL, NULL, NULL, @qrReturnTo
+                , @performerUserID, N'تم إرجاع مراجعة الجودة للتصحيح', COALESCE(@notes_A, N'تم إرجاع مراجعة الجودة للتصحيح'), @entryData, @hostName );
+            END
+            ELSE IF @qrResultCode = N'ESCALATED'
+            BEGIN
+                DECLARE @qrArbID INT;
+                SELECT @qrArbID = [ticketStatusID] FROM [Tickets].[TicketStatus]
+                WHERE [ticketStatusCode] = N'ARBITRATION' AND [ticketStatusActive] = 1;
+
+                UPDATE [Tickets].[Ticket]
+                SET [ticketStatusID_FK] = @qrArbID
+                  , [entryData] = @entryData
+                  , [hostName]  = @hostName
+                WHERE [ticketID] = @ticketID;
+
+                INSERT INTO [Tickets].[TicketHistory]
+                ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+                , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+                , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+                VALUES
+                ( @ticketID, @idaraID_FK, N'QUALITY_ESCALATED', @qrOldStatus, @qrArbID
+                , NULL, NULL, NULL, NULL
+                , @performerUserID, N'تم تصعيد مراجعة الجودة إلى التحكيم', COALESCE(@notes_A, N'تم تصعيد مراجعة الجودة إلى التحكيم'), @entryData, @hostName );
+            END
+
+            SET @Note = N'{"ticketID":"' + CAST(@ticketID AS NVARCHAR(20))
+                + N'","qualityReviewID":"' + CAST(@qrID AS NVARCHAR(20))
+                + N'","result":"' + ISNULL(@qrResultCode, N'') + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[QualityReview]', N'FINALIZE_QUALITY_REVIEW', @qrID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful, N'تم إنهاء مراجعة الجودة' AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- RAISE_ARBITRATION
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'RAISE_ARBITRATION'
+        BEGIN
+            IF @ticketID IS NULL
+            BEGIN ;THROW 50001, N'معرف التذكرة مطلوب', 1; END
+            IF @arbitrationReasonID_FK IS NULL
+            BEGIN ;THROW 50001, N'معرف سبب التحكيم مطلوب', 1; END
+
+            DECLARE @abOldStatus INT, @abOldDSD INT;
+            SELECT @abOldStatus = [ticketStatusID_FK], @abOldDSD = [currentDSDID_FK]
+            FROM [Tickets].[Ticket] WHERE [ticketID] = @ticketID AND [ticketActive] = 1;
+
+            IF @abOldStatus IS NULL
+            BEGIN ;THROW 50001, N'لم يتم العثور على تذكرة نشطة', 1; END
+
+            DECLARE @statusArbID INT;
+            SELECT @statusArbID = [ticketStatusID] FROM [Tickets].[TicketStatus]
+            WHERE [ticketStatusCode] = N'ARBITRATION' AND [ticketStatusActive] = 1;
+
+            IF @statusArbID IS NULL
+            BEGIN ;THROW 50002, N'تعذر العثور على حالة ARBITRATION', 1; END
+
+            INSERT INTO [Tickets].[ArbitrationCase]
+            ( [ticketID_FK], [idaraID_FK], [raisedByUserID], [raisedFromDSDID_FK]
+            , [arbitrationReasonID_FK], [arbitratorDistributorID]
+            , [arbitrationStatus], [decisionType], [decisionNotes]
+            , [arbitrationCaseActive], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, @performerUserID, @abOldDSD
+            , @arbitrationReasonID_FK, @arbitratorDistributorID
+            , N'OPEN', NULL, @notes
+            , 1, @entryData, @hostName );
+
+            SET @NewID = SCOPE_IDENTITY();
+
+            INSERT INTO [Tickets].[TicketPauseSession]
+            ( [ticketID_FK], [idaraID_FK], [pauseReasonID_FK], [relatedArbitrationCaseID_FK]
+            , [pauseStart], [pauseEnd], [slaPauseFlag], [pauseNotes], [pauseNotes_A]
+            , [ticketPauseSessionActive], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, 2, @NewID
+            , GETDATE(), NULL, 1, N'إيقاف تلقائي: تم التصعيد للتحكيم', N'إيقاف تلقائي: تم التصعيد للتحكيم'
+            , 1, @entryData, @hostName );
+
+            UPDATE [Tickets].[Ticket]
+            SET [ticketStatusID_FK] = @statusArbID
+              , [entryData] = @entryData
+              , [hostName]  = @hostName
+            WHERE [ticketID] = @ticketID;
+
+            INSERT INTO [Tickets].[TicketHistory]
+            ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+            , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+            , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, N'ARBITRATION', @abOldStatus, @statusArbID
+            , NULL, NULL, NULL, NULL
+            , @performerUserID, ISNULL(@notes, N'تم رفع التحكيم'), COALESCE(@notes_A, ISNULL(@notes, N'تم رفع التحكيم')), @entryData, @hostName );
+
+            SET @Note = N'{"ticketID":"' + CAST(@ticketID AS NVARCHAR(20))
+                + N'","arbitrationCaseID":"' + CAST(@NewID AS NVARCHAR(20)) + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[ArbitrationCase]', N'RAISE_ARBITRATION', @NewID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful, N'تم رفع حالة التحكيم بنجاح' AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- DECIDE_ARBITRATION
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'DECIDE_ARBITRATION'
+        BEGIN
+            IF @arbitrationCaseID IS NULL
+            BEGIN ;THROW 50001, N'معرف قضية التحكيم مطلوب', 1; END
+            IF @decisionType IS NULL
+            BEGIN ;THROW 50001, N'نوع القرار مطلوب', 1; END
+
+            DECLARE @daTicketID BIGINT, @daStatus NVARCHAR(50);
+            SELECT @daTicketID = [ticketID_FK], @daStatus = [arbitrationStatus]
+            FROM [Tickets].[ArbitrationCase]
+            WHERE [arbitrationCaseID] = @arbitrationCaseID AND [arbitrationCaseActive] = 1;
+
+            IF @daTicketID IS NULL
+            BEGIN ;THROW 50001, N'لم يتم العثور على قضية تحكيم نشطة', 1; END
+            IF @daStatus <> N'OPEN'
+            BEGIN ;THROW 50001, N'قضية التحكيم ليست في حالة OPEN', 1; END
+
+            UPDATE [Tickets].[ArbitrationCase]
+            SET [arbitrationStatus] = N'DECIDED'
+              , [decisionType] = @decisionType
+              , [decisionTargetDSDID_FK] = @decisionTargetDSDID_FK
+              , [decisionNotes] = @decisionNotes
+              , [decisionDate] = GETDATE()
+              , [entryData] = @entryData
+              , [hostName]  = ISNULL(ISNULL([hostName],N'') + N',' + [hostName], [hostName])
+            WHERE [arbitrationCaseID] = @arbitrationCaseID;
+
+            DECLARE @daOldStatus INT, @daOldDSD INT;
+            SELECT @daOldStatus = [ticketStatusID_FK], @daOldDSD = [currentDSDID_FK]
+            FROM [Tickets].[Ticket] WHERE [ticketID] = @daTicketID;
+
+            DECLARE @daPrevStatus INT;
+            SELECT TOP 1 @daPrevStatus = [oldStatusID_FK]
+            FROM [Tickets].[TicketHistory]
+            WHERE [ticketID_FK] = @daTicketID AND [actionTypeCode] = N'ARBITRATION'
+            ORDER BY [ticketHistoryID] DESC;
+
+            IF @decisionType = N'REDIRECT' AND @decisionTargetDSDID_FK IS NOT NULL
+            BEGIN
+                UPDATE [Tickets].[Ticket]
+                SET [currentDSDID_FK] = @decisionTargetDSDID_FK
+                  , [ticketStatusID_FK] = ISNULL(@daPrevStatus, @daOldStatus)
+                  , [entryData] = @entryData
+                  , [hostName]  = @hostName
+                WHERE [ticketID] = @daTicketID;
+
+                INSERT INTO [Tickets].[CatalogRoutingChangeLog]
+                ( [serviceID_FK], [idaraID_FK], [oldRoutingRuleID_FK], [newRoutingRuleID_FK]
+                , [changeReason], [sourceArbitrationCaseID_FK], [approvedByUserID]
+                , [effectiveFrom] )
+                SELECT t.[serviceID_FK], t.[idaraID_FK], NULL, NULL
+                , @decisionNotes, @arbitrationCaseID, @performerUserID
+                , GETDATE()
+                FROM [Tickets].[Ticket] t WHERE t.[ticketID] = @daTicketID;
+            END
+            ELSE
+            BEGIN
+                UPDATE [Tickets].[Ticket]
+                SET [ticketStatusID_FK] = ISNULL(@daPrevStatus, @daOldStatus)
+                  , [entryData] = @entryData
+                  , [hostName]  = @hostName
+                WHERE [ticketID] = @daTicketID;
+            END
+
+            UPDATE [Tickets].[TicketPauseSession]
+            SET [pauseEnd] = GETDATE(), [ticketPauseSessionActive] = 0
+            WHERE [ticketID_FK] = @daTicketID AND [relatedArbitrationCaseID_FK] = @arbitrationCaseID
+              AND [pauseEnd] IS NULL;
+
+            INSERT INTO [Tickets].[TicketHistory]
+            ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+            , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+            , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+            VALUES
+            ( @daTicketID, @idaraID_FK, N'ARBITRATION_DECIDED', @daOldStatus, ISNULL(@daPrevStatus, @daOldStatus)
+            , @daOldDSD, @decisionTargetDSDID_FK, NULL, NULL
+            , @performerUserID, ISNULL(@decisionNotes, N'تم اتخاذ قرار التحكيم'), COALESCE(@notes_A, ISNULL(@decisionNotes, N'تم اتخاذ قرار التحكيم')), @entryData, @hostName );
+
+            SET @Note = N'{"arbitrationCaseID":"' + CAST(@arbitrationCaseID AS NVARCHAR(20))
+                + N'","decisionType":"' + ISNULL(@decisionType, N'') + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[ArbitrationCase]', N'DECIDE_ARBITRATION', @arbitrationCaseID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful, N'تم اتخاذ قرار التحكيم بنجاح' AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- CANCEL_ARBITRATION
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'CANCEL_ARBITRATION'
+        BEGIN
+            IF @arbitrationCaseID IS NULL
+            BEGIN ;THROW 50001, N'معرف قضية التحكيم مطلوب', 1; END
+
+            DECLARE @caTicketID BIGINT;
+            SELECT @caTicketID = [ticketID_FK]
+            FROM [Tickets].[ArbitrationCase]
+            WHERE [arbitrationCaseID] = @arbitrationCaseID AND [arbitrationStatus] = N'OPEN' AND [arbitrationCaseActive] = 1;
+
+            IF @caTicketID IS NULL
+            BEGIN ;THROW 50001, N'لم يتم العثور على قضية تحكيم مفتوحة', 1; END
+
+            UPDATE [Tickets].[ArbitrationCase]
+            SET [arbitrationStatus] = N'CANCELLED'
+              , [decisionNotes] = ISNULL(@decisionNotes, N'Cancelled')
+              , [entryData] = @entryData
+              , [hostName]  = ISNULL(ISNULL([hostName],N'') + N',' + [hostName], [hostName])
+            WHERE [arbitrationCaseID] = @arbitrationCaseID;
+
+            DECLARE @caOldStatus INT;
+            SELECT @caOldStatus = [ticketStatusID_FK] FROM [Tickets].[Ticket] WHERE [ticketID] = @caTicketID;
+
+            DECLARE @caPrevStatus INT;
+            SELECT TOP 1 @caPrevStatus = [oldStatusID_FK]
+            FROM [Tickets].[TicketHistory]
+            WHERE [ticketID_FK] = @caTicketID AND [actionTypeCode] = N'ARBITRATION'
+            ORDER BY [ticketHistoryID] DESC;
+
+            UPDATE [Tickets].[Ticket]
+            SET [ticketStatusID_FK] = ISNULL(@caPrevStatus, @caOldStatus)
+              , [entryData] = @entryData
+              , [hostName]  = @hostName
+            WHERE [ticketID] = @caTicketID;
+
+            UPDATE [Tickets].[TicketPauseSession]
+            SET [pauseEnd] = GETDATE(), [ticketPauseSessionActive] = 0
+            WHERE [ticketID_FK] = @caTicketID AND [relatedArbitrationCaseID_FK] = @arbitrationCaseID
+              AND [pauseEnd] IS NULL;
+
+            INSERT INTO [Tickets].[TicketHistory]
+            ( [ticketID_FK], [idaraID_FK], [actionTypeCode], [oldStatusID_FK], [newStatusID_FK]
+            , [oldDSDID_FK], [newDSDID_FK], [oldAssignedUserID], [newAssignedUserID]
+            , [performerUserID], [notes], [notes_A], [entryData], [hostName] )
+            VALUES
+            ( @caTicketID, @idaraID_FK, N'ARBITRATION_CANCELLED', @caOldStatus, ISNULL(@caPrevStatus, @caOldStatus)
+            , NULL, NULL, NULL, NULL
+            , @performerUserID, ISNULL(@notes, N'تم إلغاء التحكيم'), COALESCE(@notes_A, ISNULL(@notes, N'تم إلغاء التحكيم')), @entryData, @hostName );
+
+            SET @Note = N'{"arbitrationCaseID":"' + CAST(@arbitrationCaseID AS NVARCHAR(20)) + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[ArbitrationCase]', N'CANCEL_ARBITRATION', @arbitrationCaseID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful, N'تم إلغاء التحكيم' AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- UPLOAD_ATTACHMENT
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'UPLOAD_ATTACHMENT'
+        BEGIN
+            IF @ticketID IS NULL
+            BEGIN ;THROW 50001, N'معرف التذكرة مطلوب', 1; END
+            IF NULLIF(LTRIM(RTRIM(@fileName)), N'') IS NULL
+            BEGIN ;THROW 50001, N'اسم الملف مطلوب', 1; END
+            IF NULLIF(LTRIM(RTRIM(@storedFileName)), N'') IS NULL
+            BEGIN ;THROW 50001, N'اسم الملف المخزن مطلوب', 1; END
+            IF NULLIF(LTRIM(RTRIM(@filePath)), N'') IS NULL
+            BEGIN ;THROW 50001, N'مسار الملف مطلوب', 1; END
+
+            IF NOT EXISTS (SELECT 1 FROM [Tickets].[Ticket] WHERE [ticketID] = @ticketID AND [ticketActive] = 1)
+            BEGIN ;THROW 50001, N'لم يتم العثور على تذكرة نشطة', 1; END
+
+            INSERT INTO [Tickets].[TicketAttachment]
+            ( [ticketID_FK], [idaraID_FK], [fileName], [storedFileName], [filePath]
+            , [fileSizeBytes], [contentType], [uploadedByUserID], [attachmentType]
+            , [ticketAttachmentActive], [entryData], [hostName] )
+            VALUES
+            ( @ticketID, @idaraID_FK, @fileName, @storedFileName, @filePath
+            , @fileSizeBytes, @contentType, @performerUserID, @attachmentType
+            , 1, @entryData, @hostName );
+
+            SET @NewID = SCOPE_IDENTITY();
+
+            SET @Note = N'{"ticketAttachmentID":"' + CAST(@NewID AS NVARCHAR(20))
+                + N'","ticketID":"' + CAST(@ticketID AS NVARCHAR(20))
+                + N'","fileName":"' + ISNULL(@fileName, N'') + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[TicketAttachment]', N'UPLOAD_ATTACHMENT', @NewID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful, N'تم رفع المرفق بنجاح' AS Message_;
+        END
+
+        ----------------------------------------------------------------
+        -- DELETE_ATTACHMENT
+        ----------------------------------------------------------------
+        ELSE IF @Action = N'DELETE_ATTACHMENT'
+        BEGIN
+            IF @ticketID IS NULL
+            BEGIN ;THROW 50001, N'معرف المرفق (الممرر كمعرف التذكرة) مطلوب', 1; END
+
+            IF NOT EXISTS (SELECT 1 FROM [Tickets].[TicketAttachment]
+                           WHERE [ticketAttachmentID] = @ticketID AND [ticketAttachmentActive] = 1)
+            BEGIN ;THROW 50001, N'لم يتم العثور على مرفق نشط', 1; END
+
+            UPDATE [Tickets].[TicketAttachment]
+            SET [ticketAttachmentActive] = 0
+              , [entryData] = @entryData
+              , [hostName]  = ISNULL(ISNULL([hostName],N'') + N',' + [hostName], [hostName])
+            WHERE [ticketAttachmentID] = @ticketID;
+
+            SET @Note = N'{"ticketAttachmentID":"' + CAST(@ticketID AS NVARCHAR(20)) + N'"}';
+            INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
+            VALUES (N'[Tickets].[TicketAttachment]', N'DELETE_ATTACHMENT', @ticketID, @entryData, @Note);
+
+            SELECT 1 AS IsSuccessful, N'تم حذف المرفق' AS Message_;
         END
 
         ----------------------------------------------------------------
@@ -280,12 +2148,15 @@ BEGIN
         ----------------------------------------------------------------
         ELSE
         BEGIN
-            ;THROW 50001, N'Unknown action for TicketSP', 1;
+            ;THROW 50001, N'نوع الإجراء غير معروف في TicketSP', 1;
         END
 
+        IF @tc = 0 COMMIT TRAN;
     END TRY
     BEGIN CATCH
         IF @tc = 0 AND XACT_STATE() <> 0 ROLLBACK;
         ;THROW;
     END CATCH
 END
+
+

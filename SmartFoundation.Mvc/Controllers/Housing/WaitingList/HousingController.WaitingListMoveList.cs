@@ -69,8 +69,8 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                         // ✅ RowId الصحيح
                         rowIdField = "ActionID";
                         var possibleIdNames = new[] { "ActionID", "actionID", "Id", "ID" };
-                        rowIdField = possibleIdNames.FirstOrDefault(n => dt1.Columns.Contains(n))
-                                     ?? dt1.Columns[0].ColumnName;
+                        rowIdField = possibleIdNames.FirstOrDefault(n => dt1!.Columns.Contains(n))
+                                     ?? dt1!.Columns[0].ColumnName;
 
                         // ✅ عناوين الأعمدة بناءً على V_MoveWaitingList
                         var headerMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -133,9 +133,9 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                                 Type = colType,
                                 Sortable = true,
                                 // ✅ اخفي IDs و metadata فقط
-                                Visible = !(isActionID || isresidentInfoID || isNationalID || isIdaraId || 
-                                           isToIdaraID || isLastActionID || isLastActionTypeID || 
-                                           isLastActionIdaraID || isMainActionEntryData || 
+                                Visible = !(isActionID || isresidentInfoID || isNationalID || isIdaraId ||
+                                           isToIdaraID || isLastActionID || isLastActionTypeID ||
+                                           isLastActionIdaraID || isMainActionEntryData ||
                                            isLastActionEntryData || isActionDate)
                             });
                         }
@@ -144,7 +144,7 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                         foreach (DataRow r in dt1.Rows)
                         {
                             var dict = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-                            foreach (DataColumn c in dt1.Columns)
+                        foreach (DataColumn c in dt1!.Columns)
                             {
                                 var val = r[c];
                                 dict[c.ColumnName] = val == DBNull.Value ? null : val;
@@ -198,8 +198,8 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                 new FieldConfig { Name = "redirectController", Type = "hidden", Value = ControllerName },
                 new FieldConfig { Name = "pageName_",          Type = "hidden", Value = PageName },
                 new FieldConfig { Name = "ActionType",         Type = "hidden", Value = "MOVEWAITINGLISTAPPROVE" },
-                new FieldConfig { Name = "idaraID",            Type = "hidden", Value = IdaraId.ToString() },
-                new FieldConfig { Name = "entrydata",          Type = "hidden", Value = usersId.ToString() },
+                new FieldConfig { Name = "idaraID",            Type = "hidden", Value = IdaraId?.ToString() },
+                new FieldConfig { Name = "entrydata",          Type = "hidden", Value = usersId?.ToString() },
                 new FieldConfig { Name = "hostname",           Type = "hidden", Value = Request.Host.Value },
                 new FieldConfig { Name = "__RequestVerificationToken", Type = "hidden", Value = (Request.Headers["RequestVerificationToken"].FirstOrDefault() ?? "") },
                 
@@ -233,8 +233,8 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                 new FieldConfig { Name = "redirectController", Type = "hidden", Value = ControllerName },
                 new FieldConfig { Name = "pageName_",          Type = "hidden", Value = PageName },
                 new FieldConfig { Name = "ActionType",         Type = "hidden", Value = "MOVEWAITINGLISTREJECT" },
-                new FieldConfig { Name = "idaraID",            Type = "hidden", Value = IdaraId.ToString() },
-                new FieldConfig { Name = "entrydata",          Type = "hidden", Value = usersId.ToString() },
+                new FieldConfig { Name = "idaraID",            Type = "hidden", Value = IdaraId?.ToString() },
+                new FieldConfig { Name = "entrydata",          Type = "hidden", Value = usersId?.ToString() },
                 new FieldConfig { Name = "hostname",           Type = "hidden", Value = Request.Host.Value },
                 new FieldConfig { Name = "__RequestVerificationToken", Type = "hidden", Value = (Request.Headers["RequestVerificationToken"].FirstOrDefault() ?? "") },
                 

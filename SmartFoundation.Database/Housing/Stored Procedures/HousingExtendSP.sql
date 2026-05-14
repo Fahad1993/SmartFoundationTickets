@@ -33,6 +33,7 @@ CREATE PROCEDURE [Housing].[HousingExtendSP]
     , @ExtendInsuranceType                  NVARCHAR(1000)  = NULL
     , @ExtendInsuranceNote                  NVARCHAR(1000)  = NULL
     , @ExtendInsuranceTypeID                NVARCHAR(1000)  = NULL
+    , @OccupentDate                         NVARCHAR(1000)  = NULL
     , @idaraID_FK                           NVARCHAR(10)    = NULL
     , @entryData                            NVARCHAR(20)    = NULL
     , @hostName                             NVARCHAR(200)   = NULL
@@ -155,6 +156,7 @@ BEGIN
             END
             from Housing.V_WaitingList w
             where w.residentInfoID = @residentInfoID
+            and w.ActionID = @ActionID
 
             IF 
             (
@@ -184,6 +186,7 @@ BEGIN
                 , buildingActionFromDate
                 , buildingActionToDate
                 , ExtendReasonTypeID_FK
+                , OccupentDate
                 , IdaraId_FK
                 , entryData
                 , hostName
@@ -204,6 +207,7 @@ BEGIN
                 , @ExtendStartDate
                 , @ExtendEndDate
                 , @ExtendTypeID
+                , @OccupentDate
                 , @IdaraID_INT
                 , @entryData
                 , @hostName
@@ -316,6 +320,7 @@ BEGIN
                 , buildingActionFromDate
                 , buildingActionToDate
                 , ExtendReasonTypeID_FK
+                , OccupentDate
                 , IdaraId_FK
                 , entryData
                 , hostName
@@ -336,6 +341,7 @@ BEGIN
                 , @ExtendStartDate
                 , @ExtendEndDate
                 , @ExtendTypeID
+                , @OccupentDate
                 , @IdaraID_INT
                 , @entryData
                 , @hostName
@@ -368,6 +374,7 @@ BEGIN
                 , buildingActionFromDate
                 , buildingActionToDate
                 , ExtendReasonTypeID_FK
+                , OccupentDate
                 , IdaraId_FK
                 , entryData
                 , hostName
@@ -388,6 +395,7 @@ BEGIN
                 , @ExtendStartDate
                 , @ExtendEndDate
                 , @ExtendTypeID
+                , @OccupentDate
                 , @IdaraID_INT
                 , @entryData
                 , @hostName
@@ -501,6 +509,7 @@ BEGIN
                 , buildingActionFromDate
                 , buildingActionToDate
                 , ExtendReasonTypeID_FK
+                , OccupentDate
                 , IdaraId_FK
                 , entryData
                 , hostName
@@ -521,6 +530,7 @@ BEGIN
                 , @ExtendStartDate
                 , @ExtendEndDate
                 , @ExtendTypeID
+                , @OccupentDate
                 , @IdaraID_INT
                 , @entryData
                 , @hostName
@@ -544,7 +554,7 @@ BEGIN
                buildingActionToDate, buildingActionDate, buildingActionDate2, buildingActionDecisionNo, buildingActionDecisionDate, fromDSD_FK, toDSD_FK, buildingActionFromSourceID_FK, buildingActionToSourceID_FK, 
                buildingActionNote, buildingActionExtraText1, buildingActionExtraText2, buildingActionExtraText3, buildingActionExtraText4, buildingActionExtraDate1, buildingActionExtraDate2, buildingActionExtraDate3, 
                buildingActionExtraFloat1, buildingActionExtraFloat2, buildingActionExtraInt1, buildingActionExtraInt2, buildingActionExtraInt3, buildingActionExtraInt4, buildingActionExtraType1, buildingActionExtraType2, 
-               buildingActionExtraType3, buildingActionActive, buildingActionParentID, CustdyRecord, AssignPeriodID_FK, IdaraId_FK, entryData, hostName
+               buildingActionExtraType3, buildingActionActive, buildingActionParentID, CustdyRecord, AssignPeriodID_FK,OccupentDate, IdaraId_FK, entryData, hostName
 
             )
             
@@ -555,7 +565,7 @@ BEGIN
                buildingActionToDate, buildingActionDate, buildingActionDate2, buildingActionDecisionNo, buildingActionDecisionDate, fromDSD_FK, toDSD_FK, buildingActionFromSourceID_FK, buildingActionToSourceID_FK, 
                buildingActionNote, buildingActionExtraText1, buildingActionExtraText2, buildingActionExtraText3, buildingActionExtraText4, buildingActionExtraDate1, buildingActionExtraDate2, buildingActionExtraDate3, 
                buildingActionExtraFloat1, buildingActionExtraFloat2, buildingActionExtraInt1, buildingActionExtraInt2, buildingActionExtraInt3, buildingActionExtraInt4, buildingActionExtraType1, buildingActionExtraType2, 
-               buildingActionExtraType3, buildingActionActive, @NewID, CustdyRecord, AssignPeriodID_FK, @idaraID_FK, @entryData, @hostName
+               buildingActionExtraType3, buildingActionActive, @NewID, CustdyRecord, AssignPeriodID_FK, @OccupentDate, @idaraID_FK, @entryData, @hostName
             FROM Housing.fn_BuildingAction_ChainToRoot(@NewID) r
             WHERE R.residentInfoID_FK = @residentInfoID and r.buildingActionTypeID_FK = 2
             ORDER BY buildingActionID;
@@ -671,6 +681,7 @@ BEGIN
                 , buildingActionFromDate
                 , buildingActionToDate
                 , ExtendReasonTypeID_FK
+                , OccupentDate
                 , IdaraId_FK
                 , entryData
                 , hostName
@@ -691,6 +702,7 @@ BEGIN
                 , @ExtendStartDate
                 , @ExtendEndDate
                 , @ExtendTypeID
+                , @OccupentDate
                 , @IdaraID_INT
                 , @entryData
                 , @hostName
@@ -812,6 +824,7 @@ BEGIN
                 , buildingActionFromDate
                 , buildingActionToDate
                 , ExtendReasonTypeID_FK
+                , OccupentDate
                 , IdaraId_FK
                 , entryData
                 , hostName
@@ -832,6 +845,7 @@ BEGIN
                 , @ExtendStartDate
                 , @ExtendEndDate
                 , @ExtendTypeID
+                , @OccupentDate
                 , @IdaraID_INT
                 , @entryData
                 , @hostName
@@ -967,6 +981,7 @@ BEGIN
                 , buildingActionFromDate
                 , buildingActionToDate
                 , ExtendReasonTypeID_FK
+                , OccupentDate
                 , IdaraId_FK
                 , entryData
                 , hostName
@@ -987,6 +1002,7 @@ BEGIN
                 , @ExtendStartDate
                 , @ExtendEndDate
                 , @ExtendTypeID
+                , @OccupentDate
                 , @IdaraID_INT
                 , @entryData
                 , @hostName

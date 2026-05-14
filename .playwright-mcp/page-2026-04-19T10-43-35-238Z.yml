@@ -1,0 +1,138 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e4]:
+      - button "Toggle sidebar" [ref=e6] [cursor=pointer]:
+        - img [ref=e7]
+      - generic [ref=e9]:
+        - navigation "روابط سريعة" [ref=e10]:
+          - link "الشاشة التفاعلية" [ref=e11] [cursor=pointer]:
+            - /url: /HousingCommandCenterDashboard/Index
+            - generic [ref=e13]: الشاشة التفاعلية
+        - navigation "روابط سريعة" [ref=e14]:
+          - link "الصفحة الرئيسية" [ref=e15] [cursor=pointer]:
+            - /url: /Home
+            - generic [ref=e17]: الصفحة الرئيسية
+        - navigation "روابط سريعة" [ref=e18]:
+          - button "تغيير كلمة المرور" [ref=e19] [cursor=pointer]:
+            - generic [ref=e21]: تغيير كلمة المرور
+        - button "عرض الإشعارات 2" [ref=e23]:
+          - generic [ref=e24]: عرض الإشعارات
+          - generic [ref=e25]:
+            - img [ref=e26]
+            - generic [ref=e28]: "2"
+        - button "الإعدادات" [ref=e31] [cursor=pointer]:
+          - generic [ref=e33]: الإعدادات
+  - navigation "Breadcrumb" [ref=e37]:
+    - list [ref=e39]:
+      - listitem [ref=e40]:
+        - link "الرئيسية" [ref=e41] [cursor=pointer]:
+          - /url: /Home
+      - listitem [ref=e42]: ◂
+      - listitem [ref=e43]: "???? ???????"
+      - listitem [ref=e44]: ◂
+      - listitem [ref=e45]: "?????? ???????"
+  - complementary "Sidebar" [ref=e46]:
+    - generic [ref=e47]:
+      - link "KFMC Logo البوابة الموحدة" [ref=e49] [cursor=pointer]:
+        - /url: /Dashboard
+        - img "KFMC Logo" [ref=e50]
+        - generic [ref=e51]: البوابة الموحدة
+      - generic [ref=e53]:
+        - generic [ref=e54]:
+          - img "user" [ref=e56]
+          - generic [ref=e57]: سامي محمد العمري
+          - generic [ref=e58]: "1064184763"
+          - generic [ref=e59]: ادارة مدينة الملك فيصل العسكرية
+          - generic [ref=e60]: أنت مدير النظام بالكامل
+        - generic [ref=e62]:
+          - generic [ref=e63]: بحث في القائمة
+          - textbox "بحث في القائمة" [ref=e65]:
+            - /placeholder: ابحث في القائمة ...
+        - list [ref=e66]:
+          - listitem [ref=e67]:
+            - button "لوحة التحكم" [ref=e69]:
+              - generic [ref=e71]: لوحة التحكم
+              - img [ref=e72]
+          - listitem [ref=e74]:
+            - button "الاسكان والممتلكات" [ref=e76]:
+              - generic [ref=e78]: الاسكان والممتلكات
+              - img [ref=e79]
+          - listitem [ref=e81]:
+            - button "نظام الايرادات المالية" [ref=e83]:
+              - generic [ref=e85]: نظام الايرادات المالية
+              - img [ref=e86]
+          - listitem [ref=e88]:
+            - button "نظام الفوترة الالكترونية" [ref=e90]:
+              - generic [ref=e92]: نظام الفوترة الالكترونية
+              - img [ref=e93]
+          - listitem [ref=e95]:
+            - button "صيانة العربات" [ref=e97]:
+              - generic [ref=e99]: صيانة العربات
+              - img [ref=e100]
+          - listitem [ref=e102]:
+            - button "الدعم الفني للنظام" [ref=e104]:
+              - generic [ref=e106]: الدعم الفني للنظام
+              - img [ref=e107]
+          - listitem [ref=e109]:
+            - button "???? ???????" [ref=e111]:
+              - generic [ref=e113]: "???? ???????"
+              - img [ref=e114]
+  - generic [ref=e116]:
+    - main [ref=e117]:
+      - generic [ref=e118]:
+        - generic [ref=e121]:
+          - link "رجوع" [ref=e122] [cursor=pointer]:
+            - /url: /Ticket/TicketList
+            - text: رجوع
+          - heading "--" [level=2] [ref=e124]
+        - generic [ref=e126]:
+          - generic [ref=e127]:
+            - generic [ref=e129]:
+              - heading "Description" [level=3] [ref=e130]
+              - paragraph [ref=e131]: "--"
+            - generic [ref=e133]:
+              - heading "Related Tickets" [level=3] [ref=e134]: Related Tickets
+              - generic [ref=e138]:
+                - generic [ref=e139]: CHILD
+                - link "--" [ref=e140] [cursor=pointer]:
+                  - /url: /Ticket/TicketDetails
+            - generic [ref=e143]:
+              - heading "Audit Trail" [level=3] [ref=e144]: Audit Trail
+              - paragraph [ref=e153]: System · --
+          - generic [ref=e154]:
+            - generic [ref=e157]:
+              - heading "Ticket Information" [level=4] [ref=e158]
+              - generic [ref=e159]:
+                - generic [ref=e160]:
+                  - term [ref=e161]: Service
+                  - definition [ref=e162]: "--"
+                - generic [ref=e163]:
+                  - term [ref=e164]: Requester
+                  - definition [ref=e165]: "--"
+                - generic [ref=e166]:
+                  - term [ref=e167]: Requester Type
+                  - definition [ref=e168]: "--"
+                - generic [ref=e169]:
+                  - term [ref=e170]: Classification
+                  - definition [ref=e171]: "--"
+              - separator [ref=e172]
+              - generic [ref=e174]:
+                - term [ref=e175]: Assigned To
+                - definition [ref=e176]: "--"
+            - generic [ref=e178]:
+              - heading "Pause Sessions" [level=4] [ref=e179]: Pause Sessions
+              - generic [ref=e182]:
+                - generic [ref=e183]:
+                  - generic [ref=e184]: "--"
+                  - generic [ref=e185]: Active
+                - paragraph [ref=e186]: "Started: --"
+            - generic [ref=e188]:
+              - heading "Dates" [level=4] [ref=e189]
+              - generic [ref=e191]:
+                - term [ref=e192]: Created
+                - definition [ref=e193]: "--"
+    - contentinfo [ref=e194]:
+      - generic [ref=e196]: إدارة مدينة الملك فيصل العسكرية © 2026
+  - button "فيصل المساعد الذكي فيصل المساعد الذكي" [ref=e198] [cursor=pointer]:
+    - img "فيصل المساعد الذكي" [ref=e200]
+    - generic [ref=e201]: فيصل المساعد الذكي

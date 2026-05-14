@@ -71,9 +71,9 @@ OUTER APPLY
 ) cap
 WHERE w.WaitingClassID = @WaitingClassID
   AND w.IdaraId = @idaraID
-  AND w.LastActionTypeID IN (27,39,41,42);
+  --AND w.LastActionTypeID IN (27,39,41);
 
-  --AND w.LastActionTypeID IN (27,38,39,40,41,42);
+  AND w.LastActionTypeID IN (27,38,39,40,41,42);
 
       --or w.LastActionTypeID in (2,3,18,19,20,21,22,23,24,26,27,28,33,34,35)
 

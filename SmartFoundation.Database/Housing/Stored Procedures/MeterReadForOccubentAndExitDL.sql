@@ -75,16 +75,20 @@ BEGIN
             w.buildingActionRoot,
 
               case 
-             when m.BuildingActionID_FK is not null then N'تم تسجيل قراءة العداد'
+               when m.BuildingActionID_FK is not null and ba2.buildingActionTypeID_FK = 59 and w.LastActionTypeID = 59 then N'تم تسجيل قراءة العداد'
+             when m.BuildingActionID_FK is not null and ba2.buildingActionTypeID_FK = 46 and w.LastActionTypeID = 46 then N'تم تسجيل قراءة العداد'
              when m.BuildingActionID_FK is null then N'بانتظار تسجيل القراءة'
+             else N'بانتظار تسجيل القراءة'
              END ReadStatus,
              case 
             when w.LastActionTypeID = 46 then N'قراءة تسكين'
             when w.LastActionTypeID = 59 then N'قراءة اخلاء'
              END ReadType,
              case 
-             when m.BuildingActionID_FK is not null then N'1'
+             when m.BuildingActionID_FK is not null and ba2.buildingActionTypeID_FK = 59 and w.LastActionTypeID = 59 then N'1'
+             when m.BuildingActionID_FK is not null and ba2.buildingActionTypeID_FK = 46 and w.LastActionTypeID = 46 then N'1'
              when m.BuildingActionID_FK is null then N'0'
+             else N'0'
              END ReadStatusInt,
              isnull(w.LastActionNote,w.ActionNote) ActionNote,
              b.BillsID,
@@ -106,6 +110,7 @@ BEGIN
     left join Housing.MeterServiceType mst on mbb.meterServiceTypeID_FK = mst.meterServiceTypeID
     left join Housing.MeterType mty on mbb.meterTypeID_FK = mty.meterTypeID
     left join Housing.Bills b on m.meterReadID = b.meterReadID
+    left join Housing.BuildingAction ba2 on m.buildingActionID_FK = ba2.buildingActionID
     WHERE w.IdaraId = @idaraID
       AND  w.LastActionTypeID in (46,59)
       AND w.residentInfoID = @residentInfoID

@@ -19,6 +19,11 @@ module.exports = {
 
         'animate-fade-in',
 
+        // Timeline dot colors (TicketDetails audit trail)
+        'bg-gray-400', 'bg-gray-500', 'bg-blue-400', 'bg-blue-500',
+        'bg-green-500', 'bg-red-500', 'bg-amber-500', 'bg-yellow-500',
+        'bg-purple-500', 'bg-gray-300',
+
         'bg-gradient-to-b', 'border', 'rounded-md', 'transition', 'text-sm', 'font-semibold',
         'h-10', 'px-5', 'md:px-6', 'gap-2', 'gap-2.5', 'gap-3', 'active:shadow-inner',
         'from-emerald-50', 'via-emerald-50', 'to-emerald-200',

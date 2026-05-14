@@ -1,0 +1,28 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - img "KFMC" [ref=e7]
+      - generic [ref=e8]: البوابة الموحدة لأنظمة إدارة مدينة الملك فيصل العسكرية
+    - generic [ref=e10]:
+      - heading "تسجيل الدخول" [level=2] [ref=e11]:
+        - generic [ref=e12]:
+          - img [ref=e13]
+          - generic [ref=e16]: تسجيل الدخول
+      - generic [ref=e17]:
+        - textbox "رقم الهوية الوطنية" [ref=e19]
+        - textbox "كلمة المرور" [ref=e21]
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - checkbox "تذكرني" [ref=e26]
+          - text: تذكرني
+        - link "نسيت كلمة المرور؟" [ref=e27] [cursor=pointer]:
+          - /url: "#"
+      - generic [ref=e28]:
+        - button "دخول" [ref=e29] [cursor=pointer]:
+          - generic [ref=e30]: دخول
+        - link "تسجيل" [ref=e31] [cursor=pointer]:
+          - /url: /Account/Register
+  - generic [ref=e32]:
+    - button "×" [ref=e33] [cursor=pointer]
+    - generic [ref=e34]: تم تسجيل خروجك من النظام لعدم وجود نشاط
+  - generic: جميع الحقوق محفوظة © مدينة الملك فيصل العسكرية 2025 - 2026

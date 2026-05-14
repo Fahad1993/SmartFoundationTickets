@@ -69,7 +69,7 @@ namespace SmartFoundation.Mvc.Controllers.Housing
             {
                 DataRow rows = dt1.Rows[0];
                 if (dt1.Columns.Contains("IdaraID") && rows["IdaraID"] != DBNull.Value)
-                    residentInfoIdaraID = rows["IdaraID"].ToString();
+                    residentInfoIdaraID = rows["IdaraID"].ToString() ?? "";
             }
 
 
@@ -692,8 +692,8 @@ namespace SmartFoundation.Mvc.Controllers.Housing
             // hidden fields
             DeleteResidentAllWaitingList.Insert(0, new FieldConfig { Name = "__RequestVerificationToken", Type = "hidden", Value = (Request.Headers["RequestVerificationToken"].FirstOrDefault() ?? "") });
             DeleteResidentAllWaitingList.Insert(0, new FieldConfig { Name = "hostname", Type = "hidden", Value = Request.Host.Value });
-            DeleteResidentAllWaitingList.Insert(0, new FieldConfig { Name = "entrydata", Type = "hidden", Value = usersId.ToString() });
-            DeleteResidentAllWaitingList.Insert(0, new FieldConfig { Name = "idaraID", Type = "hidden", Value = IdaraId.ToString() });
+            DeleteResidentAllWaitingList.Insert(0, new FieldConfig { Name = "entrydata", Type = "hidden", Value = usersId?.ToString() });
+            DeleteResidentAllWaitingList.Insert(0, new FieldConfig { Name = "idaraID", Type = "hidden", Value = IdaraId?.ToString() });
             DeleteResidentAllWaitingList.Insert(0, new FieldConfig { Name = "ActionType", Type = "hidden", Value = "DELETERESIDENTALLWAITINGLIST" });
             DeleteResidentAllWaitingList.Insert(0, new FieldConfig { Name = "pageName_", Type = "hidden", Value = PageName });
             DeleteResidentAllWaitingList.Insert(0, new FieldConfig { Name = "redirectAction", Type = "hidden", Value = PageName });
@@ -727,8 +727,8 @@ namespace SmartFoundation.Mvc.Controllers.Housing
             // hidden fields
             addFieldsWaitingList.Insert(0, new FieldConfig { Name = "__RequestVerificationToken", Type = "hidden", Value = (Request.Headers["RequestVerificationToken"].FirstOrDefault() ?? "") });
             addFieldsWaitingList.Insert(0, new FieldConfig { Name = "hostname", Type = "hidden", Value = Request.Host.Value });
-            addFieldsWaitingList.Insert(0, new FieldConfig { Name = "entrydata", Type = "hidden", Value = usersId.ToString() });
-            addFieldsWaitingList.Insert(0, new FieldConfig { Name = "idaraID", Type = "hidden", Value = IdaraId.ToString() });
+            addFieldsWaitingList.Insert(0, new FieldConfig { Name = "entrydata", Type = "hidden", Value = usersId?.ToString() });
+            addFieldsWaitingList.Insert(0, new FieldConfig { Name = "idaraID", Type = "hidden", Value = IdaraId?.ToString() });
             addFieldsWaitingList.Insert(0, new FieldConfig { Name = "ActionType", Type = "hidden", Value = "INSERTWAITINGLIST" });
             addFieldsWaitingList.Insert(0, new FieldConfig { Name = "pageName_", Type = "hidden", Value = PageName });
             addFieldsWaitingList.Insert(0, new FieldConfig { Name = "redirectAction", Type = "hidden", Value = PageName });
@@ -760,8 +760,8 @@ namespace SmartFoundation.Mvc.Controllers.Housing
             // hidden fields
             addFieldsMoveWaitingList.Insert(0, new FieldConfig { Name = "__RequestVerificationToken", Type = "hidden", Value = (Request.Headers["RequestVerificationToken"].FirstOrDefault() ?? "") });
             addFieldsMoveWaitingList.Insert(0, new FieldConfig { Name = "hostname", Type = "hidden", Value = Request.Host.Value });
-            addFieldsMoveWaitingList.Insert(0, new FieldConfig { Name = "entrydata", Type = "hidden", Value = usersId.ToString() });
-            addFieldsMoveWaitingList.Insert(0, new FieldConfig { Name = "idaraID", Type = "hidden", Value = IdaraId.ToString() });
+            addFieldsMoveWaitingList.Insert(0, new FieldConfig { Name = "entrydata", Type = "hidden", Value = usersId?.ToString() });
+            addFieldsMoveWaitingList.Insert(0, new FieldConfig { Name = "idaraID", Type = "hidden", Value = IdaraId?.ToString() });
             addFieldsMoveWaitingList.Insert(0, new FieldConfig { Name = "ActionType", Type = "hidden", Value = "MOVEWAITINGLIST" });
             addFieldsMoveWaitingList.Insert(0, new FieldConfig { Name = "pageName_", Type = "hidden", Value = PageName });
             addFieldsMoveWaitingList.Insert(0, new FieldConfig { Name = "redirectAction", Type = "hidden", Value = PageName });
@@ -790,8 +790,8 @@ namespace SmartFoundation.Mvc.Controllers.Housing
             // hidden fields
             addFieldsOccubentLetter.Insert(0, new FieldConfig { Name = "__RequestVerificationToken", Type = "hidden", Value = (Request.Headers["RequestVerificationToken"].FirstOrDefault() ?? "") });
             addFieldsOccubentLetter.Insert(0, new FieldConfig { Name = "hostname", Type = "hidden", Value = Request.Host.Value });
-            addFieldsOccubentLetter.Insert(0, new FieldConfig { Name = "entrydata", Type = "hidden", Value = usersId.ToString() });
-            addFieldsOccubentLetter.Insert(0, new FieldConfig { Name = "idaraID", Type = "hidden", Value = IdaraId.ToString() });
+            addFieldsOccubentLetter.Insert(0, new FieldConfig { Name = "entrydata", Type = "hidden", Value = usersId?.ToString() });
+            addFieldsOccubentLetter.Insert(0, new FieldConfig { Name = "idaraID", Type = "hidden", Value = IdaraId?.ToString() });
             addFieldsOccubentLetter.Insert(0, new FieldConfig { Name = "ActionType", Type = "hidden", Value = "INSERTOCCUBENTLETTER" });
             addFieldsOccubentLetter.Insert(0, new FieldConfig { Name = "pageName_", Type = "hidden", Value = PageName });
             addFieldsOccubentLetter.Insert(0, new FieldConfig { Name = "redirectAction", Type = "hidden", Value = PageName });
@@ -806,8 +806,8 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                 new FieldConfig { Name = "redirectUrl",  Type = "hidden", Value = currentUrl},
                 new FieldConfig { Name = "pageName_",           Type = "hidden", Value = PageName },
                 new FieldConfig { Name = "ActionType",          Type = "hidden", Value = "UPDATEWAITINGLIST" },
-                new FieldConfig { Name = "idaraID",             Type = "hidden", Value = IdaraId.ToString() },
-                new FieldConfig { Name = "entrydata",           Type = "hidden", Value = usersId.ToString() },
+                new FieldConfig { Name = "idaraID",             Type = "hidden", Value = IdaraId?.ToString() },
+                new FieldConfig { Name = "entrydata",           Type = "hidden", Value = usersId?.ToString() },
                 new FieldConfig { Name = "hostname",            Type = "hidden", Value = Request.Host.Value },
                 new FieldConfig { Name = "__RequestVerificationToken", Type = "hidden", Value = (Request.Headers["RequestVerificationToken"].FirstOrDefault() ?? "") },
                 new FieldConfig { Name = rowIdField_dt2,            Type = "hidden" },
@@ -839,8 +839,8 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                 new FieldConfig { Name = "redirectUrl",  Type = "hidden", Value = currentUrl},
                 new FieldConfig { Name = "pageName_",           Type = "hidden", Value = PageName },
                 new FieldConfig { Name = "ActionType",          Type = "hidden", Value = "UPDATEOCCUBENTLETTER" },
-                new FieldConfig { Name = "idaraID",             Type = "hidden", Value = IdaraId.ToString() },
-                new FieldConfig { Name = "entrydata",           Type = "hidden", Value = usersId.ToString() },
+                new FieldConfig { Name = "idaraID",             Type = "hidden", Value = IdaraId?.ToString() },
+                new FieldConfig { Name = "entrydata",           Type = "hidden", Value = usersId?.ToString() },
                 new FieldConfig { Name = "hostname",            Type = "hidden", Value = Request.Host.Value },
                 new FieldConfig { Name = "__RequestVerificationToken", Type = "hidden", Value = (Request.Headers["RequestVerificationToken"].FirstOrDefault() ?? "") },
                 new FieldConfig { Name = rowIdField_dt3,            Type = "hidden" },
@@ -875,8 +875,8 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                 new FieldConfig { Name = "redirectUrl",  Type = "hidden", Value = currentUrl},
                 new FieldConfig { Name = "pageName_",          Type = "hidden", Value = PageName },
                 new FieldConfig { Name = "ActionType",         Type = "hidden", Value = "DELETEWAITINGLIST" },
-                new FieldConfig { Name = "idaraID",            Type = "hidden", Value = IdaraId.ToString() },
-                new FieldConfig { Name = "entrydata",          Type = "hidden", Value = usersId.ToString() },
+                new FieldConfig { Name = "idaraID",            Type = "hidden", Value = IdaraId?.ToString() },
+                new FieldConfig { Name = "entrydata",          Type = "hidden", Value = usersId?.ToString() },
                 new FieldConfig { Name = "hostname",           Type = "hidden", Value = Request.Host.Value },
                 new FieldConfig { Name = "__RequestVerificationToken", Type = "hidden", Value = (Request.Headers["RequestVerificationToken"].FirstOrDefault() ?? "") },
                 new FieldConfig { Name = rowIdField_dt2, Type = "hidden" },
@@ -910,8 +910,8 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                 new FieldConfig { Name = "redirectUrl",  Type = "hidden", Value = currentUrl},
                 new FieldConfig { Name = "pageName_",          Type = "hidden", Value = PageName },
                 new FieldConfig { Name = "ActionType",         Type = "hidden", Value = "DELETEOCCUBENTLETTER" },
-                new FieldConfig { Name = "idaraID",            Type = "hidden", Value = IdaraId.ToString() },
-                new FieldConfig { Name = "entrydata",          Type = "hidden", Value = usersId.ToString() },
+                new FieldConfig { Name = "idaraID",            Type = "hidden", Value = IdaraId?.ToString() },
+                new FieldConfig { Name = "entrydata",          Type = "hidden", Value = usersId?.ToString() },
                 new FieldConfig { Name = "hostname",           Type = "hidden", Value = Request.Host.Value },
                 new FieldConfig { Name = "__RequestVerificationToken", Type = "hidden", Value = (Request.Headers["RequestVerificationToken"].FirstOrDefault() ?? "") },
                 new FieldConfig { Name = rowIdField_dt3, Type = "hidden" },
@@ -937,8 +937,8 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                 new FieldConfig { Name = "redirectUrl",  Type = "hidden", Value = currentUrl},
                 new FieldConfig { Name = "pageName_",          Type = "hidden", Value = PageName },
                 new FieldConfig { Name = "ActionType",         Type = "hidden", Value = "DELETEMOVEWAITINGLIST" },
-                new FieldConfig { Name = "idaraID",            Type = "hidden", Value = IdaraId.ToString() },
-                new FieldConfig { Name = "entrydata",          Type = "hidden", Value = usersId.ToString() },
+                new FieldConfig { Name = "idaraID",            Type = "hidden", Value = IdaraId?.ToString() },
+                new FieldConfig { Name = "entrydata",          Type = "hidden", Value = usersId?.ToString() },
                 new FieldConfig { Name = "hostname",           Type = "hidden", Value = Request.Host.Value },
                 new FieldConfig { Name = "__RequestVerificationToken", Type = "hidden", Value = (Request.Headers["RequestVerificationToken"].FirstOrDefault() ?? "") },
                 new FieldConfig { Name = rowIdField_dt4, Type = "hidden" },

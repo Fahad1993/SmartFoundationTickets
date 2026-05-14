@@ -1,4 +1,4 @@
-﻿CREATE   FUNCTION Housing.fn_BuildingAction_ChainToRoot
+﻿CREATE   FUNCTION [Housing].[fn_BuildingAction_ChainToRoot]
 (
     @buildingActionID BIGINT
 )
@@ -75,6 +75,8 @@ RETURN
         buildingActionParentID,
         CustdyRecord,
         AssignPeriodID_FK,
+        OccupentDate,
+        ExitDate,
         IdaraId_FK,
         entryDate,
         entryData,

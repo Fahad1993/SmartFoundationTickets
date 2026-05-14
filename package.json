@@ -1,5 +1,9 @@
 {
   "dependencies": {
     "flowbite-datepicker": "^1.3.2"
+  },
+  "devDependencies": {
+    "msnodesqlv8": "^5.1.9",
+    "mssql": "^12.3.1"
   }
 }

@@ -1,0 +1,9 @@
+{
+  "name": "create-smart-component",
+  "description": "Create new Smart Foundation components following the established architecture pattern",
+  "version": "0.0.1",
+  "author": {
+    "name": "SmartFoundation Team",
+    "email": "dev@smartfoundation.com"
+  }
+}

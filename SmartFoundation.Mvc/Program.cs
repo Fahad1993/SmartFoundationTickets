@@ -4,6 +4,7 @@ using SmartFoundation.DataEngine.Core.Interfaces;
 using SmartFoundation.DataEngine.Core.Services;
 using SmartFoundation.DataEngine.Core.Utilities;
 using SmartFoundation.Mvc.Controllers;
+using SmartFoundation.Mvc.Controllers.Tickets;
 using System.Text.Json;
 using QuestPDF.Infrastructure;
 using QuestPDF.Drawing;
@@ -43,6 +44,7 @@ builder.Services.AddResponseCompression();
 builder.Services.AddSingleton<ConnectionFactory>();
 builder.Services.AddScoped<ISmartComponentService, SmartComponentService>();
 builder.Services.AddScoped<CrudController>();
+builder.Services.AddScoped<TicketController>();
 builder.Services.AddScoped<IPdfExportService, QuestPdfExportService>();
 
 // Application Layer

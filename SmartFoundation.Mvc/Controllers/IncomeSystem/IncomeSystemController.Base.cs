@@ -138,22 +138,22 @@ namespace SmartFoundation.Mvc.Controllers.IncomeSystem
         /// </summary>
         protected void SplitDataSet(DataSet ds)
         {
-            permissionTable = (ds?.Tables?.Count ?? 0) > 0 ? ds.Tables[0] : null;
-            dt1 = (ds?.Tables?.Count ?? 0) > 1 ? ds.Tables[1] : null;
-            dt2 = (ds?.Tables?.Count ?? 0) > 2 ? ds.Tables[2] : null;
-            dt3 = (ds?.Tables?.Count ?? 0) > 3 ? ds.Tables[3] : null;
-            dt4 = (ds?.Tables?.Count ?? 0) > 4 ? ds.Tables[4] : null;
-            dt5 = (ds?.Tables?.Count ?? 0) > 5 ? ds.Tables[5] : null;
-            dt6 = (ds?.Tables?.Count ?? 0) > 6 ? ds.Tables[6] : null;
-            dt7 = (ds?.Tables?.Count ?? 0) > 7 ? ds.Tables[7] : null;
-            dt8 = (ds?.Tables?.Count ?? 0) > 8 ? ds.Tables[8] : null;
-            dt9 = (ds?.Tables?.Count ?? 0) > 9 ? ds.Tables[9] : null;
-            dt10 = (ds?.Tables?.Count ?? 0) > 10 ? ds.Tables[10] : null;
-            dt11 = (ds?.Tables?.Count ?? 0) > 11 ? ds.Tables[11] : null;
-            dt12 = (ds?.Tables?.Count ?? 0) > 12 ? ds.Tables[12] : null;
-            dt13 = (ds?.Tables?.Count ?? 0) > 13 ? ds.Tables[13] : null;
-            dt14 = (ds?.Tables?.Count ?? 0) > 14 ? ds.Tables[14] : null;
-            dt15 = (ds?.Tables?.Count ?? 0) > 15 ? ds.Tables[15] : null;
+            permissionTable = ds?.Tables is { Count: > 0 } ? ds.Tables[0] : null;
+            dt1 = ds?.Tables is { Count: > 1 } ? ds.Tables[1] : null;
+            dt2 = ds?.Tables is { Count: > 2 } ? ds.Tables[2] : null;
+            dt3 = ds?.Tables is { Count: > 3 } ? ds.Tables[3] : null;
+            dt4 = ds?.Tables is { Count: > 4 } ? ds.Tables[4] : null;
+            dt5 = ds?.Tables is { Count: > 5 } ? ds.Tables[5] : null;
+            dt6 = ds?.Tables is { Count: > 6 } ? ds.Tables[6] : null;
+            dt7 = ds?.Tables is { Count: > 7 } ? ds.Tables[7] : null;
+            dt8 = ds?.Tables is { Count: > 8 } ? ds.Tables[8] : null;
+            dt9 = ds?.Tables is { Count: > 9 } ? ds.Tables[9] : null;
+            dt10 = ds?.Tables is { Count: > 10 } ? ds.Tables[10] : null;
+            dt11 = ds?.Tables is { Count: > 11 } ? ds.Tables[11] : null;
+            dt12 = ds?.Tables is { Count: > 12 } ? ds.Tables[12] : null;
+            dt13 = ds?.Tables is { Count: > 13 } ? ds.Tables[13] : null;
+            dt14 = ds?.Tables is { Count: > 14 } ? ds.Tables[14] : null;
+            dt15 = ds?.Tables is { Count: > 15 } ? ds.Tables[15] : null;
         }
 
         /// <summary>

@@ -1,0 +1,193 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e4]:
+      - button "Toggle sidebar" [ref=e6] [cursor=pointer]:
+        - img [ref=e7]
+      - generic [ref=e9]:
+        - navigation "روابط سريعة" [ref=e10]:
+          - link "الشاشة التفاعلية" [ref=e11] [cursor=pointer]:
+            - /url: /HousingCommandCenterDashboard/Index
+            - generic [ref=e13]: الشاشة التفاعلية
+        - navigation "روابط سريعة" [ref=e14]:
+          - link "الصفحة الرئيسية" [ref=e15] [cursor=pointer]:
+            - /url: /Home
+            - generic [ref=e17]: الصفحة الرئيسية
+        - navigation "روابط سريعة" [ref=e18]:
+          - button "تغيير كلمة المرور" [ref=e19] [cursor=pointer]:
+            - generic [ref=e21]: تغيير كلمة المرور
+        - button "عرض الإشعارات 2" [ref=e23]:
+          - generic [ref=e24]: عرض الإشعارات
+          - generic [ref=e25]:
+            - img [ref=e26]
+            - generic [ref=e28]: "2"
+        - button "الإعدادات" [ref=e31] [cursor=pointer]:
+          - generic [ref=e33]: الإعدادات
+  - navigation "Breadcrumb" [ref=e37]:
+    - list [ref=e39]:
+      - listitem [ref=e40]:
+        - link "الرئيسية" [ref=e41] [cursor=pointer]:
+          - /url: /Home
+      - listitem [ref=e42]: ◂
+      - listitem [ref=e43]: نظام التذاكر
+      - listitem [ref=e44]: ◂
+      - listitem [ref=e45]: قائمة التذاكر
+  - complementary "Sidebar" [ref=e46]:
+    - generic [ref=e47]:
+      - link "KFMC Logo البوابة الموحدة" [ref=e49] [cursor=pointer]:
+        - /url: /Dashboard
+        - img "KFMC Logo" [ref=e50]
+        - generic [ref=e51]: البوابة الموحدة
+      - generic [ref=e53]:
+        - generic [ref=e54]:
+          - img "user" [ref=e56]
+          - generic [ref=e57]: سامي محمد العمري
+          - generic [ref=e58]: "1064184763"
+          - generic [ref=e59]: ادارة مدينة الملك فيصل العسكرية
+          - generic [ref=e60]: أنت مدير النظام بالكامل
+        - generic [ref=e62]:
+          - generic [ref=e63]: بحث في القائمة
+          - textbox "بحث في القائمة" [ref=e65]:
+            - /placeholder: ابحث في القائمة ...
+        - list [ref=e66]:
+          - listitem [ref=e67]:
+            - button "لوحة التحكم" [ref=e69]:
+              - generic [ref=e71]: لوحة التحكم
+              - img [ref=e72]
+          - listitem [ref=e74]:
+            - button "الاسكان والممتلكات" [ref=e76]:
+              - generic [ref=e78]: الاسكان والممتلكات
+              - img [ref=e79]
+          - listitem [ref=e81]:
+            - button "نظام الايرادات المالية" [ref=e83]:
+              - generic [ref=e85]: نظام الايرادات المالية
+              - img [ref=e86]
+          - listitem [ref=e88]:
+            - button "نظام الفوترة الالكترونية" [ref=e90]:
+              - generic [ref=e92]: نظام الفوترة الالكترونية
+              - img [ref=e93]
+          - listitem [ref=e95]:
+            - button "صيانة العربات" [ref=e97]:
+              - generic [ref=e99]: صيانة العربات
+              - img [ref=e100]
+          - listitem [ref=e102]:
+            - button "الدعم الفني للنظام" [ref=e104]:
+              - generic [ref=e106]: الدعم الفني للنظام
+              - img [ref=e107]
+          - listitem [ref=e109]:
+            - button "نظام التذاكر" [ref=e111]:
+              - generic [ref=e113]: نظام التذاكر
+              - img [ref=e114]
+  - generic [ref=e116]:
+    - main [ref=e117]:
+      - generic [ref=e118]:
+        - generic [ref=e119]:
+          - generic [ref=e120]:
+            - generic [ref=e121]:
+              - link "رجوع" [ref=e122] [cursor=pointer]:
+                - /url: /Ticket/TicketList
+                - text: رجوع
+              - heading "TKT-2026-00001" [level=2] [ref=e124]
+              - generic [ref=e125]: جاري التنفيذ
+              - generic [ref=e126]: مرتفع
+            - paragraph [ref=e127]: صنبور مياه مكسور في المطبخ
+          - generic [ref=e129]:
+            - button "حل" [ref=e130] [cursor=pointer]: حل
+            - button "إيقاف مؤقت" [ref=e132] [cursor=pointer]: إيقاف مؤقت
+            - button "تحكيم" [ref=e134] [cursor=pointer]: تحكيم
+            - button "تذكرة فرعية" [ref=e136] [cursor=pointer]: تذكرة فرعية
+            - button "رفع مرفق" [ref=e138] [cursor=pointer]: رفع مرفق
+        - generic [ref=e140]:
+          - generic [ref=e141]:
+            - generic [ref=e143]:
+              - heading "الوصف" [level=3] [ref=e144]
+              - paragraph [ref=e145]: صنبور المطبخ يسرب بشكل كبير — خطر تلف المياه
+            - generic [ref=e147]:
+              - heading "التذاكر المرتبطة" [level=3] [ref=e148]: التذاكر المرتبطة
+              - generic [ref=e151]:
+                - generic [ref=e152]:
+                  - generic [ref=e153]: فرعية
+                  - link "TKT-2026-00006" [ref=e154] [cursor=pointer]:
+                    - /url: /Ticket/TicketDetails/6
+                  - generic [ref=e155]: تغيير مواسير المطبخ
+                - generic [ref=e156]: معيّن
+            - generic [ref=e158]:
+              - heading "سجل المتابعة" [level=3] [ref=e159]: سجل المتابعة
+              - generic [ref=e162]:
+                - generic [ref=e165]:
+                  - generic [ref=e166]:
+                    - generic [ref=e167]: إنشاء التذكرة
+                    - generic [ref=e168]: جديد
+                  - paragraph [ref=e169]: تم إنشاء التذكرة بواسطة المقيم
+                  - paragraph [ref=e170]: النظام · Apr 19, 01:46 PM
+                - generic [ref=e173]:
+                  - generic [ref=e174]:
+                    - generic [ref=e175]: توجيه إلى الطابور
+                    - generic [ref=e176]: موجّه
+                  - paragraph [ref=e177]: تم التوجيه تلقائياً حسب كتالوج الخدمات
+                  - paragraph [ref=e178]: خالد طامي علي الشهراني · Apr 19, 01:46 PM
+                - generic [ref=e181]:
+                  - generic [ref=e182]:
+                    - generic [ref=e183]: تعيين
+                    - generic [ref=e184]: معيّن
+                  - paragraph [ref=e185]: تم التعيين للفني بواسطة المشرف
+                  - paragraph [ref=e186]: محمد سلمان هادي الفيفي · Apr 19, 01:46 PM
+                - generic [ref=e189]:
+                  - generic [ref=e190]:
+                    - generic [ref=e191]: بدء العمل
+                    - generic [ref=e192]: جاري التنفيذ
+                  - paragraph [ref=e193]: بدأ الفني العمل على التذكرة
+                  - paragraph [ref=e194]: مشعل منصور مشعل العتيبي · Apr 19, 01:46 PM
+          - generic [ref=e195]:
+            - generic [ref=e198]:
+              - heading "معلومات التذكرة" [level=4] [ref=e199]
+              - generic [ref=e200]:
+                - generic [ref=e201]:
+                  - term [ref=e202]: الخدمة
+                  - definition [ref=e203]: إصلاح صنبور مياه
+                - generic [ref=e204]:
+                  - term [ref=e205]: مقدم الطلب
+                  - definition [ref=e206]: سامي محمد معيض العمري
+                - generic [ref=e207]:
+                  - term [ref=e208]: نوع مقدم الطلب
+                  - definition [ref=e209]: مقيم / مستفيد
+                - generic [ref=e210]:
+                  - term [ref=e211]: التصنيف
+                  - definition [ref=e212]: صيانة
+              - separator [ref=e213]
+              - generic [ref=e215]:
+                - term [ref=e216]: معيّن إلى
+                - definition [ref=e217]: مشعل منصور مشعل العتيبي
+              - separator [ref=e218]
+              - generic [ref=e221]:
+                - paragraph [ref=e222]: الموقع
+                - paragraph [ref=e223]: مبنى B-12، وحدة 3A، حي الهزاز
+            - generic [ref=e225]:
+              - heading "حالة مستوى الخدمة" [level=4] [ref=e226]
+              - generic [ref=e227]:
+                - paragraph [ref=e228]: SLA الإنجاز
+                - paragraph [ref=e229]: 10h 0m
+            - generic [ref=e231]:
+              - heading "جلسات الإيقاف" [level=4] [ref=e232]: جلسات الإيقاف
+              - generic [ref=e234]:
+                - generic [ref=e235]:
+                  - generic [ref=e237]: طلب توضيح من الموقع
+                  - paragraph [ref=e238]: قطع غيار كهربائية غير متوفرة
+                  - paragraph [ref=e239]: "البداية: Mar 20, 11:00 AM — النهاية: Mar 21, 08:00 AM"
+                - generic [ref=e240]:
+                  - generic [ref=e242]: بانتظار موافقة
+                  - paragraph [ref=e243]: بانتظار قطع غيار سباكة من المستودع
+                  - paragraph [ref=e244]: "البداية: Mar 20, 08:30 AM — النهاية: Mar 20, 09:00 AM"
+            - generic [ref=e246]:
+              - heading "التواريخ" [level=4] [ref=e247]
+              - generic [ref=e248]:
+                - generic [ref=e249]:
+                  - term [ref=e250]: تاريخ الإنشاء
+                  - definition [ref=e251]: Apr 19, 01:46 PM
+                - generic [ref=e252]:
+                  - term [ref=e253]: آخر تحديث
+                  - definition [ref=e254]: Apr 19, 01:46 PM
+    - contentinfo [ref=e255]:
+      - generic [ref=e257]: إدارة مدينة الملك فيصل العسكرية © 2026
+  - button "فيصل المساعد الذكي فيصل المساعد الذكي" [ref=e259] [cursor=pointer]:
+    - img "فيصل المساعد الذكي" [ref=e261]
+    - generic [ref=e262]: فيصل المساعد الذكي

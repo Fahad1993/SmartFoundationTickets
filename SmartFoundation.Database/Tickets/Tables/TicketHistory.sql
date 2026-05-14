@@ -10,6 +10,7 @@ CREATE TABLE [Tickets].[TicketHistory] (
     [oldAssignedUserID] INT             NULL,
     [newAssignedUserID] INT             NULL,
     [performerUserID]   INT             NULL,
+    [notes_A]           NVARCHAR (2000) NULL,
     [notes]             NVARCHAR (2000) NULL,
     [actionDate]        DATETIME        CONSTRAINT [DF_Tickets_TicketHistory_actionDate] DEFAULT (GETDATE()) NOT NULL,
     [entryDate]         DATETIME        CONSTRAINT [DF_Tickets_TicketHistory_entryDate] DEFAULT (GETDATE()) NULL,

@@ -36,6 +36,7 @@ BEGIN
             ba.buildingActionTypeResidentAlias,
             w.buildingDetailsID,
             w.buildingDetailsNo,
+            convert(nvarchar(10),w.OccupentDate,23) OccupentDate,
             isnull(w.LastActionNote,w.ActionNote) ActionNote,
             w.IdaraId,
             w.AssignPeriodID,
@@ -43,6 +44,7 @@ BEGIN
             where m.buildingDetailsID_FK = w.buildingDetailsID 
             and m.IdaraID_FK = w.IdaraId 
             and m.meterForBuildingActive = 1) meterscount
+            
            
             
             

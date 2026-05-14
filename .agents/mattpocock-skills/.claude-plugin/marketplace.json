@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "smartfoundation-components",
+  "version": "0.0.1",
+  "description": "Skills for creating Smart Foundation components",
+  "owner": {
+    "name": "SmartFoundation Team",
+    "email": "dev@smartfoundation.com"
+  },
+  "plugins": [
+    {
+      "name": "create-smart-component",
+      "source": "./skills/create-smart-component",
+      "category": "development",
+      "description": "Create a new Smart Foundation component following the established architecture pattern"
+    }
+  ]
+}

@@ -386,12 +386,14 @@ END
             t.BillChargeTypeName_A,
             bp.buildingDetailsID_FK AS buildingDetailsID,
             bd.buildingDetailsNo,
-            vgrd.FullName_A
+            vgrd.FullName_A,
+            d.deductName
             FROM   Housing.BuildingPayment AS bp INNER JOIN
                          Housing.DeductList AS d ON bp.deductListID_FK = d.deductListID INNER JOIN
                          Housing.BillChargeType AS t ON bp.BillChargeTypeID_FK = t.BillChargeTypeID INNER JOIN
                          Housing.BuildingDetails AS bd ON bp.buildingDetailsID_FK = bd.buildingDetailsID LEFT JOIN
                          Housing.V_GetFullResidentDetails AS vgrd ON bp.residentInfoID_FK = vgrd.residentInfoID
+                        
             WHERE 
             (d.deductActive = 1) 
             AND (bp.buildingPayementActive = 1) 
@@ -489,6 +491,33 @@ END
             FROM Housing.Bills b
             where b.BillsID = @parameter_01
             END
+
+
+        END
+
+
+          -------------------------------------------------------------------
+    --                  FinancialAuditForExtendAndEvictions
+    -------------------------------------------------------------------
+
+
+         ELSE IF @pageName_ = 'WaitingListByResident'
+        BEGIN
+         IF @ActionType = 'GetWaitingListActions'
+            BEGIN
+
+               select b.buildingActionTypeResidentAlias
+              ,convert(nvarchar(10),c.entryDate,23)+' '+convert(nvarchar(10),c.entryDate,8) as entryDate
+              ,u.FullName
+              from [Housing].[fn_BuildingAction_ChainToRoot](@parameter_01) c
+              inner join Housing.BuildingActionType b on c.buildingActionTypeID_FK = b.buildingActionTypeID
+              inner join dbo.V_GetFullSystemUsersDetails u on c.entryData = u.usersID    
+              order by c.entryDate asc
+       
+            END
+
+
+            
 
 
         END

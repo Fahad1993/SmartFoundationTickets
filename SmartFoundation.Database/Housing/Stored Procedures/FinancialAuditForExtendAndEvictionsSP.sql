@@ -8,7 +8,6 @@ CREATE PROCEDURE [Housing].[FinancialAuditForExtendAndEvictionsSP]
     , @LastActionID                         NVARCHAR(1000)  = NULL
     , @LastActionTypeID                     NVARCHAR(1000)  = NULL
     , @Notes                                NVARCHAR(1000)  = NULL
-    , @ExitDate                             NVARCHAR(1000)  = NULL
     , @LastActionExtendReasonTypeID         NVARCHAR(1000)  = NULL
     , @PaymentType                          NVARCHAR(1000)  = NULL
     , @PaymentNo                            NVARCHAR(1000)  = NULL
@@ -18,6 +17,8 @@ CREATE PROCEDURE [Housing].[FinancialAuditForExtendAndEvictionsSP]
     , @BillChargeTypeID_FK                  NVARCHAR(1000)  = NULL
     , @ToBillChargeTypeID_FK                NVARCHAR(1000)  = NULL
     , @description                          NVARCHAR(4000)  = NULL
+    , @OccupentDate                         NVARCHAR(4000)  = NULL
+    , @ExitDate                             NVARCHAR(1000)  = NULL
     , @idaraID_FK                           NVARCHAR(10)    = NULL
     , @entryData                            NVARCHAR(20)    = NULL
     , @hostName                             NVARCHAR(200)   = NULL
@@ -200,7 +201,9 @@ BEGIN
             9999
             END
             from Housing.V_WaitingList w
-            where w.residentInfoID = @residentInfoID and w.buildingDetailsID = @buildingDetailsID
+            where w.residentInfoID = @residentInfoID 
+            and w.ActionID = @ActionID
+            and w.buildingDetailsID = @buildingDetailsID
 
             IF 
             (
@@ -231,6 +234,8 @@ BEGIN
                 , buildingActionFromDate
                 , buildingActionToDate
                 , ExtendReasonTypeID_FK
+                , OccupentDate
+                --, ExitDate
                 , IdaraId_FK
                 , entryData
                 , hostName
@@ -249,6 +254,8 @@ BEGIN
                 , @ExtendStartDate
                 , @ExtendEndDate
                 , w.LastActionExtendReasonTypeID
+                , cast(@OccupentDate as date)
+                --, @ExitDate
                 , @IdaraID_INT
                 , @entryData
                 , @hostName
@@ -348,6 +355,8 @@ BEGIN
                 , buildingActionDecisionDate
                 , buildingActionDecisionNo
                 , ExtendReasonTypeID_FK
+                , OccupentDate
+                , ExitDate
                 , IdaraId_FK
                 , entryData
                 , hostName
@@ -362,9 +371,11 @@ BEGIN
                 , @Notes
                 , @LastActionID
                 , GETDATE() 
-                , w.ActionDecisionDate
-                , w.ActionDecisionNo
+                , null
+                , null
                 , @LastActionExtendReasonTypeID
+                , @OccupentDate
+                , @ExitDate
                 , @IdaraID_INT
                 , @entryData
                 , @hostName

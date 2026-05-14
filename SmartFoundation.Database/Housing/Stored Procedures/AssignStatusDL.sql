@@ -43,6 +43,7 @@ BEGIN
             ba.buildingActionTypeResidentAlias,
             w.buildingDetailsID,
             w.buildingDetailsNo,
+            b.militaryLocationName_A,
             isnull(w.LastActionNote,w.ActionNote) ActionNote,
             w.IdaraId,
             w.AssignPeriodID,
@@ -51,12 +52,15 @@ BEGIN
             rd.militaryUnitName_A
             
             
+            
+            
     FROM Housing.V_WaitingList w 
     INNER JOIN Housing.V_GetFullResidentDetails rd 
         ON w.residentInfoID = rd.residentInfoID
         Inner Join Housing.BuildingActionType ba on w.LastActionTypeID = ba.buildingActionTypeID
-    WHERE w.AssignPeriodID = 20
-      AND w.IdaraId = 1
+        left join Housing.V_GetGeneralListForBuilding b on w.buildingDetailsID = b.buildingDetailsID
+    WHERE w.AssignPeriodID = @AssignPeriodID
+      AND w.IdaraId = @idaraID
       AND  w.LastActionTypeID in (38,39,40,41,42,45)
       AND (w.InAssignPeriod = 1 or w.InAssignPeriod is null)
       order by   w.waitingClassSequence asc

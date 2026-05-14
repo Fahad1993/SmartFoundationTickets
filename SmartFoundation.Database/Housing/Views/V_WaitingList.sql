@@ -5,6 +5,8 @@
 
 
 
+
+
 CREATE VIEW [Housing].[V_WaitingList]
 AS
 WITH d AS
@@ -115,7 +117,9 @@ SELECT
     la.entryDate AS LastActionEntryDate,
     la.entryData AS LastActionEntryData,
     la.ExtendReasonTypeID_FK as LastActionExtendReasonTypeID,
-    rd.IdaraId_FK ResidentIdaraID
+    rd.IdaraId_FK ResidentIdaraID,
+    la.OccupentDate,
+    la.ExitDate
     
 FROM Housing.BuildingAction b
 LEFT JOIN leaf l

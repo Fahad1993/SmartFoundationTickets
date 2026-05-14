@@ -1,0 +1,74 @@
+@using SmartFoundation.UI.ViewModels.SmartPage
+@using System.Text.Json
+
+@model SlaPanelConfig
+
+@{
+    var webJson = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+
+    var panelConfig = new
+    {
+        title = Model.Title ?? "Service Level Agreement",
+        icon = Model.Icon ?? "fa-clock",
+        responseTimeMinutes = Model.ResponseTimeMinutes,
+        resolutionTimeMinutes = Model.ResolutionTimeMinutes,
+        achievedPercentage = Model.AchievedPercentage,
+        showDetails = Model.ShowDetails,
+        colorScheme = Model.ColorScheme ?? "blue"
+    };
+}
+
+<!-- Alpine.js component - NO inline scripts or styles -->
+<div x-data='SlaPanel(@Html.Raw(JsonSerializer.Serialize(panelConfig, webJson)))'
+     x-init="init()" x-cloak
+     class="sla-panel"
+     :class="'sla-panel--' + colorScheme"
+     dir="rtl">
+
+    <!-- Header -->
+    <div class="sla-panel__header">
+        <div class="sla-panel__title">
+            <i :class="icon" x-show="icon"></i>
+            <span x-text="title"></span>
+        </div>
+        <div class="sla-panel__badge"
+             :class="'sla-panel__badge--' + colorScheme"
+             x-text="Math.round(achievedPercentage) + '%'">
+        </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="sla-panel__metrics">
+        <div class="sla-panel__metric">
+            <span class="sla-panel__metric-label">وقت الاستجابة</span>
+            <span class="sla-panel__metric-value" x-text="formatTime(responseTimeMinutes)"></span>
+        </div>
+        <div class="sla-panel__metric">
+            <span class="sla-panel__metric-label">وقت الحل</span>
+            <span class="sla-panel__metric-value" x-text="formatTime(resolutionTimeMinutes)"></span>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="sla-panel__progress">
+        <div class="sla-panel__progress-bar"
+             :class="'sla-panel__progress-bar--' + colorScheme"
+             :style="'width:' + achievedPercentage + '%'">
+        </div>
+    </div>
+
+    <!-- Details (Collapsible) -->
+    <div x-show="showDetails" class="sla-panel__details">
+        <div class="sla-panel__detail-row">
+            <span>معدل الاستجابة المحقق</span>
+            <span class="sla-panel__detail-value"
+                  :class="colorScheme === 'green' || colorScheme === 'blue' ? 'sla-panel__detail-value--success' : ''"
+                  x-text="Math.round(achievedPercentage) + '%'"></span>
+        </div>
+        <div class="sla-panel__detail-row">
+            <span>الهدف</span>
+            <span class="sla-panel__detail-value" x-text="formatTime(responseTimeMinutes)"></span>
+        </div>
+    </div>
+
+</div>

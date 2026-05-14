@@ -121,31 +121,31 @@ namespace SmartFoundation.Mvc.Controllers.Housing
         /// </summary>
         protected void SplitDataSet(DataSet ds)
         {
-            permissionTable = (ds?.Tables?.Count ?? 0) > 0 ? ds.Tables[0] : null;
-            dt1 = (ds?.Tables?.Count ?? 0) > 1 ? ds.Tables[1] : null;
-            dt2 = (ds?.Tables?.Count ?? 0) > 2 ? ds.Tables[2] : null;
-            dt3 = (ds?.Tables?.Count ?? 0) > 3 ? ds.Tables[3] : null;
-            dt4 = (ds?.Tables?.Count ?? 0) > 4 ? ds.Tables[4] : null;
-            dt5 = (ds?.Tables?.Count ?? 0) > 5 ? ds.Tables[5] : null;
-            dt6 = (ds?.Tables?.Count ?? 0) > 6 ? ds.Tables[6] : null;
-            dt7 = (ds?.Tables?.Count ?? 0) > 7 ? ds.Tables[7] : null;
-            dt8 = (ds?.Tables?.Count ?? 0) > 8 ? ds.Tables[8] : null;
-            dt9 = (ds?.Tables?.Count ?? 0) > 9 ? ds.Tables[9] : null;
+            permissionTable = ds?.Tables is { Count: > 0 } ? ds.Tables[0] : null;
+            dt1 = ds?.Tables is { Count: > 1 } ? ds.Tables[1] : null;
+            dt2 = ds?.Tables is { Count: > 2 } ? ds.Tables[2] : null;
+            dt3 = ds?.Tables is { Count: > 3 } ? ds.Tables[3] : null;
+            dt4 = ds?.Tables is { Count: > 4 } ? ds.Tables[4] : null;
+            dt5 = ds?.Tables is { Count: > 5 } ? ds.Tables[5] : null;
+            dt6 = ds?.Tables is { Count: > 6 } ? ds.Tables[6] : null;
+            dt7 = ds?.Tables is { Count: > 7 } ? ds.Tables[7] : null;
+            dt8 = ds?.Tables is { Count: > 8 } ? ds.Tables[8] : null;
+            dt9 = ds?.Tables is { Count: > 9 } ? ds.Tables[9] : null;
         }
 
 
         protected void SplitExtraDataSet(DataSet dsExtra)
         {
-            permissionTable = (dsExtra?.Tables?.Count ?? 0) > 0 ? dsExtra.Tables[0] : null;
-            dtExtra1 = (dsExtra?.Tables?.Count ?? 0) > 1 ? dsExtra.Tables[1] : null;
-            dtExtra2 = (dsExtra?.Tables?.Count ?? 0) > 2 ? dsExtra.Tables[2] : null;
-            dtExtra3 = (dsExtra?.Tables?.Count ?? 0) > 3 ? dsExtra.Tables[3] : null;
-            dtExtra4 = (dsExtra?.Tables?.Count ?? 0) > 4 ? dsExtra.Tables[4] : null;
-            dtExtra5 = (dsExtra?.Tables?.Count ?? 0) > 5 ? dsExtra.Tables[5] : null;
-            dtExtra6 = (dsExtra?.Tables?.Count ?? 0) > 6 ? dsExtra.Tables[6] : null;
-            dtExtra7 = (dsExtra?.Tables?.Count ?? 0) > 7 ? dsExtra.Tables[7] : null;
-            dtExtra8 = (dsExtra?.Tables?.Count ?? 0) > 8 ? dsExtra.Tables[8] : null;
-            dtExtra9 = (dsExtra?.Tables?.Count ?? 0) > 9 ? dsExtra.Tables[9] : null;
+            permissionTable = dsExtra?.Tables is { Count: > 0 } ? dsExtra.Tables[0] : null;
+            dtExtra1 = dsExtra?.Tables is { Count: > 1 } ? dsExtra.Tables[1] : null;
+            dtExtra2 = dsExtra?.Tables is { Count: > 2 } ? dsExtra.Tables[2] : null;
+            dtExtra3 = dsExtra?.Tables is { Count: > 3 } ? dsExtra.Tables[3] : null;
+            dtExtra4 = dsExtra?.Tables is { Count: > 4 } ? dsExtra.Tables[4] : null;
+            dtExtra5 = dsExtra?.Tables is { Count: > 5 } ? dsExtra.Tables[5] : null;
+            dtExtra6 = dsExtra?.Tables is { Count: > 6 } ? dsExtra.Tables[6] : null;
+            dtExtra7 = dsExtra?.Tables is { Count: > 7 } ? dsExtra.Tables[7] : null;
+            dtExtra8 = dsExtra?.Tables is { Count: > 8 } ? dsExtra.Tables[8] : null;
+            dtExtra9 = dsExtra?.Tables is { Count: > 9 } ? dsExtra.Tables[9] : null;
         }
     }
 }

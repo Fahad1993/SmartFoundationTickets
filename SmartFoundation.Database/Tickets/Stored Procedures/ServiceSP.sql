@@ -1,4 +1,4 @@
-CREATE PROCEDURE [Tickets].[ServiceSP]
+﻿CREATE PROCEDURE [Tickets].[ServiceSP]
 (
       @Action                      NVARCHAR(200)
     , @serviceID                   BIGINT          = NULL
@@ -25,9 +25,11 @@ CREATE PROCEDURE [Tickets].[ServiceSP]
     , @serviceCatalogSuggestionID  BIGINT          = NULL
     , @proposedServiceName_A       NVARCHAR(500)   = NULL
     , @proposedServiceName_E       NVARCHAR(500)   = NULL
+    , @proposedServiceDesc_A       NVARCHAR(2000)  = NULL
     , @proposedServiceDesc         NVARCHAR(2000)  = NULL
     , @proposedTargetDSDID_FK      INT             = NULL
     , @proposedPriorityID_FK       INT             = NULL
+    , @approvalNotes_A             NVARCHAR(2000)  = NULL
     , @approvalNotes               NVARCHAR(2000)  = NULL
     , @effectiveFrom               DATETIME        = NULL
     , @entryData                   NVARCHAR (20)   = NULL
@@ -46,7 +48,7 @@ BEGIN
         IF @tc = 0 BEGIN TRAN;
 
         IF NULLIF(LTRIM(RTRIM(@Action)), N'') IS NULL
-        BEGIN ;THROW 50001, N'Action is required', 1; END
+        BEGIN ;THROW 50001, N'نوع الإجراء مطلوب', 1; END
 
         ----------------------------------------------------------------
         -- INSERT_SERVICE
@@ -54,10 +56,10 @@ BEGIN
         IF @Action = N'INSERT_SERVICE'
         BEGIN
             IF NULLIF(LTRIM(RTRIM(@serviceName_A)), N'') IS NULL
-            BEGIN ;THROW 50001, N'Service name (Arabic) is required', 1; END
+            BEGIN ;THROW 50001, N'اسم الخدمة بالعربية مطلوب', 1; END
 
             IF @idaraID_FK IS NULL
-            BEGIN ;THROW 50001, N'IdaraID is required', 1; END
+            BEGIN ;THROW 50001, N'معرف الإدارة مطلوب', 1; END
 
             IF EXISTS (
                 SELECT 1 FROM [Tickets].[Service]
@@ -65,7 +67,7 @@ BEGIN
                   AND [serviceActive] = 1
                   AND [idaraID_FK] = @idaraID_FK
             )
-            BEGIN ;THROW 50001, N'A service with this Arabic name already exists for this Idara', 1; END
+            BEGIN ;THROW 50001, N'توجد خدمة بنفس الاسم العربي لهذه الإدارة مسبقاً', 1; END
 
             INSERT INTO [Tickets].[Service]
             (
@@ -84,7 +86,7 @@ BEGIN
 
             SET @NewID = SCOPE_IDENTITY();
             IF @NewID IS NULL OR @NewID <= 0
-            BEGIN ;THROW 50002, N'Failed to create service - identity error', 1; END
+            BEGIN ;THROW 50002, N'فشل إنشاء الخدمة بسبب خطأ في توليد المعرف', 1; END
 
             SET @Note = N'{"serviceID":"' + CAST(@NewID AS NVARCHAR(20))
                 + N'","serviceCode":"' + ISNULL(@serviceCode, N'')
@@ -93,7 +95,7 @@ BEGIN
             INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
             VALUES (N'[Tickets].[Service]', N'INSERT_SERVICE', @NewID, @entryData, @Note);
 
-            SELECT 1 AS IsSuccessful, N'Service created successfully' AS Message_;
+            SELECT 1 AS IsSuccessful, N'تم إنشاء الخدمة بنجاح' AS Message_;
             RETURN;
         END
 
@@ -103,10 +105,10 @@ BEGIN
         ELSE IF @Action = N'UPDATE_SERVICE'
         BEGIN
             IF @serviceID IS NULL
-            BEGIN ;THROW 50001, N'ServiceID is required for update', 1; END
+            BEGIN ;THROW 50001, N'معرف الخدمة مطلوب للتحديث', 1; END
 
             IF NOT EXISTS (SELECT 1 FROM [Tickets].[Service] WHERE [serviceID] = @serviceID AND [serviceActive] = 1)
-            BEGIN ;THROW 50001, N'Service not found or inactive', 1; END
+            BEGIN ;THROW 50001, N'لم يتم العثور على الخدمة أو أنها غير نشطة', 1; END
 
             UPDATE [Tickets].[Service]
             SET
@@ -119,19 +121,19 @@ BEGIN
                 , [requiresLocation]      = ISNULL(@requiresLocation, [requiresLocation])
                 , [allowsChildTickets]    = ISNULL(@allowsChildTickets, [allowsChildTickets])
                 , [requiresQualityReview] = ISNULL(@requiresQualityReview, [requiresQualityReview])
-                , [entryData] = ISNULL(ISNULL([entryData],N'') + N',' + @entryData, [entryData])
-                , [hostName]  = ISNULL(ISNULL(@hostName,N'') + N',' + [hostName], [hostName])
+                                , [entryData] = @entryData
+                                , [hostName]  = @hostName
             WHERE [serviceID] = @serviceID;
 
             IF @@ROWCOUNT = 0
-            BEGIN ;THROW 50002, N'No rows updated', 1; END
+            BEGIN ;THROW 50002, N'لم يتم تحديث أي صفوف', 1; END
 
             SET @Note = N'{"serviceID":"' + CAST(@serviceID AS NVARCHAR(20)) + N'"}';
 
             INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
             VALUES (N'[Tickets].[Service]', N'UPDATE_SERVICE', @serviceID, @entryData, @Note);
 
-            SELECT 1 AS IsSuccessful, N'Service updated successfully' AS Message_;
+            SELECT 1 AS IsSuccessful, N'تم تحديث الخدمة بنجاح' AS Message_;
             RETURN;
         END
 
@@ -141,26 +143,26 @@ BEGIN
         ELSE IF @Action = N'DELETE_SERVICE'
         BEGIN
             IF @serviceID IS NULL
-            BEGIN ;THROW 50001, N'ServiceID is required for deletion', 1; END
+            BEGIN ;THROW 50001, N'معرف الخدمة مطلوب للحذف', 1; END
 
             IF NOT EXISTS (SELECT 1 FROM [Tickets].[Service] WHERE [serviceID] = @serviceID AND [serviceActive] = 1)
-            BEGIN ;THROW 50001, N'Service not found or already inactive', 1; END
+            BEGIN ;THROW 50001, N'لم يتم العثور على الخدمة أو أنها غير نشطة مسبقاً', 1; END
 
             UPDATE [Tickets].[Service]
             SET [serviceActive] = 0
-              , [entryData] = ISNULL(ISNULL([entryData],N'') + N',' + @entryData, [entryData])
-              , [hostName]  = ISNULL(ISNULL(@hostName,N'') + N',' + [hostName], [hostName])
+                            , [entryData] = @entryData
+                            , [hostName]  = @hostName
             WHERE [serviceID] = @serviceID;
 
             IF @@ROWCOUNT = 0
-            BEGIN ;THROW 50002, N'No rows deleted', 1; END
+            BEGIN ;THROW 50002, N'لم يتم حذف أي صفوف', 1; END
 
             SET @Note = N'{"serviceID":"' + CAST(@serviceID AS NVARCHAR(20)) + N'"}';
 
             INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
             VALUES (N'[Tickets].[Service]', N'DELETE_SERVICE', @serviceID, @entryData, @Note);
 
-            SELECT 1 AS IsSuccessful, N'Service deactivated successfully' AS Message_;
+            SELECT 1 AS IsSuccessful, N'تم تعطيل الخدمة بنجاح' AS Message_;
             RETURN;
         END
 
@@ -170,18 +172,39 @@ BEGIN
         ELSE IF @Action = N'INSERT_ROUTING_RULE'
         BEGIN
             IF @serviceID IS NULL
-            BEGIN ;THROW 50001, N'ServiceID is required for routing rule', 1; END
+            BEGIN ;THROW 50001, N'معرف الخدمة مطلوب لقاعدة التوجيه', 1; END
 
             IF @targetDSDID_FK IS NULL
-            BEGIN ;THROW 50001, N'TargetDSDID is required for routing rule', 1; END
+            BEGIN ;THROW 50001, N'معرف الجهة المستهدفة مطلوب لقاعدة التوجيه', 1; END
 
             IF @idaraID_FK IS NULL
-            BEGIN ;THROW 50001, N'IdaraID is required for routing rule', 1; END
+            BEGIN ;THROW 50001, N'معرف الإدارة مطلوب لقاعدة التوجيه', 1; END
 
             IF NOT EXISTS (SELECT 1 FROM [Tickets].[Service] WHERE [serviceID] = @serviceID AND [serviceActive] = 1)
-            BEGIN ;THROW 50001, N'Active service not found', 1; END
+            BEGIN ;THROW 50001, N'لم يتم العثور على خدمة نشطة', 1; END
+
+                        IF NOT EXISTS (
+                                SELECT 1
+                                FROM dbo.[V_GetFullStructureForDSD]
+                                WHERE [DSDID] = @targetDSDID_FK
+                                    AND [IdaraID] = @idaraID_FK
+                        )
+                        BEGIN ;THROW 50001, N'الجهة المستهدفة غير صالحة لهذه الإدارة', 1; END
 
             DECLARE @EffFrom DATETIME = ISNULL(@effectiveFrom, GETDATE());
+
+                        UPDATE [Tickets].[ServiceRoutingRule]
+                        SET [effectiveTo] = CASE
+                                                                        WHEN [effectiveFrom] < @EffFrom THEN DATEADD(SECOND, -1, @EffFrom)
+                                                                        ELSE @EffFrom
+                                                                END
+                            , [serviceRoutingRuleActive] = 0
+                            , [entryData] = @entryData
+                            , [hostName]  = @hostName
+                        WHERE [serviceID_FK] = @serviceID
+                            AND [serviceRoutingRuleActive] = 1
+                            AND [effectiveFrom] <= @EffFrom
+                            AND ([effectiveTo] IS NULL OR [effectiveTo] >= @EffFrom);
 
             INSERT INTO [Tickets].[ServiceRoutingRule]
             (
@@ -198,7 +221,7 @@ BEGIN
 
             SET @NewID = SCOPE_IDENTITY();
             IF @NewID IS NULL OR @NewID <= 0
-            BEGIN ;THROW 50002, N'Failed to create routing rule', 1; END
+            BEGIN ;THROW 50002, N'فشل إنشاء قاعدة التوجيه', 1; END
 
             SET @Note = N'{"serviceRoutingRuleID":"' + CAST(@NewID AS NVARCHAR(20))
                 + N'","serviceID":"' + CAST(@serviceID AS NVARCHAR(20))
@@ -207,7 +230,7 @@ BEGIN
             INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
             VALUES (N'[Tickets].[ServiceRoutingRule]', N'INSERT_ROUTING_RULE', @NewID, @entryData, @Note);
 
-            SELECT 1 AS IsSuccessful, N'Routing rule created successfully' AS Message_;
+            SELECT 1 AS IsSuccessful, N'تم إنشاء قاعدة التوجيه بنجاح' AS Message_;
             RETURN;
         END
 
@@ -219,27 +242,27 @@ BEGIN
             DECLARE @RuleID BIGINT = @serviceID;
 
             IF @RuleID IS NULL
-            BEGIN ;THROW 50001, N'ServiceRoutingRuleID (passed as @serviceID) is required', 1; END
+            BEGIN ;THROW 50001, N'معرف قاعدة توجيه الخدمة (الممرر كـ @serviceID) مطلوب', 1; END
 
             IF NOT EXISTS (SELECT 1 FROM [Tickets].[ServiceRoutingRule] WHERE [serviceRoutingRuleID] = @RuleID AND [serviceRoutingRuleActive] = 1)
-            BEGIN ;THROW 50001, N'Active routing rule not found', 1; END
+            BEGIN ;THROW 50001, N'لم يتم العثور على قاعدة توجيه نشطة', 1; END
 
             UPDATE [Tickets].[ServiceRoutingRule]
             SET [effectiveTo] = GETDATE()
               , [serviceRoutingRuleActive] = 0
-              , [entryData] = ISNULL(ISNULL([entryData],N'') + N',' + @entryData, [entryData])
-              , [hostName]  = ISNULL(ISNULL(@hostName,N'') + N',' + [hostName], [hostName])
+                            , [entryData] = @entryData
+                            , [hostName]  = @hostName
             WHERE [serviceRoutingRuleID] = @RuleID;
 
             IF @@ROWCOUNT = 0
-            BEGIN ;THROW 50002, N'No routing rule closed', 1; END
+            BEGIN ;THROW 50002, N'لم يتم إغلاق أي قاعدة توجيه', 1; END
 
             SET @Note = N'{"serviceRoutingRuleID":"' + CAST(@RuleID AS NVARCHAR(20)) + N'"}';
 
             INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
             VALUES (N'[Tickets].[ServiceRoutingRule]', N'CLOSE_ROUTING_RULE', @RuleID, @entryData, @Note);
 
-            SELECT 1 AS IsSuccessful, N'Routing rule closed successfully' AS Message_;
+            SELECT 1 AS IsSuccessful, N'تم إغلاق قاعدة التوجيه بنجاح' AS Message_;
             RETURN;
         END
 
@@ -249,13 +272,13 @@ BEGIN
         ELSE IF @Action = N'UPSERT_SLA_POLICY'
         BEGIN
             IF @serviceID IS NULL
-            BEGIN ;THROW 50001, N'ServiceID is required for SLA policy', 1; END
+            BEGIN ;THROW 50001, N'معرف الخدمة مطلوب لسياسة SLA', 1; END
 
             IF @priorityID_FK IS NULL
-            BEGIN ;THROW 50001, N'PriorityID is required for SLA policy', 1; END
+            BEGIN ;THROW 50001, N'معرف الأولوية مطلوب لسياسة SLA', 1; END
 
             IF @idaraID_FK IS NULL
-            BEGIN ;THROW 50001, N'IdaraID is required for SLA policy', 1; END
+            BEGIN ;THROW 50001, N'معرف الإدارة مطلوب لسياسة SLA', 1; END
 
             IF EXISTS (
                 SELECT 1 FROM [Tickets].[ServiceSLAPolicy]
@@ -271,8 +294,8 @@ BEGIN
                     , [assignmentTargetMinutes]            = ISNULL(@assignmentTargetMinutes, [assignmentTargetMinutes])
                     , [operationalCompletionTargetMinutes] = ISNULL(@operationalCompletionTargetMinutes, [operationalCompletionTargetMinutes])
                     , [finalClosureTargetMinutes]          = ISNULL(@finalClosureTargetMinutes, [finalClosureTargetMinutes])
-                    , [entryData] = ISNULL(ISNULL([entryData],N'') + N',' + @entryData, [entryData])
-                    , [hostName]  = ISNULL(ISNULL(@hostName,N'') + N',' + [hostName], [hostName])
+                                        , [entryData] = @entryData
+                                        , [hostName]  = @hostName
                 WHERE [serviceID_FK] = @serviceID
                   AND [priorityID_FK] = @priorityID_FK
                   AND [idaraID_FK] = @idaraID_FK
@@ -284,7 +307,7 @@ BEGIN
                 INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
                 VALUES (N'[Tickets].[ServiceSLAPolicy]', N'UPSERT_SLA_POLICY', @serviceID, @entryData, @Note);
 
-                SELECT 1 AS IsSuccessful, N'SLA policy updated successfully' AS Message_;
+                SELECT 1 AS IsSuccessful, N'تم تحديث سياسة SLA بنجاح' AS Message_;
                 RETURN;
             END
             ELSE
@@ -313,7 +336,7 @@ BEGIN
                 INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
                 VALUES (N'[Tickets].[ServiceSLAPolicy]', N'UPSERT_SLA_POLICY', @NewID, @entryData, @Note);
 
-                SELECT 1 AS IsSuccessful, N'SLA policy created successfully' AS Message_;
+                SELECT 1 AS IsSuccessful, N'تم إنشاء سياسة SLA بنجاح' AS Message_;
                 RETURN;
             END
         END
@@ -324,7 +347,7 @@ BEGIN
         ELSE IF @Action = N'APPROVE_SERVICE_SUGGESTION'
         BEGIN
             IF @serviceCatalogSuggestionID IS NULL
-            BEGIN ;THROW 50001, N'ServiceCatalogSuggestionID is required', 1; END
+            BEGIN ;THROW 50001, N'معرف اقتراح دليل الخدمة مطلوب', 1; END
 
             DECLARE @SugID BIGINT = @serviceCatalogSuggestionID;
             DECLARE @SugIdaraID INT;
@@ -338,7 +361,7 @@ BEGIN
                   @SugIdaraID  = [idaraID_FK]
                 , @SugName_A   = [proposedServiceName_A]
                 , @SugName_E   = [proposedServiceName_E]
-                , @SugDesc     = [proposedServiceDesc]
+                                , @SugDesc     = COALESCE([proposedServiceDesc_A], [proposedServiceDesc])
                 , @SugDSDID    = [proposedTargetDSDID_FK]
                 , @SugPriorityID = [proposedPriorityID_FK]
             FROM [Tickets].[ServiceCatalogSuggestion]
@@ -346,7 +369,7 @@ BEGIN
               AND [approvalStatus] = N'PENDING';
 
             IF @SugName_A IS NULL
-            BEGIN ;THROW 50001, N'Suggestion not found or not in PENDING status', 1; END
+            BEGIN ;THROW 50001, N'لم يتم العثور على الاقتراح أو أنه ليس في حالة PENDING', 1; END
 
             INSERT INTO [Tickets].[Service]
             (
@@ -371,10 +394,11 @@ BEGIN
                   [approvalStatus]    = N'APPROVED'
                 , [approvedByUserID]  = @approvedByUserID
                 , [approvalDate]      = GETDATE()
-                , [approvalNotes]     = @approvalNotes
+                                , [approvalNotes_A]   = ISNULL(@approvalNotes_A, @approvalNotes)
+                                , [approvalNotes]     = ISNULL(@approvalNotes, @approvalNotes_A)
                 , [createdServiceID_FK] = @NewID
-                , [entryData] = ISNULL(ISNULL([entryData],N'') + N',' + @entryData, [entryData])
-                , [hostName]  = ISNULL(ISNULL(@hostName,N'') + N',' + [hostName], [hostName])
+                                , [entryData] = @entryData
+                                , [hostName]  = @hostName
             WHERE [serviceCatalogSuggestionID] = @SugID;
 
             IF @SugDSDID IS NOT NULL
@@ -388,7 +412,7 @@ BEGIN
                 VALUES
                 (
                       @NewID, @SugIdaraID, @SugDSDID
-                    , GETDATE(), N'Auto-created from approved suggestion #' + CAST(@SugID AS NVARCHAR(20))
+                    , GETDATE(), N'تم الإنشاء تلقائياً من اقتراح معتمد رقم ' + CAST(@SugID AS NVARCHAR(20))
                     , @approvedByUserID
                     , 1, @entryData, @hostName
                 );
@@ -400,7 +424,7 @@ BEGIN
             INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
             VALUES (N'[Tickets].[ServiceCatalogSuggestion]', N'APPROVE_SERVICE_SUGGESTION', @SugID, @entryData, @Note);
 
-            SELECT 1 AS IsSuccessful, N'Suggestion approved and service created' AS Message_;
+            SELECT 1 AS IsSuccessful, N'تمت الموافقة على الاقتراح وإنشاء الخدمة' AS Message_;
             RETURN;
         END
 
@@ -410,7 +434,7 @@ BEGIN
         ELSE IF @Action = N'REJECT_SERVICE_SUGGESTION'
         BEGIN
             IF @serviceCatalogSuggestionID IS NULL
-            BEGIN ;THROW 50001, N'ServiceCatalogSuggestionID is required', 1; END
+            BEGIN ;THROW 50001, N'معرف اقتراح دليل الخدمة مطلوب', 1; END
 
             SET @SugID = @serviceCatalogSuggestionID;
 
@@ -419,28 +443,29 @@ BEGIN
                 WHERE [serviceCatalogSuggestionID] = @SugID
                   AND [approvalStatus] = N'PENDING'
             )
-            BEGIN ;THROW 50001, N'Suggestion not found or not in PENDING status', 1; END
+            BEGIN ;THROW 50001, N'لم يتم العثور على الاقتراح أو أنه ليس في حالة PENDING', 1; END
 
             UPDATE [Tickets].[ServiceCatalogSuggestion]
             SET
                   [approvalStatus]   = N'REJECTED'
                 , [approvedByUserID] = @approvedByUserID
                 , [approvalDate]     = GETDATE()
-                , [approvalNotes]    = @approvalNotes
+                                , [approvalNotes_A]  = ISNULL(@approvalNotes_A, @approvalNotes)
+                                , [approvalNotes]    = ISNULL(@approvalNotes, @approvalNotes_A)
                 , [suggestionActive] = 0
-                , [entryData] = ISNULL(ISNULL([entryData],N'') + N',' + @entryData, [entryData])
-                , [hostName]  = ISNULL(ISNULL(@hostName,N'') + N',' + [hostName], [hostName])
+                                , [entryData] = @entryData
+                                , [hostName]  = @hostName
             WHERE [serviceCatalogSuggestionID] = @SugID;
 
             IF @@ROWCOUNT = 0
-            BEGIN ;THROW 50002, N'No suggestion updated', 1; END
+            BEGIN ;THROW 50002, N'لم يتم تحديث أي اقتراح', 1; END
 
             SET @Note = N'{"suggestionID":"' + CAST(@SugID AS NVARCHAR(20)) + N'"}';
 
             INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, PerformedBy, Notes)
             VALUES (N'[Tickets].[ServiceCatalogSuggestion]', N'REJECT_SERVICE_SUGGESTION', @SugID, @entryData, @Note);
 
-            SELECT 1 AS IsSuccessful, N'Suggestion rejected' AS Message_;
+            SELECT 1 AS IsSuccessful, N'تم رفض الاقتراح' AS Message_;
             RETURN;
         END
 
@@ -449,7 +474,7 @@ BEGIN
         ----------------------------------------------------------------
         ELSE
         BEGIN
-            ;THROW 50001, N'Unknown action for ServiceSP', 1;
+            ;THROW 50001, N'نوع الإجراء غير معروف في ServiceSP', 1;
         END
 
     END TRY
@@ -458,3 +483,4 @@ BEGIN
         ;THROW;
     END CATCH
 END
+

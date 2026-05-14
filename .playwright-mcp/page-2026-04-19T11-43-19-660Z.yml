@@ -1,0 +1,786 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e4]:
+      - button "Toggle sidebar" [ref=e6] [cursor=pointer]:
+        - img [ref=e7]
+      - generic [ref=e9]:
+        - navigation "روابط سريعة" [ref=e10]:
+          - link "الشاشة التفاعلية" [ref=e11] [cursor=pointer]:
+            - /url: /HousingCommandCenterDashboard/Index
+            - generic [ref=e13]: الشاشة التفاعلية
+        - navigation "روابط سريعة" [ref=e14]:
+          - link "الصفحة الرئيسية" [ref=e15] [cursor=pointer]:
+            - /url: /Home
+            - generic [ref=e17]: الصفحة الرئيسية
+        - navigation "روابط سريعة" [ref=e18]:
+          - button "تغيير كلمة المرور" [ref=e19] [cursor=pointer]:
+            - generic [ref=e21]: تغيير كلمة المرور
+        - button "عرض الإشعارات 2" [ref=e23]:
+          - generic [ref=e24]: عرض الإشعارات
+          - generic [ref=e25]:
+            - img [ref=e26]
+            - generic [ref=e28]: "2"
+        - button "الإعدادات" [ref=e31] [cursor=pointer]:
+          - generic [ref=e33]: الإعدادات
+  - navigation "Breadcrumb" [ref=e37]:
+    - list [ref=e39]:
+      - listitem [ref=e40]:
+        - link "الرئيسية" [ref=e41] [cursor=pointer]:
+          - /url: /Home
+  - complementary "Sidebar" [ref=e42]:
+    - generic [ref=e43]:
+      - link "KFMC Logo البوابة الموحدة" [ref=e45] [cursor=pointer]:
+        - /url: /Dashboard
+        - img "KFMC Logo" [ref=e46]
+        - generic [ref=e47]: البوابة الموحدة
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - img "user" [ref=e52]
+          - generic [ref=e53]: سامي محمد العمري
+          - generic [ref=e54]: "1064184763"
+          - generic [ref=e55]: ادارة مدينة الملك فيصل العسكرية
+          - generic [ref=e56]: أنت مدير النظام بالكامل
+        - generic [ref=e58]:
+          - generic [ref=e59]: بحث في القائمة
+          - textbox "بحث في القائمة" [ref=e61]:
+            - /placeholder: ابحث في القائمة ...
+        - list [ref=e62]:
+          - listitem [ref=e63]:
+            - button "لوحة التحكم" [ref=e65]:
+              - generic [ref=e67]: لوحة التحكم
+              - img [ref=e68]
+          - listitem [ref=e70]:
+            - button "الاسكان والممتلكات" [ref=e72]:
+              - generic [ref=e74]: الاسكان والممتلكات
+              - img [ref=e75]
+          - listitem [ref=e77]:
+            - button "نظام الايرادات المالية" [ref=e79]:
+              - generic [ref=e81]: نظام الايرادات المالية
+              - img [ref=e82]
+          - listitem [ref=e84]:
+            - button "نظام الفوترة الالكترونية" [ref=e86]:
+              - generic [ref=e88]: نظام الفوترة الالكترونية
+              - img [ref=e89]
+          - listitem [ref=e91]:
+            - button "صيانة العربات" [ref=e93]:
+              - generic [ref=e95]: صيانة العربات
+              - img [ref=e96]
+          - listitem [ref=e98]:
+            - button "الدعم الفني للنظام" [ref=e100]:
+              - generic [ref=e102]: الدعم الفني للنظام
+              - img [ref=e103]
+          - listitem [ref=e105]:
+            - button "نظام التذاكر" [ref=e107]:
+              - generic [ref=e109]: نظام التذاكر
+              - img [ref=e110]
+  - generic [ref=e112]:
+    - main [ref=e113]:
+      - generic [ref=e117]:
+        - generic [ref=e120]: لوحة مؤشرات الإسكان والمباني والصيانة والساكنين
+        - generic [ref=e121]:
+          - group [ref=e123]:
+            - generic [ref=e125]:
+              - generic [ref=e128]: الأداء مقابل الأهداف
+              - generic [ref=e129]: ملخص مؤشرات التشغيل الرئيسية
+            - generic [ref=e134]:
+              - generic [ref=e136] [cursor=pointer]:
+                - generic [ref=e137]: إغلاق البلاغات ضمن SLA
+                - generic [ref=e138]: "الحالي: 78% • الهدف: 90%"
+              - generic [ref=e146] [cursor=pointer]:
+                - generic [ref=e147]: نسبة الإشغال
+                - generic [ref=e148]: "الحالي: 92% • الهدف: 95%"
+              - generic [ref=e156] [cursor=pointer]:
+                - generic [ref=e157]: جاهزية الوحدات
+                - generic [ref=e158]: "الحالي: 86% • الهدف: 90%"
+              - generic [ref=e166] [cursor=pointer]:
+                - generic [ref=e167]: إنجاز فحوصات المباني
+                - generic [ref=e168]: "الحالي: 64% • الهدف: 80%"
+          - group [ref=e176]:
+            - generic [ref=e178]:
+              - generic [ref=e181]: إحصائيات وأرقام تنفيذية
+              - generic [ref=e182]: "ملخص قرار سريع: إشغال / شواغر / صيانة / تكاليف"
+            - generic [ref=e187]:
+              - generic [ref=e188]:
+                - generic [ref=e189]:
+                  - generic [ref=e190]:
+                    - generic [ref=e191]: الوحدات المشغولة
+                    - generic [ref=e192]: الحالة الحالية
+                  - generic [ref=e193]: اليوم
+                - generic [ref=e194]:
+                  - generic [ref=e195] [cursor=pointer]:
+                    - generic [ref=e199]:
+                      - generic "عدد الوحدات المشغولة" [ref=e200]
+                      - generic "إجمالي الوحدات المستفيدة حالياً" [ref=e201]
+                    - generic [ref=e202]:
+                      - generic [ref=e203]: 4,645
+                      - generic [ref=e204]: وحدة
+                      - generic [ref=e205]: +1.9%
+                  - generic [ref=e206] [cursor=pointer]:
+                    - generic [ref=e210]:
+                      - generic "نسبة الإشغال" [ref=e211]
+                      - generic "إشغال = مشغولة ÷ إجمالي الوحدات" [ref=e212]
+                    - generic [ref=e213]:
+                      - generic [ref=e214]: "50"
+                      - generic [ref=e215]: "%"
+                      - generic [ref=e216]: +0.8%
+              - generic [ref=e217]:
+                - generic [ref=e218]:
+                  - generic [ref=e219]:
+                    - generic [ref=e220]: الشواغر والصيانة
+                    - generic [ref=e221]: نقاط قرار سريعة
+                  - generic [ref=e222]: هذا الشهر
+                - generic [ref=e223]:
+                  - generic [ref=e224] [cursor=pointer]:
+                    - generic [ref=e228]:
+                      - generic "وحدات شاغرة قابلة للتأجير" [ref=e229]
+                      - generic "متاحة للترشيح/التخصيص" [ref=e230]
+                    - generic [ref=e231]:
+                      - generic [ref=e232]: "222"
+                      - generic [ref=e233]: وحدة
+                      - generic [ref=e234]: "-6.2%"
+                  - generic [ref=e235] [cursor=pointer]:
+                    - generic [ref=e239]:
+                      - generic "وحدات تحت الصيانة" [ref=e240]
+                      - generic "تحتاج تسريع الإغلاق لتقليل الفاقد" [ref=e241]
+                    - generic [ref=e242]:
+                      - generic [ref=e243]: "103"
+                      - generic [ref=e244]: وحدة
+                      - generic [ref=e245]: +3.1%
+          - group [ref=e247]:
+            - generic [ref=e249]:
+              - generic [ref=e252]: لوحة التشغيل اليومية
+              - generic [ref=e253]: تشغيل الصيانة + الساكنين + المباني + الإسكان (آخر 24 ساعة)
+            - generic [ref=e258]:
+              - generic [ref=e259] [cursor=pointer]:
+                - generic [ref=e260]:
+                  - generic [ref=e264]:
+                    - generic "الصيانة" [ref=e265]
+                    - generic "البلاغات والالتزام والقطع" [ref=e266]
+                  - generic [ref=e267]: آخر 24 ساعة
+                - generic [ref=e268]:
+                  - generic [ref=e269]:
+                    - generic [ref=e270]:
+                      - generic [ref=e274]:
+                        - generic "بلاغات جديدة" [ref=e275]
+                        - generic "تم إنشاؤها خلال آخر 24 ساعة" [ref=e276]
+                      - generic [ref=e277]:
+                        - generic [ref=e278]: "80"
+                        - generic [ref=e279]: بلاغ
+                        - generic [ref=e280]: +12.4%
+                    - generic "progress" [ref=e281]
+                  - generic [ref=e282]:
+                    - generic [ref=e283]:
+                      - generic [ref=e287]:
+                        - generic "إغلاق ضمن SLA" [ref=e288]
+                        - generic "نسبة إغلاق البلاغات ضمن SLA" [ref=e289]
+                      - generic [ref=e290]:
+                        - generic [ref=e291]: "44"
+                        - generic [ref=e292]: "%"
+                        - generic [ref=e293]: +1.6%
+                    - generic "progress" [ref=e294]
+                  - generic [ref=e295]:
+                    - generic [ref=e296]:
+                      - generic [ref=e300]:
+                        - generic "معلّق بسبب قطع" [ref=e301]
+                        - generic "بانتظار قطع/توريد" [ref=e302]
+                      - generic [ref=e303]:
+                        - generic [ref=e304]: "12"
+                        - generic [ref=e305]: بلاغ
+                        - generic [ref=e306]: "-3"
+                    - generic "progress" [ref=e307]
+                  - generic [ref=e308]:
+                    - generic [ref=e309]:
+                      - generic [ref=e313]:
+                        - generic "الأعمال الحرجة المفتوحة" [ref=e314]
+                        - generic "تحتاج تدخل سريع" [ref=e315]
+                      - generic [ref=e316]:
+                        - generic [ref=e317]: "4"
+                        - generic [ref=e318]: بلاغ
+                        - generic [ref=e319]: "+2"
+                    - generic "progress" [ref=e320]
+                - generic [ref=e321]:
+                  - generic [ref=e322]:
+                    - generic [ref=e326]:
+                      - generic "تسريب مياه - مبنى 12 / شقة 304" [ref=e327]
+                      - 'generic "إسناد لفريق السباكة • رقم البلاغ: MNT-10421" [ref=e328]'
+                    - generic [ref=e329]:
+                      - generic [ref=e330]: منذ 18 دقيقة
+                      - generic [ref=e331]: قيد التنفيذ
+                      - generic [ref=e332]: عالية
+                  - generic [ref=e333]:
+                    - generic [ref=e337]:
+                      - generic "عطل كهربائي - غرفة مضخات" [ref=e338]
+                      - 'generic "تصعيد للمقاول • رقم البلاغ: MNT-10407" [ref=e339]'
+                    - generic [ref=e340]:
+                      - generic [ref=e341]: منذ ساعتين
+                      - generic [ref=e342]: معلّق
+                      - generic [ref=e343]: حرجة
+                  - generic [ref=e344]:
+                    - generic [ref=e348]:
+                      - generic "إغلاق بلاغ - تكييف (وحدة 88)" [ref=e349]
+                      - generic "تم الإغلاق والتحقق" [ref=e350]
+                    - generic [ref=e351]:
+                      - generic [ref=e352]: اليوم 09:20
+                      - generic [ref=e353]: مغلق
+                      - generic [ref=e354]: عادية
+              - generic [ref=e355] [cursor=pointer]:
+                - generic [ref=e356]:
+                  - generic [ref=e360]:
+                    - generic "الساكنين والخدمات" [ref=e361]
+                    - generic "حركة الطلبات والتوثيق" [ref=e362]
+                  - generic [ref=e363]: اليوم
+                - generic [ref=e364]:
+                  - generic [ref=e365]:
+                    - generic [ref=e366]:
+                      - generic [ref=e370]:
+                        - generic "طلبات نقل/تبديل" [ref=e371]
+                        - generic "طلبات تحويل وحدات" [ref=e372]
+                      - generic [ref=e373]:
+                        - generic [ref=e374]: "10"
+                        - generic [ref=e375]: طلب
+                        - generic [ref=e376]: "+4"
+                    - generic "progress" [ref=e377]
+                  - generic [ref=e378]:
+                    - generic [ref=e379]:
+                      - generic [ref=e383]:
+                        - generic "بلاغات الساكنين المفتوحة" [ref=e384]
+                        - generic "طلبات خدمة قيد المعالجة" [ref=e385]
+                      - generic [ref=e386]:
+                        - generic [ref=e387]: "33"
+                        - generic [ref=e388]: بلاغ
+                        - generic [ref=e389]: "-5"
+                    - generic "progress" [ref=e390]
+                  - generic [ref=e391]:
+                    - generic [ref=e392]:
+                      - generic [ref=e396]:
+                        - generic "تحديث بيانات الهوية" [ref=e397]
+                        - generic "تحديث/توثيق اليوم" [ref=e398]
+                      - generic [ref=e399]:
+                        - generic [ref=e400]: "18"
+                        - generic [ref=e401]: سجل
+                        - generic [ref=e402]: +9.0%
+                    - generic "progress" [ref=e403]
+                  - generic [ref=e404]:
+                    - generic [ref=e405]:
+                      - generic [ref=e409]:
+                        - generic "مستفيدون جدد" [ref=e410]
+                        - generic "تسجيلات جديدة" [ref=e411]
+                      - generic [ref=e412]:
+                        - generic [ref=e413]: "6"
+                        - generic [ref=e414]: شخص
+                        - generic [ref=e415]: "+2"
+                    - generic "progress" [ref=e416]
+                - generic [ref=e417]:
+                  - generic [ref=e418]:
+                    - generic [ref=e422]:
+                      - generic "طلب نقل - من حي الياسمين إلى النرجس" [ref=e423]
+                      - 'generic "بانتظار اعتماد الإسكان • رقم: TR-2209" [ref=e424]'
+                    - generic [ref=e425]:
+                      - generic [ref=e426]: منذ 35 دقيقة
+                      - generic [ref=e427]: بانتظار اعتماد
+                      - generic [ref=e428]: عادية
+                  - generic [ref=e429]:
+                    - generic [ref=e433]:
+                      - generic "طلب خدمة - تحديث عقد" [ref=e434]
+                      - generic "تمت المراجعة الأولية" [ref=e435]
+                    - generic [ref=e436]:
+                      - generic [ref=e437]: اليوم 10:05
+                      - generic [ref=e438]: قيد المراجعة
+                      - generic [ref=e439]: متوسطة
+          - group [ref=e441]:
+            - generic [ref=e443]:
+              - generic [ref=e446]: حالة الوحدات السكنية
+              - generic [ref=e447]: مأهولة • شاغرة • صيانة • محجوزة • غير صالحة
+            - generic [ref=e452]:
+              - generic [ref=e453] [cursor=pointer]:
+                - generic [ref=e454]: مأهولة
+                - generic [ref=e456]: 8120 وحدة • 80.4%
+              - generic [ref=e457] [cursor=pointer]:
+                - generic [ref=e458]: شاغرة
+                - generic [ref=e460]: 1240 وحدة • 12.3%
+              - generic [ref=e461] [cursor=pointer]:
+                - generic [ref=e462]: تحت الصيانة
+                - generic [ref=e464]: 430 وحدة • 4.3%
+              - generic [ref=e465] [cursor=pointer]:
+                - generic [ref=e466]: محجوزة
+                - generic [ref=e468]: 210 وحدة • 2.1%
+              - generic [ref=e469] [cursor=pointer]:
+                - generic [ref=e470]: غير صالحة
+                - generic [ref=e472]: 95 وحدة • 0.9%
+          - group [ref=e474]:
+            - generic [ref=e476]:
+              - generic [ref=e479]: لوحة مراقبة المدراء
+              - generic [ref=e480]: مراقبة الورش + سير الأعمال + إنذارات رقابية
+            - generic [ref=e485]:
+              - generic [ref=e486]:
+                - generic [ref=e488]:
+                  - generic [ref=e489]: مؤشرات المدراء
+                  - generic [ref=e490]: ملخص رقابي سريع للأداء والمخاطر
+                - generic [ref=e491]:
+                  - generic [ref=e492] [cursor=pointer]:
+                    - generic [ref=e496]:
+                      - generic "طلبات مفتوحة" [ref=e497]
+                      - generic "إجمالي الطلبات قيد المعالجة" [ref=e498]
+                    - generic [ref=e499]:
+                      - generic [ref=e500]: "664"
+                      - generic [ref=e501]: طلب
+                      - generic [ref=e502]: +3.2%
+                  - generic [ref=e503] [cursor=pointer]:
+                    - generic [ref=e507]:
+                      - generic "معدل إنجاز اليوم" [ref=e508]
+                      - generic "مقارنة بالخطة اليومية" [ref=e509]
+                    - generic [ref=e510]:
+                      - generic [ref=e511]: "46"
+                      - generic [ref=e512]: "%"
+                      - generic [ref=e513]: +1.1%
+                  - generic [ref=e514] [cursor=pointer]:
+                    - generic [ref=e518]:
+                      - generic "متوسط زمن الإغلاق" [ref=e519]
+                      - generic "متوسط آخر 7 أيام" [ref=e520]
+                    - generic [ref=e521]:
+                      - generic [ref=e522]: "10"
+                      - generic [ref=e523]: ساعة
+                      - generic [ref=e524]: "-0.9"
+                  - generic [ref=e525] [cursor=pointer]:
+                    - generic [ref=e529]:
+                      - generic "التكلفة التشغيلية" [ref=e530]
+                      - generic "مصروفات صيانة وتشغيل" [ref=e531]
+                    - generic [ref=e532]:
+                      - generic [ref=e533]: 1.3M
+                      - generic [ref=e534]: ر.س
+                      - generic [ref=e535]: +6.0%
+                - generic [ref=e537]:
+                  - generic [ref=e538]: سير الأعمال للطلبات
+                  - generic [ref=e539]: مراحل الطلبات + متوسط زمن + المتأخر
+                - generic [ref=e540]:
+                  - generic [ref=e542] [cursor=pointer]:
+                    - generic [ref=e543]: استقبال الطلب
+                    - generic [ref=e544]:
+                      - generic [ref=e545]:
+                        - text: "العدد:"
+                        - generic [ref=e546]: "225"
+                      - generic [ref=e547]:
+                        - text: "متوسط:"
+                        - generic [ref=e548]: "2.1"
+                        - text: س
+                      - generic [ref=e549]:
+                        - text: "متأخر:"
+                        - generic [ref=e550]: "12"
+                  - generic [ref=e553] [cursor=pointer]:
+                    - generic [ref=e554]: فرز وتوجيه
+                    - generic [ref=e555]:
+                      - generic [ref=e556]:
+                        - text: "العدد:"
+                        - generic [ref=e557]: "166"
+                      - generic [ref=e558]:
+                        - text: "متوسط:"
+                        - generic [ref=e559]: "3.7"
+                        - text: س
+                      - generic [ref=e560]:
+                        - text: "متأخر:"
+                        - generic [ref=e561]: "19"
+                  - generic [ref=e564] [cursor=pointer]:
+                    - generic [ref=e565]: قيد التنفيذ
+                    - generic [ref=e566]:
+                      - generic [ref=e567]:
+                        - text: "العدد:"
+                        - generic [ref=e568]: "139"
+                      - generic [ref=e569]:
+                        - text: "متوسط:"
+                        - generic [ref=e570]: "11.4"
+                        - text: س
+                      - generic [ref=e571]:
+                        - text: "متأخر:"
+                        - generic [ref=e572]: "27"
+                  - generic [ref=e575] [cursor=pointer]:
+                    - generic [ref=e576]: بانتظار قطع
+                    - generic [ref=e577]:
+                      - generic [ref=e578]:
+                        - text: "العدد:"
+                        - generic [ref=e579]: "51"
+                      - generic [ref=e580]:
+                        - text: "متوسط:"
+                        - generic [ref=e581]: "22.6"
+                        - text: س
+                      - generic [ref=e582]:
+                        - text: "متأخر:"
+                        - generic [ref=e583]: "31"
+                  - generic [ref=e586] [cursor=pointer]:
+                    - generic [ref=e587]: إغلاق وتحقق
+                    - generic [ref=e588]:
+                      - generic [ref=e589]:
+                        - text: "العدد:"
+                        - generic [ref=e590]: "83"
+                      - generic [ref=e591]:
+                        - text: "متوسط:"
+                        - generic [ref=e592]: "4.2"
+                        - text: س
+                      - generic [ref=e593]:
+                        - text: "متأخر:"
+                        - generic [ref=e594]: "6"
+                - generic [ref=e597]:
+                  - generic [ref=e598]: مراقبة الورش
+                  - generic [ref=e599]: حمولة/إنتاجية/تأخير/Backlog
+                - generic [ref=e600]:
+                  - generic [ref=e601] [cursor=pointer]:
+                    - generic [ref=e602]:
+                      - generic "ورشة الكهرباء" [ref=e606]
+                      - generic [ref=e607]: حمولة 78%
+                    - generic [ref=e608]:
+                      - generic [ref=e609]:
+                        - generic [ref=e610]: الطاقة
+                        - generic [ref=e611]: "18"
+                      - generic [ref=e612]:
+                        - generic [ref=e613]: الإنتاجية
+                        - generic [ref=e614]: 84%
+                      - generic [ref=e615]:
+                        - generic [ref=e616]: Backlog
+                        - generic [ref=e617]: "46"
+                      - generic [ref=e618]:
+                        - generic [ref=e619]: متأخر
+                        - generic [ref=e620]: "9"
+                  - generic [ref=e621] [cursor=pointer]:
+                    - generic [ref=e622]:
+                      - generic "ورشة السباكة" [ref=e626]
+                      - generic [ref=e627]: حمولة 64%
+                    - generic [ref=e628]:
+                      - generic [ref=e629]:
+                        - generic [ref=e630]: الطاقة
+                        - generic [ref=e631]: "14"
+                      - generic [ref=e632]:
+                        - generic [ref=e633]: الإنتاجية
+                        - generic [ref=e634]: 88%
+                      - generic [ref=e635]:
+                        - generic [ref=e636]: Backlog
+                        - generic [ref=e637]: "31"
+                      - generic [ref=e638]:
+                        - generic [ref=e639]: متأخر
+                        - generic [ref=e640]: "4"
+                  - generic [ref=e641] [cursor=pointer]:
+                    - generic [ref=e642]:
+                      - generic "ورشة التكييف" [ref=e646]
+                      - generic [ref=e647]: حمولة 86%
+                    - generic [ref=e648]:
+                      - generic [ref=e649]:
+                        - generic [ref=e650]: الطاقة
+                        - generic [ref=e651]: "16"
+                      - generic [ref=e652]:
+                        - generic [ref=e653]: الإنتاجية
+                        - generic [ref=e654]: 72%
+                      - generic [ref=e655]:
+                        - generic [ref=e656]: Backlog
+                        - generic [ref=e657]: "58"
+                      - generic [ref=e658]:
+                        - generic [ref=e659]: متأخر
+                        - generic [ref=e660]: "15"
+                  - generic [ref=e661] [cursor=pointer]:
+                    - generic [ref=e662]:
+                      - generic "ورشة النجارة" [ref=e666]
+                      - generic [ref=e667]: حمولة 52%
+                    - generic [ref=e668]:
+                      - generic [ref=e669]:
+                        - generic [ref=e670]: الطاقة
+                        - generic [ref=e671]: "10"
+                      - generic [ref=e672]:
+                        - generic [ref=e673]: الإنتاجية
+                        - generic [ref=e674]: 90%
+                      - generic [ref=e675]:
+                        - generic [ref=e676]: Backlog
+                        - generic [ref=e677]: "19"
+                      - generic [ref=e678]:
+                        - generic [ref=e679]: متأخر
+                        - generic [ref=e680]: "2"
+              - generic [ref=e681]:
+                - generic [ref=e682]:
+                  - generic [ref=e684]:
+                    - generic [ref=e685]: الإنذارات الرقابية
+                    - generic [ref=e686]: مخاطر تحتاج قرار سريع
+                  - generic [ref=e687] [cursor=pointer]:
+                    - generic [ref=e688]:
+                      - generic "تجاوز SLA في بلاغات التكييف" [ref=e689]
+                      - generic "15 بلاغًا تجاوزت الحد خلال 48 ساعة" [ref=e690]
+                    - generic [ref=e691]: آخر 6 ساعات
+                  - generic [ref=e692] [cursor=pointer]:
+                    - generic [ref=e693]:
+                      - generic "تراكم أعمال ورشة الكهرباء" [ref=e694]
+                      - generic "Backlog أعلى من المتوسط الأسبوعي" [ref=e695]
+                    - generic [ref=e696]: اليوم
+                  - generic [ref=e697] [cursor=pointer]:
+                    - generic [ref=e698]:
+                      - generic "نقص مخزون قطع (صمامات)" [ref=e699]
+                      - generic "قد يسبب تعليق بلاغات السباكة" [ref=e700]
+                    - generic [ref=e701]: هذا الأسبوع
+                - generic [ref=e703] [cursor=pointer]:
+                  - generic [ref=e704]:
+                    - generic [ref=e705]: التزام SLA (كافة الطلبات)
+                    - generic [ref=e706]: نسبة الإغلاق ضمن SLA خلال 7 أيام
+                    - generic [ref=e707]: مستوى الخدمة
+                  - generic [ref=e708]: 44 %
+          - group [ref=e710]:
+            - generic [ref=e712]:
+              - generic [ref=e715]: اتجاه طلبات الإسكان
+              - generic [ref=e716]: آخر 12 شهر
+            - img [ref=e722]:
+              - generic [ref=e723]: "220"
+              - generic [ref=e724]: "195"
+              - generic [ref=e725]: "170"
+              - generic [ref=e726]: "145"
+              - generic [ref=e727]: "120"
+              - generic [ref=e728]: يناير
+              - generic [ref=e729]: مارس
+              - generic [ref=e730]: مايو
+              - generic [ref=e731]: يوليو
+              - generic [ref=e732]: سبتمبر
+              - generic [ref=e733]: نوفمبر
+          - group [ref=e761]:
+            - generic [ref=e763]:
+              - generic [ref=e766]: توزيع أنواع الوحدات
+              - generic [ref=e767]: حسب نوع العقار
+            - generic [ref=e772]:
+              - generic [ref=e773]:
+                - img [ref=e774]
+                - generic:
+                  - generic: "7470"
+                  - generic: الإجمالي
+              - generic [ref=e780]:
+                - generic [ref=e781]:
+                  - generic [ref=e783]: شقق سكنية
+                  - generic [ref=e784]: 56.2%
+                - generic [ref=e785]:
+                  - generic [ref=e787]: فلل
+                  - generic [ref=e788]: 24.1%
+                - generic [ref=e789]:
+                  - generic [ref=e791]: أراضي
+                  - generic [ref=e792]: 12.7%
+                - generic [ref=e793]:
+                  - generic [ref=e795]: تجاري
+                  - generic [ref=e796]: 5.4%
+                - generic [ref=e797]:
+                  - generic [ref=e799]: وقف
+                  - generic [ref=e800]: 1.6%
+          - group [ref=e802]:
+            - generic [ref=e804]:
+              - generic [ref=e807]: التزام الإسكان بزمن معالجة الطلبات
+              - generic [ref=e808]: طلبات الإسكان خلال 48 ساعة
+            - generic [ref=e813]:
+              - generic [ref=e814]:
+                - img [ref=e815]
+                - generic:
+                  - generic: 87%
+                  - generic: طلبات ضمن 48 ساعة
+              - generic [ref=e818]:
+                - generic [ref=e819]: طلبات ضمن 48 ساعة
+                - generic [ref=e820]: "القيمة الحالية: 87 من 100 (الهدف: 92%+)."
+                - generic [ref=e821]:
+                  - generic [ref=e824]: "جيد: 92%+"
+                  - generic [ref=e827]: "تحذير: 80%+"
+                  - generic [ref=e830]: "خارج SLA: أقل من 80%"
+          - group [ref=e832]:
+            - generic [ref=e834]:
+              - generic [ref=e837]: توزيع حالة الوحدات
+              - generic [ref=e838]: شاغرة / مشغولة / صيانة / موقوفة
+            - generic [ref=e848]:
+              - generic [ref=e849] [cursor=pointer]:
+                - generic [ref=e852]: مشغولة
+                - generic [ref=e853]:
+                  - generic [ref=e854]: 70.4%
+                  - generic [ref=e855]: "8450"
+              - generic [ref=e856] [cursor=pointer]:
+                - generic [ref=e859]: شاغرة جاهزة
+                - generic [ref=e860]:
+                  - generic [ref=e861]: 17.9%
+                  - generic [ref=e862]: "2150"
+              - generic [ref=e863] [cursor=pointer]:
+                - generic [ref=e866]: تحت صيانة
+                - generic [ref=e867]:
+                  - generic [ref=e868]: 8.2%
+                  - generic [ref=e869]: "980"
+              - generic [ref=e870] [cursor=pointer]:
+                - generic [ref=e873]: موقوفة
+                - generic [ref=e874]:
+                  - generic [ref=e875]: 3.5%
+                  - generic [ref=e876]: "420"
+          - group [ref=e878]:
+            - generic [ref=e880]:
+              - generic [ref=e883]: الوحدات حسب الحي
+              - generic [ref=e884]: مقارنة عدد الوحدات بين الأحياء
+            - img [ref=e891]:
+              - generic [ref=e892]: "1500"
+              - generic [ref=e893]: "1125"
+              - generic [ref=e894]: "750"
+              - generic [ref=e895]: "375"
+              - generic [ref=e896]: "0"
+              - generic [ref=e922]: النرجس
+              - generic [ref=e923]: "1240"
+              - generic [ref=e925]: الياسمين
+              - generic [ref=e926]: "980"
+              - generic [ref=e928]: الملقا
+              - generic [ref=e929]: "760"
+              - generic [ref=e931]: العارض
+              - generic [ref=e932]: "540"
+              - generic [ref=e934]: القيروان
+              - generic [ref=e935]: "410"
+              - generic [ref=e937]: حطين
+              - generic [ref=e938]: "390"
+              - generic [ref=e940]: الندى
+              - generic [ref=e941]: "360"
+              - generic [ref=e943]: الواحة
+              - generic [ref=e944]: "200"
+          - group [ref=e947]:
+            - generic [ref=e949]:
+              - generic [ref=e952]: سير بلاغات الصيانة
+              - generic [ref=e953]: مراحل معالجة البلاغات
+            - generic [ref=e958]:
+              - generic [ref=e959] [cursor=pointer]:
+                - generic [ref=e961]:
+                  - generic [ref=e962]: جديد
+                  - generic [ref=e964]: 33.2%
+                - generic [ref=e967]: "420"
+              - generic [ref=e968] [cursor=pointer]:
+                - generic [ref=e970]:
+                  - generic [ref=e971]: تم الإسناد
+                  - generic [ref=e972]:
+                    - generic [ref=e973]: 24.5%
+                    - generic [ref=e974]: "مقارنةً بالسابق: -26.2%"
+                - generic [ref=e976]:
+                  - generic [ref=e977]: "310"
+                  - generic [ref=e978]: "-26.2%"
+              - generic [ref=e979] [cursor=pointer]:
+                - generic [ref=e981]:
+                  - generic [ref=e982]: قيد التنفيذ
+                  - generic [ref=e983]:
+                    - generic [ref=e984]: 20.6%
+                    - generic [ref=e985]: "مقارنةً بالسابق: -16.1%"
+                - generic [ref=e987]:
+                  - generic [ref=e988]: "260"
+                  - generic [ref=e989]: "-16.1%"
+              - generic [ref=e990] [cursor=pointer]:
+                - generic [ref=e992]:
+                  - generic [ref=e993]: بانتظار قطع
+                  - generic [ref=e994]:
+                    - generic [ref=e995]: 7.5%
+                    - generic [ref=e996]: "مقارنةً بالسابق: -63.5%"
+                - generic [ref=e998]:
+                  - generic [ref=e999]: "95"
+                  - generic [ref=e1000]: "-63.5%"
+              - generic [ref=e1001] [cursor=pointer]:
+                - generic [ref=e1003]:
+                  - generic [ref=e1004]: مغلق
+                  - generic [ref=e1005]:
+                    - generic [ref=e1006]: 14.2%
+                    - generic [ref=e1007]: "مقارنةً بالسابق: +89.5%"
+                - generic [ref=e1009]:
+                  - generic [ref=e1010]: "180"
+                  - generic [ref=e1011]: +89.5%
+          - group [ref=e1013]:
+            - generic [ref=e1015]:
+              - generic [ref=e1018]: جسر تغيّر الإشغال الشهري
+              - generic [ref=e1019]: تفصيل الزيادة/النقصان المؤثر على إشغال الوحدات (بداية ⇢ نهاية الشهر)
+            - img [ref=e1026]:
+              - generic [ref=e1027]: "10000"
+              - generic [ref=e1028]: "7500"
+              - generic [ref=e1029]: "5000"
+              - generic [ref=e1030]: "2500"
+              - generic [ref=e1031]: "0"
+              - generic [ref=e1032]: إشغال بداية الشهر
+              - generic [ref=e1033]: "8120"
+              - generic [ref=e1035]: تخصيص وحدات جديدة
+              - generic [ref=e1036]: "+640"
+              - generic [ref=e1038]: تجديد عقود
+              - generic [ref=e1039]: "+310"
+              - generic [ref=e1041]: عودة وحدات من الصيانة
+              - generic [ref=e1042]: "+220"
+              - generic [ref=e1044]: إخلاءات
+              - generic [ref=e1045]: "-520"
+              - generic [ref=e1047]: تحويل وحدات للصيانة
+              - generic [ref=e1048]: "-190"
+              - generic [ref=e1050]: إشغال نهاية الشهر
+              - generic [ref=e1051]: "8580"
+          - group [ref=e1054]:
+            - generic [ref=e1056]:
+              - generic [ref=e1059]: مؤشرات التشغيل
+              - generic [ref=e1060]: إشغال • جاهزية • SLA • شواغر
+            - generic [ref=e1065]:
+              - generic [ref=e1066]:
+                - img [ref=e1067]
+                - generic:
+                  - generic: المؤشر الأعلى
+                  - generic: 92%
+              - generic [ref=e1080]:
+                - generic [ref=e1081] [cursor=pointer]:
+                  - generic [ref=e1082]:
+                    - generic [ref=e1085]: الإشغال
+                    - generic [ref=e1086]: 92% من الحد
+                  - generic [ref=e1087]: 92%
+                - generic [ref=e1088] [cursor=pointer]:
+                  - generic [ref=e1089]:
+                    - generic [ref=e1092]: جاهزية الوحدات
+                    - generic [ref=e1093]: 86% من الحد
+                  - generic [ref=e1094]: 86%
+                - generic [ref=e1095] [cursor=pointer]:
+                  - generic [ref=e1096]:
+                    - generic [ref=e1099]: صيانة ضمن SLA
+                    - generic [ref=e1100]: 78% من الحد
+                  - generic [ref=e1101]: 78%
+                - generic [ref=e1102] [cursor=pointer]:
+                  - generic [ref=e1103]:
+                    - generic [ref=e1106]: الشواغر الجاهزة
+                    - generic [ref=e1107]: 51% من الحد
+                  - generic [ref=e1108]: "410"
+          - group [ref=e1110]:
+            - generic [ref=e1112]:
+              - generic [ref=e1115]: توزيع الوحدات حسب فئة المستفيد
+              - generic [ref=e1116]: 3D Pie يوضح مزج الفئات + قابل للنقر للتفاصيل
+            - generic [ref=e1121]:
+              - img [ref=e1123]:
+                - generic [ref=e1151]: الإجمالي
+                - generic [ref=e1152]: "5835"
+              - generic [ref=e1153]:
+                - generic [ref=e1154] [cursor=pointer]:
+                  - generic "منازل كبار القادة" [ref=e1157]
+                  - generic [ref=e1158]:
+                    - generic [ref=e1159]: "120"
+                    - generic [ref=e1160]: 2.1%
+                - generic [ref=e1161] [cursor=pointer]:
+                  - generic "سكن الضباط" [ref=e1164]
+                  - generic [ref=e1165]:
+                    - generic [ref=e1166]: "480"
+                    - generic [ref=e1167]: 8.2%
+                - generic [ref=e1168] [cursor=pointer]:
+                  - generic "سكن ضباط الصف" [ref=e1171]
+                  - generic [ref=e1172]:
+                    - generic [ref=e1173]: "760"
+                    - generic [ref=e1174]: 13%
+                - generic [ref=e1175] [cursor=pointer]:
+                  - generic "سكن الأفراد" [ref=e1178]
+                  - generic [ref=e1179]:
+                    - generic [ref=e1180]: "1320"
+                    - generic [ref=e1181]: 22.6%
+                - generic [ref=e1182] [cursor=pointer]:
+                  - generic "سكن العزاب" [ref=e1185]
+                  - generic [ref=e1186]:
+                    - generic [ref=e1187]: "610"
+                    - generic [ref=e1188]: 10.5%
+                - generic [ref=e1189] [cursor=pointer]:
+                  - generic "وحدات العوائل" [ref=e1192]
+                  - generic [ref=e1193]:
+                    - generic [ref=e1194]: "2240"
+                    - generic [ref=e1195]: 38.4%
+                - generic [ref=e1196] [cursor=pointer]:
+                  - generic "الضيافة/المؤقت" [ref=e1199]
+                  - generic [ref=e1200]:
+                    - generic [ref=e1201]: "95"
+                    - generic [ref=e1202]: 1.6%
+                - generic [ref=e1203] [cursor=pointer]:
+                  - generic "محجوزة/حجز VIP" [ref=e1206]
+                  - generic [ref=e1207]:
+                    - generic [ref=e1208]: "210"
+                    - generic [ref=e1209]: 3.6%
+    - contentinfo [ref=e1210]:
+      - generic [ref=e1212]: إدارة مدينة الملك فيصل العسكرية © 2026
+  - generic [ref=e1213]:
+    - button "×" [ref=e1215] [cursor=pointer]
+    - generic [ref=e1216]: "مرحبا بك : سامي محمد العمري تم تسجيل دخولك للنظام في 2026/04/19 الساعة 14:43:17"
+  - button "فيصل المساعد الذكي فيصل المساعد الذكي" [ref=e1218] [cursor=pointer]:
+    - img "فيصل المساعد الذكي" [ref=e1220]
+    - generic [ref=e1221]: فيصل المساعد الذكي

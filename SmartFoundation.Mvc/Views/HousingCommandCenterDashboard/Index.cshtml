@@ -1,0 +1,177 @@
+﻿@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@model SmartFoundation.UI.ViewModels.SmartPage.SmartPageViewModel
+
+@{
+    Layout = null;
+    ViewData["Title"] = Model.PageTitle ?? "لوحة قيادة الإدارات التشغيلية والصيانة";
+}
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"]</title>
+
+    @* Favicon *@
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='2' y='18' width='7' height='12' rx='3.5' fill='%231a3a5c'/><rect x='12' y='10' width='7' height='20' rx='3.5' fill='%232d5282'/><rect x='22' y='4' width='7' height='26' rx='3.5' fill='%23c9a227'/></svg>" />
+
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/statistics.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/Fontawesome6-5-0.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/fontawesome/css/all.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/smartcharts.housingcommandcenter.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/hcc-page.css" asp-append-version="true" />
+</head>
+
+<body>
+
+    @* ════ HEADER ════ *@
+    <header class="hcc-header">
+        <div class="hcc-header-inner">
+
+            @* ── يمين: الشعار/الأيقونة ── *@
+            <div class="hcc-header-logo">
+                <svg class="hcc-chart-icon" viewBox="0 0 32 26" fill="none"
+                     xmlns="http://www.w3.org/2000/svg" width="34" height="28">
+                    <rect x="0" y="14" width="7" height="12" rx="2" fill="#60a5fa" />
+                    <rect x="9" y="8" width="7" height="18" rx="2" fill="#34d399" />
+                    <rect x="18" y="2" width="7" height="24" rx="2" fill="#fbbf24" />
+                    <rect x="27" y="10" width="5" height="16" rx="2" fill="#f87171" />
+                    <line x1="0" y1="25.5" x2="32" y2="25.5" stroke="rgba(255,255,255,.25)" stroke-width="1" />
+                </svg>
+            </div>
+
+            @* ── وسط: العنوان والشيبس ── *@
+            <div class="hcc-header-brand">
+                <div class="hcc-header-title">لوحة قيادة الإدارات التشغيلية والصيانة</div>
+                <div class="hcc-header-chips">
+                    <span class="hcc-chip">
+                        <span class="hcc-chip-dot is-live"></span>
+                        مباشر
+                    </span>
+                    <span class="hcc-chip">
+                        <i class="fa-solid fa-building" style="font-size:.62rem;color:#c9a227"></i>
+                        7 إدارات
+                    </span>
+                    <span class="hcc-chip">
+                        <i class="fa-solid fa-chart-bar" style="font-size:.62rem;color:#c9a227"></i>
+                        5 معايير
+                    </span>
+                    <span class="hcc-chip">
+                        <i class="fa-regular fa-clock" style="font-size:.62rem"></i>
+                        <span id="hcc-last-updated-text">آخر تحديث: الآن</span>
+                    </span>
+                </div>
+            </div>
+
+            @* ── يسار: التاريخ والساعة ── *@
+            <div class="hcc-header-meta">
+                <div class="hcc-datetime">
+                    <div class="hcc-time" id="hcc-live-time">--:--:--</div>
+                    <div class="hcc-date" id="hcc-live-date">......</div>
+                </div>
+            </div>
+
+        </div>
+    </header>
+
+    @* ════ Main Content ════ *@
+    <main class="hcc-content">
+        <div class="hcc-charts-wrap">
+            @if (Model?.Charts is not null)
+            {
+                @await Component.InvokeAsync("SmartCharts", new { model = Model.Charts, embedded = true })
+            }
+            else
+            {
+                <div class="hcc-empty">
+                    <span>لا توجد بيانات لعرضها</span>
+                    <span>تأكد من تعبئة <b>Model.Charts</b> قبل استدعاء الصفحة.</span>
+                </div>
+            }
+        </div>
+    </main>
+
+    @* ════ Footer ════ *@
+    <footer class="hcc-footer">
+        إدارة مدينة الملك فيصل العسكرية للتشغيل والصيانة &mdash; قسم الحاسب الآلي &copy; 2026
+    </footer>
+
+    @* ════ Scripts ════ *@
+    <script src="~/js/smartcharts.housingcommandcenter.js" asp-append-version="true"></script>
+
+    <script>
+            (function () {
+                'use strict';
+
+                /* ── Render SmartCharts ── */
+                document.querySelectorAll('.sf-hcc[id]').forEach(function (el) {
+                    var s = el.querySelector('script[type="application/json"]');
+                    if (!s) return;
+                    if (window.SmartCharts && window.SmartCharts.renderHousingCommandCenter)
+                        window.SmartCharts.renderHousingCommandCenter(el.id, s.id);
+                });
+
+                /* ── Live Clock ── */
+                var DAYS   = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+                var MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو',
+                              'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+
+                function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+                function tick() {
+                    var d  = new Date();
+                    var tEl = document.getElementById('hcc-live-time');
+                    var dEl = document.getElementById('hcc-live-date');
+                    if (tEl) tEl.textContent = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+                    if (dEl) dEl.textContent = DAYS[d.getDay()] + ' · ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+                }
+                tick();
+                setInterval(tick, 1000);
+
+                /* ── Last Updated ── */
+                var lastUpdate = new Date();
+                function updateStamp() {
+                    var sec = Math.floor((new Date() - lastUpdate) / 1000);
+                    var el  = document.getElementById('hcc-last-updated-text');
+                    if (!el) return;
+                    el.textContent = sec < 60   ? 'آخر تحديث: منذ ' + sec + ' ث'
+                                   : sec < 3600 ? 'آخر تحديث: منذ ' + Math.floor(sec/60) + ' د'
+                                   :              'آخر تحديث: منذ ' + Math.floor(sec/3600) + ' س';
+                }
+                setInterval(updateStamp, 10000);
+
+                /* ── Overall Performance ── */
+                function calcOverall() {
+                    var el = document.getElementById('hcc-overall-perf');
+                    if (!el) return;
+                    var cells = document.querySelectorAll('.sf-hccm-tcell-percent');
+                    if (!cells.length) return;
+                    var sum = 0, n = 0;
+                    cells.forEach(function(c) {
+                        var v = parseFloat(c.textContent);
+                        if (!isNaN(v)) { sum += v; n++; }
+                    });
+                    if (!n) return;
+                    var avg = (sum / n).toFixed(1);
+                    el.textContent = avg + '%';
+                    el.style.color = parseFloat(avg) >= 85 ? '#4ade80'
+                                   : parseFloat(avg) >= 70 ? '#fbbf24' : '#f87171';
+                }
+                setTimeout(calcOverall, 900);
+                setTimeout(calcOverall, 2400);
+
+                /* ── Refresh ── */
+                window.hccRefresh = function(btn) {
+                    btn.classList.add('is-spinning');
+                    lastUpdate = new Date();
+                    var el = document.getElementById('hcc-last-updated-text');
+                    if (el) el.textContent = 'آخر تحديث: الآن';
+                    setTimeout(function() { location.reload(); }, 550);
+                };
+
+            })();
+    </script>
+
+</body>
+</html>

@@ -48,5 +48,8 @@
     "**/node_modules/**": true
   },
   "dotnet.completion.showCompletionItemsFromUnimportedNamespaces": true,
-  "dotnet.formatting.organizeImportsOnFormat": true
+  "dotnet.formatting.organizeImportsOnFormat": true,
+  "chat.tools.terminal.autoApprove": {
+    "sqlcmd": true
+  }
 }

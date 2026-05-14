@@ -117,6 +117,7 @@ namespace SmartFoundation.Mvc.Controllers.Housing
             string rowIdField_dt2 = "";
 
             bool canInsertWaitingList = false;
+#pragma warning disable CS0219
             bool canInsertOCCUBENTLETTER = false;
             bool canUpdateWaitingList = false;
             bool canUpdateOCCUBENTLETTER = false;
@@ -124,6 +125,7 @@ namespace SmartFoundation.Mvc.Controllers.Housing
             bool canDeleteWaitingList = false;
             bool canDeleteOCCUBENTLETTER = false;
             bool candeleteMoveWaitingList = false;
+#pragma warning restore CS0219
             bool canDELETERESIDENTALLWAITINGLIST = false;
 
 
@@ -447,8 +449,8 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                 new FieldConfig { Name = "redirectUrl",  Type = "hidden", Value = currentUrl},
                 new FieldConfig { Name = "pageName_",           Type = "hidden", Value = PageName },
                 new FieldConfig { Name = "ActionType",          Type = "hidden", Value = "UPDATEWAITINGLIST" },
-                new FieldConfig { Name = "idaraID",             Type = "hidden", Value = IdaraId.ToString() },
-                new FieldConfig { Name = "entrydata",           Type = "hidden", Value = usersId.ToString() },
+                new FieldConfig { Name = "idaraID",             Type = "hidden", Value = IdaraId?.ToString() },
+                new FieldConfig { Name = "entrydata",           Type = "hidden", Value = usersId?.ToString() },
                 new FieldConfig { Name = "hostname",            Type = "hidden", Value = Request.Host.Value },
                 new FieldConfig { Name = "__RequestVerificationToken", Type = "hidden", Value = (Request.Headers["RequestVerificationToken"].FirstOrDefault() ?? "") },
                 new FieldConfig { Name = rowIdField_dt2,            Type = "hidden" },
@@ -487,8 +489,8 @@ namespace SmartFoundation.Mvc.Controllers.Housing
                 new FieldConfig { Name = "redirectUrl",  Type = "hidden", Value = currentUrl},
                 new FieldConfig { Name = "pageName_",          Type = "hidden", Value = PageName },
                 new FieldConfig { Name = "ActionType",         Type = "hidden", Value = "DELETEWAITINGLIST" },
-                new FieldConfig { Name = "idaraID",            Type = "hidden", Value = IdaraId.ToString() },
-                new FieldConfig { Name = "entrydata",          Type = "hidden", Value = usersId.ToString() },
+                new FieldConfig { Name = "idaraID",            Type = "hidden", Value = IdaraId?.ToString() },
+                new FieldConfig { Name = "entrydata",          Type = "hidden", Value = usersId?.ToString() },
                 new FieldConfig { Name = "hostname",           Type = "hidden", Value = Request.Host.Value },
                 new FieldConfig { Name = "__RequestVerificationToken", Type = "hidden", Value = (Request.Headers["RequestVerificationToken"].FirstOrDefault() ?? "") },
                 new FieldConfig { Name = rowIdField_dt2, Type = "hidden" },

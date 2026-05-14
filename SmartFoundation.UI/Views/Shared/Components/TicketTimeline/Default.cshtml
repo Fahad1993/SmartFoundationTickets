@@ -1,0 +1,68 @@
+@using SmartFoundation.UI.ViewModels.SmartPage
+@using System.Text.Json
+
+@model TicketTimelineConfig
+
+@{
+    var webJson = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+
+    var timelineConfig = new
+    {
+        title = Model.Title ?? "سجل المتابعة",
+        events = Model.Events ?? new List<TimelineEvent>(),
+        showEmptyState = Model.ShowEmptyState,
+        emptyStateText = Model.EmptyStateText ?? "لا توجد سجلات متابعة متاحة لهذه التذكرة."
+    };
+}
+
+<div x-data='TicketTimeline(@Html.Raw(JsonSerializer.Serialize(timelineConfig, webJson)))'
+     x-init="init()" x-cloak
+     class="ticket-timeline"
+     dir="rtl">
+
+    @if (Model.Title != null)
+    {
+        <div class="ticket-timeline__header">
+            <span x-text="title"></span>
+        </div>
+    }
+
+    <template x-if="events.length === 0 && showEmptyState">
+        <div class="ticket-timeline__empty">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span x-text="emptyStateText"></span>
+        </div>
+    </template>
+
+    <template x-for="(evt, index) in events" :key="evt._timelineKey ?? ((evt.actionCode ?? 'event') + '-' + index)">
+        <div class="ticket-timeline-item"
+             :class="'ticket-timeline-item--' + getEventStatusClass(evt)">
+            <div class="ticket-timeline-dot"
+                 :class="'ticket-timeline-dot ' + getDotColorClass(evt) + ' ' + getDotStateClass(evt, index, events.length)">
+            </div>
+            <div class="ticket-timeline-content">
+                <div class="ticket-timeline-header">
+                    <span class="ticket-timeline-action" x-text="evt.actionNameAr"></span>
+                    <span class="ticket-timeline-status-badge"
+                          :class="'ticket-timeline-status-badge--' + getStatusBadgeClass(evt.newStatusCode ?? '')">
+                        <span x-text="(evt.newStatusName_A ?? evt.newStatusCode ?? '')"></span>
+                    </span>
+                    <span x-show="isLast(index, events.length)"
+                          class="ticket-timeline-status-badge ticket-timeline-status-badge--gray">
+                        آخر تحديث
+                    </span>
+                </div>
+
+                <template x-if="evt.notes">
+                    <p class="ticket-timeline-notes" x-text="evt.notes"></p>
+                </template>
+
+                <p class="ticket-timeline-meta">
+                    <span x-text="evt.performerName ?? 'النظام'"></span>
+                    <span x-show="evt.actionDate">• <span x-text="formatDate(evt.actionDate)"></span></span>
+                </p>
+            </div>
+        </div>
+    </template>
+
+</div>

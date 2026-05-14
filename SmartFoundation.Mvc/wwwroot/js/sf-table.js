@@ -100,6 +100,7 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
             filtersTimer: null,
             columnFilters: (cfg.columnFilters && typeof cfg.columnFilters === "object") ? cfg.columnFilters : {},
             showFilters: false,
+            filterToggleSeq: 0,
             // ✅ NEW: cache for select options
             filterOptionsCache: {},   // key -> [{value,text}]
             filterOptionsLoading: {}, // key -> true/false (اختياري)
@@ -241,6 +242,35 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
                 return Array.from(uniq.keys()).sort().map(x => ({ value: x, text: x }));
             },
 
+            normalizeFilterText(value) {
+                return String(value ?? "")
+                    .replace(/\u0640/g, "")
+                    .replace(/[أإآ]/g, "ا")
+                    .replace(/ى/g, "ي")
+                    .replace(/\s+/g, " ")
+                    .trim()
+                    .toLowerCase();
+            },
+
+            getColFilterOptionText(col, value) {
+                const currentValue = String(value ?? "").trim();
+                if (!currentValue) return "";
+
+                const options = this.getColFilterOptions(col) || [];
+                const hit = options.find((opt) => {
+                    const optValue = String(opt?.value ?? opt?.Value ?? "").trim();
+                    return optValue === currentValue;
+                });
+
+                return String(
+                    hit?.text ??
+                    hit?.Text ??
+                    hit?.value ??
+                    hit?.Value ??
+                    ""
+                ).trim();
+            },
+
 
 
             async fetchFilterOptionsForCol(col) {
@@ -292,6 +322,7 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
 
 
             onColumnFilterInput() {
+                this.syncColumnFiltersFromDom();
                 clearTimeout(this.filtersTimer);
                 this.filtersTimer = setTimeout(() => {
                     this.page = 1;
@@ -310,12 +341,91 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
 
             clearAllColumnFilters() {
                 const cols = Array.isArray(this.columns) ? this.columns : [];
+                const nextFilters = { ...(this.columnFilters || {}) };
                 for (const c of cols) {
                     const f = String(c?.field || "");
                     if (!f) continue;
-                    this.columnFilters[f] = "";
+                    nextFilters[f] = "";
                 }
+                this.columnFilters = nextFilters;
+                this.$nextTick(() => this.refreshFilterControlsUI());
                 this.onColumnFilterInput();
+            },
+
+            normalizeColumnFilterValue(value) {
+                if (value == null) return "";
+                if (Array.isArray(value)) return this.normalizeColumnFilterValue(value[0]);
+                if (typeof value === "string") return value.trim();
+                if (typeof value === "number" || typeof value === "boolean") return String(value);
+                return "";
+            },
+
+            setColumnFilterValue(field, value) {
+                const key = String(field || "").trim();
+                if (!key) return false;
+
+                const normalized = this.normalizeColumnFilterValue(value);
+                const current = this.normalizeColumnFilterValue(this.columnFilters?.[key]);
+                if (current === normalized) return false;
+
+                this.columnFilters = {
+                    ...(this.columnFilters || {}),
+                    [key]: normalized
+                };
+
+                return true;
+            },
+
+            syncColumnFiltersFromDom() {
+                if (!this.showFilters || !this.$el) return false;
+
+                const controls = this.$el.querySelectorAll(".sf-filter-row [data-field]");
+                if (!controls.length) return false;
+
+                const nextFilters = { ...(this.columnFilters || {}) };
+                let changed = false;
+
+                controls.forEach((el) => {
+                    const field = String(el.getAttribute("data-field") || "").trim();
+                    if (!field) return;
+
+                    const value = this.normalizeColumnFilterValue(el.value);
+                    const current = this.normalizeColumnFilterValue(nextFilters[field]);
+                    if (current === value) return;
+
+                    nextFilters[field] = value;
+                    changed = true;
+                });
+
+                if (changed) {
+                    this.columnFilters = nextFilters;
+                }
+
+                return changed;
+            },
+
+            refreshFilterControlsUI() {
+                if (!this.showFilters || !this.$el) return;
+
+                const controls = this.$el.querySelectorAll(".sf-filter-row [data-field]");
+                controls.forEach((el) => {
+                    const field = String(el.getAttribute("data-field") || "").trim();
+                    if (!field) return;
+
+                    const value = this.normalizeColumnFilterValue(this.columnFilters?.[field]);
+
+                    if (el.tagName === "SELECT" && window.jQuery && jQuery.fn) {
+                        const $el = jQuery(el);
+                        if ($el.data("select2")) {
+                            $el.val(value).trigger("change.select2");
+                            return;
+                        }
+                    }
+
+                    if ((el.value ?? "") !== value) {
+                        el.value = value;
+                    }
+                });
             },
 
             matchText(hay, needle) {
@@ -424,10 +534,20 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
                     } else if (type === "bool") {
                         if (!this.matchBool(cell, fval)) return false;
                     } else if (type === "select") {
-                        // ✅ select = مساواة دقيقة
-                        const a = String(cell ?? "").trim();
-                        const b = String(fval ?? "").trim();
-                        if (a !== b) return false;
+                        const cellValue = String(cell ?? "").trim();
+                        const filterValue = String(fval ?? "").trim();
+                        const cellNorm = this.normalizeFilterText(cellValue);
+                        const filterNorm = this.normalizeFilterText(filterValue);
+
+                        // أولاً: طابق القيمة الخام مباشرة
+                        if (cellNorm === filterNorm) continue;
+
+                        // ثانياً: لو قيمة الـ option مختلفة عن النص الظاهر، طابق النص المعروض
+                        const optionText = this.getColFilterOptionText(col, fval);
+                        const optionTextNorm = this.normalizeFilterText(optionText);
+                        if (optionTextNorm && cellNorm === optionTextNorm) continue;
+
+                        return false;
                     } else {
                         // text
                         const m = this.getColFilterMatch(col);
@@ -448,6 +568,7 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
 
 
             hasActiveColumnFilters() {
+                this.syncColumnFiltersFromDom();
                 if (!this.columnFilters || typeof this.columnFilters !== "object") return false;
                 for (const k of Object.keys(this.columnFilters)) {
                     const v = this.columnFilters[k];
@@ -471,6 +592,84 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
                     const root = this.$el; // جذر الكومبوننت
                     const selects = root.querySelectorAll("select.sf-filter-select2");
 
+                    const measureFilterDropdownWidth = (selectEl, placeholderText = "الكل") => {
+                        const rect = selectEl.getBoundingClientRect();
+                        const triggerWidth = Math.ceil(rect.width || 0);
+                        const viewportWidth = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+
+                        const texts = Array.from(selectEl.options || [])
+                            .map((opt) => (opt?.textContent || "").trim())
+                            .filter(Boolean);
+
+                        if (placeholderText) {
+                            texts.push(String(placeholderText).trim());
+                        }
+
+                        const probe = document.createElement("span");
+                        probe.style.position = "fixed";
+                        probe.style.top = "-9999px";
+                        probe.style.left = "-9999px";
+                        probe.style.visibility = "hidden";
+                        probe.style.whiteSpace = "nowrap";
+                        probe.style.fontFamily = '"Tajawal", "Inter", "Segoe UI", sans-serif';
+                        probe.style.fontSize = "13.5px";
+                        probe.style.fontWeight = "500";
+                        probe.style.lineHeight = "1";
+                        document.body.appendChild(probe);
+
+                        let widest = triggerWidth;
+                        texts.forEach((text) => {
+                            probe.textContent = text;
+                            widest = Math.max(widest, Math.ceil(probe.getBoundingClientRect().width));
+                        });
+
+                        probe.remove();
+
+                        const paddedWidth = widest + 84;
+                        const maxWidth = Math.max(triggerWidth, Math.min(560, viewportWidth - 24));
+                        return Math.max(triggerWidth, Math.min(paddedWidth, maxWidth));
+                    };
+
+                    const positionFilterDropdown = (selectEl, preferredWidth) => {
+                        const $open = jQuery(".select2-container--open").filter(function () {
+                            return jQuery(this).find(".select2-dropdown.sf-filter-dropdown").length > 0;
+                        }).last();
+
+                        if (!$open.length) return;
+
+                        const rect = selectEl.getBoundingClientRect();
+                        const viewportWidth = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+                        const scrollX = window.pageXOffset || document.documentElement.scrollLeft || 0;
+                        const minViewportGap = 12;
+                        const width = Math.max(Math.ceil(rect.width || 0), preferredWidth || 0);
+
+                        let left = Math.round(rect.right + scrollX - width);
+                        const minLeft = scrollX + minViewportGap;
+                        const maxLeft = scrollX + viewportWidth - width - minViewportGap;
+                        left = Math.max(minLeft, Math.min(left, maxLeft));
+
+                        $open.addClass("sf-filter-dropdown-host");
+                        $open.css({
+                            minWidth: `${Math.ceil(rect.width || 0)}px`,
+                            width: `${width}px`,
+                            maxWidth: `${Math.max(width, viewportWidth - (minViewportGap * 2))}px`,
+                            left: `${left}px`,
+                            right: "auto"
+                        });
+
+                        $open.find(".select2-dropdown.sf-filter-dropdown").css({
+                            width: "100%",
+                            minWidth: `${Math.ceil(rect.width || 0)}px`
+                        });
+                    };
+
+                    const stripSelect2Title = ($select) => {
+                        if (!$select || !$select.length) return;
+                        const $container = $select.next(".select2");
+                        $container.find(".select2-selection__rendered").removeAttr("title");
+                        $container.find(".select2-selection").removeAttr("title");
+                    };
+
                     selects.forEach((el) => {
                         const $el = jQuery(el);
 
@@ -480,29 +679,59 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
                             $el.select2("destroy");
                         }
 
+                        const minResults = el.getAttribute("data-s2-min-results");
+                        const ph =
+                            el.getAttribute("data-s2-placeholder") ||
+                            $el.find('option[value=""]').first().text() ||
+                            "الكل";
+
                         // dropdownParent مهم جداً عشان ما ينقص داخل sticky/overflow
                         const dropdownParent = jQuery("body");
-
-
 
                         $el.select2({
                             width: "100%",
                             dir: "rtl",
                             dropdownParent,
-                            minimumResultsForSearch: 10
+                            containerCssClass: "sf-form",
+                            dropdownCssClass: "sf-form sf-filter-dropdown",
+                            dropdownAutoWidth: true,
+                            placeholder: ph,
+                            allowClear: false,
+                            minimumResultsForSearch:
+                                (minResults === undefined || minResults === null || minResults === "")
+                                    ? 0
+                                    : Number(minResults)
                         });
+
+                        stripSelect2Title($el);
 
                         // sync value من Alpine -> select2
                         const field = el.getAttribute("data-field");
                         const v = this.columnFilters?.[field] ?? "";
                         $el.val(v).trigger("change.select2");
+                        stripSelect2Title($el);
 
-                        // on change: حدّث Alpine ثم فلترة
-                        $el.on("change.sfFilter", () => {
-                            const f = el.getAttribute("data-field");
-                            this.columnFilters[f] = $el.val() ?? "";
-                            this.onColumnFilterInput();
+                        $el.on("select2:open.sfFilter", () => {
+                            const preferredWidth = measureFilterDropdownWidth(el, ph);
+                            stripSelect2Title($el);
+                            requestAnimationFrame(() => {
+                                positionFilterDropdown(el, preferredWidth);
+                            });
+                            setTimeout(() => {
+                                positionFilterDropdown(el, preferredWidth);
+                            }, 0);
                         });
+
+                        const syncFilterFromSelect = () => {
+                            const f = el.getAttribute("data-field");
+                            stripSelect2Title($el);
+                            this.setColumnFilterValue(f, $el.val());
+                            this.onColumnFilterInput();
+                        };
+
+                        // on change/select: حدّث Alpine ثم فلترة
+                        $el.on("change.sfFilter", syncFilterFromSelect);
+                        $el.on("select2:select.sfFilter select2:clear.sfFilter select2:unselect.sfFilter", syncFilterFromSelect);
                     });
                         });
 
@@ -537,22 +766,38 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
             //},
 
             async toggleFilters() {
-                this.showFilters = !this.showFilters;
+                const nextState = !this.showFilters;
+                this.showFilters = nextState;
 
-                if (this.showFilters) {
+                // token يمنع سباق الضغطات السريعة (open/close/open)
+                const seq = ++this.filterToggleSeq;
 
+                if (!nextState) {
+                    this.destroyFilterSelect2();
+                    return;
+                }
+
+                try {
                     // 1) حمّل الخيارات أولًا (لو Server)
                     await this.preloadSelectFilters();
+
+                    // لو تغيرت الحالة أثناء الانتظار، لا تكمل
+                    if (seq !== this.filterToggleSeq || !this.showFilters) return;
 
                     // 2) انتظر Alpine يرسم الـ DOM (x-for للـ options)
                     await this.$nextTick();
 
+                    if (seq !== this.filterToggleSeq || !this.showFilters) return;
+
                     // 3) أعد تهيئة Select2 بعد ما تظهر الفلاتر فعليًا
                     this.destroyFilterSelect2();
                     this.initFilterSelect2();
-
-                } else {
-                    this.destroyFilterSelect2();
+                } catch (e) {
+                    // لا نكسر زر الفلترة عند أي خطأ تحميل/تهيئة
+                    console.error("toggleFilters failed", e);
+                    if (seq === this.filterToggleSeq) {
+                        this.destroyFilterSelect2();
+                    }
                 }
             },
 
@@ -594,12 +839,27 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
             // ===========================
             
 
+            // ===========================
+            // Column Visibility (Alpine)
+            // ===========================
+
+            // ===========================
+            // Column Visibility (Alpine)
+            // ===========================
+
+            colVisOpen: false,
             colVisSearch: "",
             colVisMap: {},
-            colVisLoaded: true, // ✅ نعتبره "محمل" من البداية عشان لا يحاول يقرأ من التخزين
+            colVisLoaded: true,
+            colVisAnchorRect: null,
+            colVisPlacement: {
+                top: 0,
+                left: 0,
+                width: 320,
+                maxHeight: 420
+            },
 
             colVisStorageKey() {
-                // (لم يعد يُستخدم) لكن نخليه لو عندك مراجع ثانية
                 const base =
                     (cfg && (cfg.storageKey || cfg.StorageKey)) ||
                     `sfTable:${cfg?.spName || cfg?.StoredProcedureName || "sp"}:${cfg?.operation || cfg?.Operation || "op"}`;
@@ -614,18 +874,15 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
                 return false;
             },
 
-            // ✅ لا تحميل من localStorage
             colVisLoad() {
                 return;
             },
 
-            // ✅ لا حفظ في localStorage
             colVisSave() {
                 return;
             },
 
             colVisIsShown(col) {
-                // ✅ بدون Load / Storage: يعتمد فقط على colVisMap داخل الجلسة + default visible
                 const def = (col?.visible ?? col?.Visible);
                 const v = this.colVisMap?.[col.field];
                 return (typeof v === "boolean") ? v : !!def;
@@ -633,9 +890,8 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
 
             colVisToggle(col) {
                 if (this.colVisIsLocked(col)) return;
-                const now = this.colVisIsShown(col);
 
-                // ✅ reassign object (Alpine reactivity)
+                const now = this.colVisIsShown(col);
                 const next = { ...(this.colVisMap || {}) };
                 next[col.field] = !now;
                 this.colVisMap = next;
@@ -644,17 +900,20 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
             colVisShowAll() {
                 const cols = this.colVisBaseColumns();
                 const next = { ...(this.colVisMap || {}) };
-                cols.forEach(c => { if (!this.colVisIsLocked(c)) next[c.field] = true; });
+
+                cols.forEach(c => {
+                    if (!this.colVisIsLocked(c)) next[c.field] = true;
+                });
+
                 this.colVisMap = next;
             },
 
             colVisReset() {
-                // ✅ يرجع لاختيار الافتراضي (يعتمد على col.visible)
                 this.colVisMap = {};
             },
 
             colVisApply() {
-                // ✅ لا شيء (ما فيه تخزين)
+                return;
             },
 
             colVisFilteredColumns() {
@@ -674,7 +933,6 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
                 return String(col?.label ?? col?.title ?? col?.header ?? col?.field ?? "").trim();
             },
 
-           
             colVisBaseColumns() {
                 return (this.columns || []).filter(c => {
                     const hasHeader = !!(c.label || c.title || c.header);
@@ -688,6 +946,157 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
                 });
             },
 
+            toggleColVis(e) {
+                if (this.colVisOpen) {
+                    this.closeColVis();
+                    return;
+                }
+
+                const btn = e?.currentTarget || this.$refs?.colVisBtn || null;
+                if (btn) {
+                    this.colVisAnchorRect = btn.getBoundingClientRect();
+                }
+
+                this.colVisOpen = true;
+
+                this.$nextTick(() => {
+                    this.updateColVisPosition();
+
+                    if (!this.__colVisBound) {
+                        this.__colVisBound = true;
+
+                        this.__colVisResizeHandler = () => {
+                            if (!this.colVisOpen) return;
+                            const liveBtn = this.$refs?.colVisBtn;
+                            if (liveBtn) this.colVisAnchorRect = liveBtn.getBoundingClientRect();
+                            this.updateColVisPosition();
+                        };
+
+                        this.__colVisScrollHandler = () => {
+                            if (!this.colVisOpen) return;
+                            const liveBtn = this.$refs?.colVisBtn;
+                            if (liveBtn) this.colVisAnchorRect = liveBtn.getBoundingClientRect();
+                            this.updateColVisPosition();
+                        };
+
+                        window.addEventListener("resize", this.__colVisResizeHandler, { passive: true });
+                        window.addEventListener("scroll", this.__colVisScrollHandler, true);
+                    }
+                });
+            },
+
+            closeColVis() {
+                this.colVisOpen = false;
+                this.colVisAnchorRect = null;
+            },
+
+            colVisPanelStyle() {
+                const p = this.colVisPlacement || {};
+
+                return [
+                    "position:fixed",
+                    "z-index:2147483647",
+                    "top:" + (p.top || 0) + "px",
+                    "left:" + (p.left || 0) + "px",
+                    "right:auto",
+                    "bottom:auto",
+                    "width:" + (p.width || 320) + "px",
+                    "max-width:calc(100vw - 24px)",
+                    "max-height:" + (p.maxHeight || 420) + "px",
+                    "display:flex",
+                    "flex-direction:column",
+                    "overflow:hidden"
+                ].join(";");
+            },
+
+            updateColVisPosition() {
+                const panel = this.$refs?.colVisPanel;
+                const btn = this.$refs?.colVisBtn;
+
+                if (!panel) return;
+
+                const anchorRect =
+                    this.colVisAnchorRect ||
+                    btn?.getBoundingClientRect?.() ||
+                    null;
+
+                if (!anchorRect) return;
+
+                const GAP = 8;
+                const MARGIN = 12;
+                const viewportW = window.innerWidth;
+                const viewportH = window.innerHeight;
+                const panelWidth = Math.min(320, viewportW - (MARGIN * 2));
+
+                panel.style.visibility = "hidden";
+                panel.style.display = "flex";
+                panel.style.flexDirection = "column";
+                panel.style.width = panelWidth + "px";
+                panel.style.maxHeight = "420px";
+                panel.style.left = "-99999px";
+                panel.style.top = "-99999px";
+
+                let panelRect = panel.getBoundingClientRect();
+                let measuredHeight = Math.ceil(panelRect.height || 320);
+
+                const spaceBelow = viewportH - anchorRect.bottom - GAP - MARGIN;
+                const spaceAbove = anchorRect.top - GAP - MARGIN;
+
+                let top = 0;
+                let maxHeight = 420;
+
+                if (spaceBelow >= Math.min(measuredHeight, 420) || spaceBelow >= spaceAbove) {
+                    maxHeight = Math.max(180, spaceBelow);
+                    panel.style.maxHeight = maxHeight + "px";
+
+                    panelRect = panel.getBoundingClientRect();
+                    measuredHeight = Math.ceil(panelRect.height || measuredHeight);
+
+                    top = anchorRect.bottom + GAP;
+
+                    if (top + measuredHeight > viewportH - MARGIN) {
+                        top = viewportH - measuredHeight - MARGIN;
+                    }
+                } else {
+                    maxHeight = Math.max(180, spaceAbove);
+                    panel.style.maxHeight = maxHeight + "px";
+
+                    panelRect = panel.getBoundingClientRect();
+                    measuredHeight = Math.ceil(panelRect.height || measuredHeight);
+
+                    top = anchorRect.top - measuredHeight - GAP;
+
+                    if (top < MARGIN) {
+                        top = MARGIN;
+                    }
+                }
+
+                let left = anchorRect.right - panelWidth;
+
+                if (left < MARGIN) {
+                    left = anchorRect.left;
+                }
+
+                if (left + panelWidth > viewportW - MARGIN) {
+                    left = viewportW - panelWidth - MARGIN;
+                }
+
+                if (left < MARGIN) {
+                    left = MARGIN;
+                }
+
+                top = Math.max(MARGIN, Math.min(top, viewportH - measuredHeight - MARGIN));
+
+                panel.style.visibility = "";
+                panel.style.display = "";
+
+                this.colVisPlacement = {
+                    top,
+                    left,
+                    width: panelWidth,
+                    maxHeight
+                };
+            },
 
             
 
@@ -868,6 +1277,93 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
             storageKey: cfg.storageKey || null,
             // Toolbar
             toolbar: cfg.toolbar || {},
+            normalizePlacement(value) {
+                const p = String(value ?? "Button").trim().toLowerCase();
+                if (p === "actionsmenu") return "actionsmenu";
+                if (p === "rowend") return "rowend";
+                if (p === "rowendmenu") return "rowendmenu";
+                return "button";
+            },
+            toolbarActionEntries() {
+                const tb = this.toolbar || {};
+                const items = [
+                    { action: tb.add, show: tb.showAdd, enable: tb.enableAdd ?? true },
+                    { action: tb.add1, show: tb.showAdd1, enable: tb.enableAdd1 ?? true },
+                    { action: tb.add2, show: tb.showAdd2, enable: tb.enableAdd2 ?? true },
+                    { action: tb.edit, show: tb.showEdit, enable: tb.enableEdit ?? true },
+                    { action: tb.edit1, show: tb.showEdit1, enable: tb.enableEdit1 ?? true },
+                    { action: tb.edit2, show: tb.showEdit2, enable: tb.enableEdit2 ?? true },
+                    { action: tb.delete, show: tb.showDelete, enable: tb.enableDelete ?? true },
+                    { action: tb.delete1, show: tb.showDelete1, enable: tb.enableDelete1 ?? true },
+                    { action: tb.delete2, show: tb.showDelete2, enable: tb.enableDelete2 ?? true },
+                    { action: tb.print, show: tb.showPrint, enable: true },
+                    { action: tb.print1, show: tb.showPrint1, enable: true },
+                    { action: tb.print2, show: tb.showPrint2, enable: true },
+                    { action: tb.print3, show: tb.showPrint3, enable: true }
+                ].filter(x => x.action && x.show !== false);
+
+                const custom = Array.isArray(tb.customActions) ? tb.customActions : [];
+                custom.forEach(a => items.push({ action: a, show: true, enable: true }));
+
+                return items;
+            },
+            rowEndActionEntries() {
+                const toolbarItems = this.toolbarActionEntries();
+                const inlineItems = (Array.isArray(this.actions) ? this.actions : []).map(a => ({
+                    action: a,
+                    show: (a?.show ?? a?.Show ?? true),
+                    enable: true
+                }));
+
+                return [...toolbarItems, ...inlineItems]
+                    .filter(x => x.action && x.show !== false);
+            },
+            rowEndActions() {
+                return this.rowEndActionEntries()
+                    .filter(x => this.normalizePlacement(x.action.placement ?? x.action.Placement) === "rowend");
+            },
+            rowEndMenuActions() {
+                return this.rowEndActionEntries()
+                    .filter(x => this.normalizePlacement(x.action.placement ?? x.action.Placement) === "rowendmenu");
+            },
+            hasRowEndActions() {
+                return this.rowEndActions().length > 0 || this.rowEndMenuActions().length > 0;
+            },
+            activeMenuId: null,
+            isMenuOpen(menuId) {
+                return !!menuId && this.activeMenuId === menuId;
+            },
+            openOnlyMenu(menuId) {
+                this.activeMenuId = menuId || null;
+            },
+            closeAllMenus() {
+                this.activeMenuId = null;
+            },
+            closeRowMenusExcept(menuId) {
+                const root = this.$el || document;
+                const keepId = menuId || null;
+                root.querySelectorAll(".sf-row-menu").forEach((el) => {
+                    const data = el.__x?.$data;
+                    if (!data) return;
+                    const currentId = data.menuId || null;
+                    if (currentId !== keepId) {
+                        data.open = false;
+                    }
+                });
+            },
+            runRowAction(action, row) {
+                const requireSelection = !!(action?.requireSelection ?? action?.RequireSelection);
+                if (requireSelection && row && this.rowIdField) {
+                    const rowId = row[this.rowIdField];
+                    this.selectedKeys.clear();
+                    if (rowId !== undefined && rowId !== null) {
+                        this.selectedKeys.add(rowId);
+                    }
+                    this.selectAll = false;
+                }
+
+                return this.doAction(action, row || null);
+            },
             // ===== Internal State =====
             q: "",
             page: 1,
@@ -1058,11 +1554,18 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
                 this.loadStoredPreferences();
                 this.initColumnFilters();
 
-                
+                if (!this.__colVisEscBound) {
+                    this.__colVisEscBound = true;
+
+                    document.addEventListener("keydown", (e) => {
+                        if (e.key === "Escape" && this.colVisOpen) {
+                            this.closeColVis();
+                        }
+                    });
+                }
 
                 this.bindPrintListenerOnce();
 
-                
                 if (!this.enablePagination) {
                     this.page = 1;
                     this.pages = 1;
@@ -1071,11 +1574,9 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
                         : this.pageSize;
                 }
 
-               
                 this.load();
                 this.setupEventListeners();
 
-                
                 this.$nextTick(() => {
                     if (this.filtersEnabled && this.filtersRow && this.showFilters) {
                         this.initFilterSelect2();
@@ -1178,6 +1679,12 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
                 if (!window.jQuery || !jQuery.fn || !jQuery.fn.select2) return;
 
                 const $modal = jQuery(modalEl);
+                const stripSelect2Title = ($select) => {
+                    if (!$select || !$select.length) return;
+                    const $container = $select.next(".select2");
+                    $container.find(".select2-selection__rendered").removeAttr("title");
+                    $container.find(".select2-selection").removeAttr("title");
+                };
                 $modal.find("select.js-select2").each(function () {
                     const $sel = jQuery(this);
 
@@ -1207,9 +1714,12 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
                             (minResults === undefined || minResults === null) ? 0 : Number(minResults)
                     });
 
+                    stripSelect2Title($sel);
+
                     $sel.on("select2:select.sfS2Bridge select2:clear.sfS2Bridge select2:unselect.sfS2Bridge", function (e) {
                         const el = this;
                         const value = $sel.val();
+                        stripSelect2Title($sel);
 
                         queueMicrotask(() => {
                             el.dispatchEvent(new Event("input", { bubbles: true }));
@@ -1343,7 +1853,8 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
                             Params: {
                                 q: this.q || null,
                                 sortField: this.sort.field || null,
-                                sortDir: this.sort.dir || "asc"
+                                sortDir: this.sort.dir || "asc",
+                                columnFilters: this.columnFilters || {}
                             }
                         };
                         const json = await this.postJson(this.endpoint, body);
@@ -1409,6 +1920,7 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
             },
 
             applyFiltersAndSort() {
+                this.syncColumnFiltersFromDom();
                 let filtered = [...this.allRows];
 
                 // 1) Global search (q)
@@ -5952,7 +6464,7 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
                         field.classList.add('border-red-500', 'ring-1', 'ring-red-500');
 
                         const errorDiv = document.createElement('div');
-                        errorDiv.className = 'text-red-600 text-sm mt-1';
+                        errorDiv.className = 'mt-1 text-sm text-red-600';
                         errorDiv.setAttribute('data-error-msg', '1');
                         errorDiv.textContent = Array.isArray(message) ? message.join(', ') : String(message);
 
@@ -6160,87 +6672,108 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
             },
 
 
-            //showToast(message, type = 'info') {
-            //    const toast = document.createElement('div');
-            //    toast.textContent = message;
-            //    Object.assign(toast.style, {
-            //        position: 'fixed',
-            //        top: '20px',
-            //        left: '50%',
-            //        transform: 'translateX(-50%)',
-            //        padding: '0.7rem 2rem',
-            //        borderRadius: '0.5rem',
-            //        color: 'white',
-            //        backgroundColor:
-            //            type === 'error' ? '#EF4444' :
-            //                type === 'success' ? '#16A34A' :
-            //                    '#3B82F6',
-            //        zIndex: '10000',
-            //        fontSize: '1rem',
-            //        textAlign: 'center',
-            //        maxWidth: '90%',
-            //        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-            //    });
-
-            //    document.body.appendChild(toast);
-
-            //    setTimeout(() => {
-            //        toast.remove();
-            //    }, 3000);
-            //},
+            
 
             showToast(message, type = 'info') {
                 const toast = document.createElement('div');
+                const tone = type === 'error' ? 'assertive' : 'polite';
 
-                const icon =
+                toast.className = `sf-toast sf-toast--${type}`;
+                toast.setAttribute('data-toast-type', type);
+                toast.setAttribute('data-testid', 'sf-toast');
+                toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+                toast.setAttribute('aria-live', tone);
+                toast.setAttribute('aria-atomic', 'true');
+
+                const bg =
                     type === 'error'
-                        ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                 <path d="M6 6L18 18M18 6L6 18" stroke="white" stroke-width="2" stroke-linecap="round"/>
-               </svg>`
+                        ? 'linear-gradient(135deg,#ef4444,#dc2626)'
                         : type === 'success'
-                            ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                     <path d="M5 13L9 17L19 7" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                   </svg>`
-                            : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                     <circle cx="12" cy="12" r="10" stroke="white" stroke-width="2"/>
-                     <path d="M12 8V12" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                     <circle cx="12" cy="16" r="1" fill="white"/>
-                   </svg>`;
+                            ? 'linear-gradient(135deg,#16a34a,#15803d)'
+                            : 'linear-gradient(135deg,#3b82f6,#2563eb)';
 
-                toast.innerHTML = `
-        <div style="display:flex;align-items:center;gap:8px;">
-            ${icon}
-            <span>${message}</span>
-        </div>
-    `;
+                const content = document.createElement('div');
+                Object.assign(content.style, {
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                });
+
+                const text = document.createElement('span');
+                text.textContent = message == null ? '' : String(message);
+                content.appendChild(text);
+
+                const closeBtn = document.createElement('button');
+                closeBtn.type = 'button';
+                closeBtn.className = 'toast-close-btn';
+                closeBtn.setAttribute('aria-label', 'إغلاق');
+                closeBtn.textContent = '×';
+                Object.assign(closeBtn.style, {
+                    position: 'absolute',
+                    top: '6px',
+                    left: '8px',
+                    background: 'none',
+                    border: 'none',
+                    color: 'white',
+                    fontSize: '18px',
+                    lineHeight: '1',
+                    cursor: 'pointer',
+                    padding: '0',
+                    margin: '0'
+                });
+
+                toast.appendChild(content);
+                toast.appendChild(closeBtn);
 
                 Object.assign(toast.style, {
                     position: 'fixed',
                     top: '10px',
                     left: '20px',
-                    padding: '0.65rem 1.6rem',
+                    padding: '0.65rem 1.6rem 0.65rem 2rem',
                     borderRadius: '6px',
                     color: 'white',
-                    background:
-                        type === 'error' ? 'linear-gradient(135deg,#ef4444,#dc2626)' :
-                            type === 'success' ? 'linear-gradient(135deg,#16a34a,#15803d)' :
-                                'linear-gradient(135deg,#3b82f6,#2563eb)',
+                    background: bg,
                     zIndex: '99999',
                     fontSize: '0.95rem',
                     fontWeight: '500',
                     boxShadow: '0 6px 18px rgba(0,0,0,0.2)',
                     backdropFilter: 'blur(6px)',
                     border: '1px solid rgba(255,255,255,0.15)',
-                    direction: 'rtl'
+                    direction: 'rtl',
+                    width: 'fit-content',
+                    maxWidth: '420px'
                 });
+
+                toast.style.display = 'inline-block';
+                toast.style.whiteSpace = 'nowrap';
 
                 document.body.appendChild(toast);
 
-                setTimeout(() => {
+                let timer;
+
+                const closeToast = () => {
                     toast.style.opacity = '0';
                     toast.style.transition = '0.3s';
                     setTimeout(() => toast.remove(), 300);
-                }, 3000);
+                };
+
+                const startTimer = () => {
+                    timer = setTimeout(closeToast, 3000);
+                };
+
+                const stopTimer = () => {
+                    clearTimeout(timer);
+                };
+
+                // hover behavior
+                toast.addEventListener('mouseenter', stopTimer);
+                toast.addEventListener('mouseleave', startTimer);
+
+                // زر الإغلاق
+                closeBtn.addEventListener('click', closeToast);
+
+                // تشغيل أولي
+                startTimer();
             },
 
             // ===== Advanced Features =====
@@ -6325,37 +6858,36 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
 
         }));
 
-        // دالة عامة للطباعة مع Busy modal
+
         window.sfPrintWithBusy = window.sfPrintWithBusy || function (table, options) {
             options = options || {};
 
             if (!table) return false;
 
             const defaultHtml = `
-                    <div class="space-y-3 text-center">
-                      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-400 text-white text-sm">
-                        جاري تجهيز البيانات للطباعة الرجاء الانتظار
-                        <i class="fa fa-spinner animate-spin"></i>
-                      </div>
+        <div class="space-y-3 text-center">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-400 text-white text-sm">
+            جاري تجهيز البيانات للطباعة الرجاء الانتظار
+            <i class="fa fa-spinner animate-spin"></i>
+          </div>
 
-                      <div class="text-base">
-                        <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-400 text-white text-sm">
-                          وقت الطباعة يعتمد على عدد السجلات المراد طباعتها وسرعة الاتصال
-                          <i class="fa fa-bolt"></i>
-                        </span>
-                      </div>
+          <div class="text-base">
+            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-400 text-white text-sm">
+              وقت الطباعة يعتمد على عدد السجلات المراد طباعتها وسرعة الاتصال
+              <i class="fa fa-bolt"></i>
+            </span>
+          </div>
 
-                      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-50 text-green-700 text-sm">
-                        حفاظًا على البيئة وتماشياً مع مستهدفات رؤية 2030 نأمل تقليل الطباعة
-                        <i class="fa fa-leaf"></i>
-                      </div>
-                    </div>
-                  `;
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-50 text-green-700 text-sm">
+            حفاظًا على البيئة وتماشياً مع مستهدفات رؤية 2030 نأمل تقليل الطباعة
+            <i class="fa fa-leaf"></i>
+          </div>
+        </div>
+    `;
 
             const busy = options.busy || {};
             const pdfVal = (options.pdf ?? options.pdfVal ?? 1);
 
-            // ✅ افتح مودال الـ Busy
             if (options.messageText) {
                 table.showBusyPrint(options.messageText, {
                     isHtml: false,
@@ -6372,13 +6904,12 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
                 });
             }
 
-            // ✅ كوّن رابط الطباعة من نفس الصفحة
             let url;
             try {
                 const u = new URL(window.location.href);
                 u.searchParams.set('pdf', String(pdfVal));
 
-                // أي بارامترات إضافية
+                // بارامترات إضافية من extraParams
                 if (options.extraParams && typeof options.extraParams === "object") {
                     Object.keys(options.extraParams).forEach(k => {
                         const v = options.extraParams[k];
@@ -6387,6 +6918,25 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
                     });
                 }
 
+                // بارامترات إضافية مرسلة مباشرة داخل options
+                const reservedKeys = new Set([
+                    "pdf",
+                    "pdfVal",
+                    "busy",
+                    "messageText",
+                    "messageHtml",
+                    "extraParams"
+                ]);
+
+                Object.keys(options).forEach(k => {
+                    if (reservedKeys.has(k)) return;
+
+                    const v = options[k];
+                    if (v === null || v === undefined) return;
+
+                    u.searchParams.set(k, String(v));
+                });
+
                 url = u.toString();
             } catch (e) {
                 table.hideBusyPrint();
@@ -6394,10 +6944,9 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
                 return false;
             }
 
-            // ✅ ابدأ الطباعة عبر iframe
             table.__printHandle = sfOpenPrint(url, {
                 onBeforePrint: () => table.hideBusyPrint(),
-                onAfterPrint: () => table.hideBusyPrint(), // احتياط
+                onAfterPrint: () => table.hideBusyPrint(),
                 onError: (e) => {
                     table.hideBusyPrint();
                     table.showToast('تعذر فتح الطباعة: ' + (e?.message || e), 'error');
@@ -6412,6 +6961,95 @@ window.__sfTableGlobalBound = window.__sfTableGlobalBound || false;
 
             return true;
         };
+
+
+        //// دالة عامة للطباعة مع Busy modal
+        //window.sfPrintWithBusy = window.sfPrintWithBusy || function (table, options) {
+        //    options = options || {};
+
+        //    if (!table) return false;
+
+        //    const defaultHtml = `
+        //            <div class="space-y-3 text-center">
+        //              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-400 text-white text-sm">
+        //                جاري تجهيز البيانات للطباعة الرجاء الانتظار
+        //                <i class="fa fa-spinner animate-spin"></i>
+        //              </div>
+
+        //              <div class="text-base">
+        //                <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-400 text-white text-sm">
+        //                  وقت الطباعة يعتمد على عدد السجلات المراد طباعتها وسرعة الاتصال
+        //                  <i class="fa fa-bolt"></i>
+        //                </span>
+        //              </div>
+
+        //              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-50 text-green-700 text-sm">
+        //                حفاظًا على البيئة وتماشياً مع مستهدفات رؤية 2030 نأمل تقليل الطباعة
+        //                <i class="fa fa-leaf"></i>
+        //              </div>
+        //            </div>
+        //          `;
+
+        //    const busy = options.busy || {};
+        //    const pdfVal = (options.pdf ?? options.pdfVal ?? 1);
+
+        //    // ✅ افتح مودال الـ Busy
+        //    if (options.messageText) {
+        //        table.showBusyPrint(options.messageText, {
+        //            isHtml: false,
+        //            title: busy.title || "الطباعة",
+        //            icon: (busy.icon === undefined) ? "fa fa-print" : busy.icon,
+        //            className: busy.className || "border border-sky-200 bg-sky-50 text-sky-700"
+        //        });
+        //    } else {
+        //        table.showBusyPrint(options.messageHtml || defaultHtml, {
+        //            isHtml: true,
+        //            title: busy.title || "الطباعة",
+        //            icon: (busy.icon === undefined) ? "fa fa-print" : busy.icon,
+        //            className: busy.className || "border border-sky-200 bg-sky-50 text-sky-700"
+        //        });
+        //    }
+
+        //    // ✅ كوّن رابط الطباعة من نفس الصفحة
+        //    let url;
+        //    try {
+        //        const u = new URL(window.location.href);
+        //        u.searchParams.set('pdf', String(pdfVal));
+
+        //        // أي بارامترات إضافية
+        //        if (options.extraParams && typeof options.extraParams === "object") {
+        //            Object.keys(options.extraParams).forEach(k => {
+        //                const v = options.extraParams[k];
+        //                if (v === null || v === undefined) return;
+        //                u.searchParams.set(k, String(v));
+        //            });
+        //        }
+
+        //        url = u.toString();
+        //    } catch (e) {
+        //        table.hideBusyPrint();
+        //        table.showToast("تعذر تجهيز رابط الطباعة", "error");
+        //        return false;
+        //    }
+
+        //    // ✅ ابدأ الطباعة عبر iframe
+        //    table.__printHandle = sfOpenPrint(url, {
+        //        onBeforePrint: () => table.hideBusyPrint(),
+        //        onAfterPrint: () => table.hideBusyPrint(), // احتياط
+        //        onError: (e) => {
+        //            table.hideBusyPrint();
+        //            table.showToast('تعذر فتح الطباعة: ' + (e?.message || e), 'error');
+        //        }
+        //    });
+
+        //    if (!table.__printHandle) {
+        //        table.hideBusyPrint();
+        //        table.showToast('تعذر بدء الطباعة', 'error');
+        //        return false;
+        //    }
+
+        //    return true;
+        //};
 
     };
 
@@ -6670,7 +7308,7 @@ window.sfRouteEditForm = function (table, act, row) {
 
         m = document.createElement("div");
         m.id = "sf-preview-modal";
-        m.className = "sf-preview hidden";
+        m.className = "hidden sf-preview";
         m.innerHTML = `
       <div class="sf-preview-backdrop" data-sf-preview-close></div>
       <div class="sf-preview-dialog" role="dialog" aria-modal="true">

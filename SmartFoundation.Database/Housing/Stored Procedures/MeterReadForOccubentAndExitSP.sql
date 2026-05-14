@@ -201,6 +201,7 @@ BEGIN
            
             from Housing.V_WaitingList w
             where w.residentInfoID = @residentInfoID
+            and w.ActionID = @ActionID
             --AND W.LastActionTypeID IN (46,59)
 
             IF 
@@ -1380,6 +1381,7 @@ FROM Housing.CalculteElectrictyBills_ByNewReadValue_ForInsert(@meterID, @NewMete
            
             from Housing.V_WaitingList w
             where w.residentInfoID = @residentInfoID
+            and w.ActionID = @ActionID
             --AND W.LastActionTypeID IN (46,59)
 
             IF 
@@ -2541,7 +2543,7 @@ FROM Housing.CalculteElectrictyBills_ByNewReadValue_ForInsert(@meterID, @NewMete
 
             
 
-            Declare @buildingActionTypeID_11 INT
+            Declare @buildingActionTypeID_11 INT,@occupantDate nvarchar(10),@ExitDate_ nvarchar(10)
 
             select TOP(1)
             @buildingActionTypeID_11 =
@@ -2551,10 +2553,10 @@ FROM Housing.CalculteElectrictyBills_ByNewReadValue_ForInsert(@meterID, @NewMete
             else 
             9999
             END
-           
-           
+
             from Housing.V_WaitingList w
             where w.residentInfoID = @residentInfoID
+            and w.ActionID = @ActionID
             AND W.LastActionTypeID IN (46,59)
 
             IF 
@@ -2564,6 +2566,53 @@ FROM Housing.CalculteElectrictyBills_ByNewReadValue_ForInsert(@meterID, @NewMete
             BEGIN
                 ;THROW 50001, N'حصل خطأ ما building Action Type', 1;
             END
+
+            if(
+            select TOP(1)
+            w.LastActionTypeID
+            from Housing.V_WaitingList w
+            where w.residentInfoID = @residentInfoID
+            and w.buildingDetailsID = @buildingDetailsID
+            AND W.LastActionTypeID IN (46,59)) = 46
+            BEGIN
+
+            set @occupantDate = (select TOP(1)
+            CONVERT(NVARCHAR(10), w.OccupentDate, 23)
+            from Housing.V_WaitingList w
+            where w.residentInfoID = @residentInfoID
+            and w.buildingDetailsID = @buildingDetailsID
+            AND W.LastActionTypeID IN (46))
+
+            set @ExitDate_ = null
+            
+            END
+
+            else if(
+            select TOP(1)
+            w.LastActionTypeID
+            from Housing.V_WaitingList w
+            where w.residentInfoID = @residentInfoID
+            and w.buildingDetailsID = @buildingDetailsID
+            AND W.LastActionTypeID IN (46,59)) = 59
+            BEGIN
+
+            set @occupantDate = (select TOP(1)
+            CONVERT(NVARCHAR(10), w.OccupentDate, 23)
+            from Housing.V_WaitingList w
+            where w.residentInfoID = @residentInfoID
+            and w.buildingDetailsID = @buildingDetailsID
+            AND W.LastActionTypeID IN (59))
+
+            set @ExitDate_ = (select TOP(1)
+            CONVERT(NVARCHAR(10), w.ExitDate, 23)
+            from Housing.V_WaitingList w
+            where w.residentInfoID = @residentInfoID
+            and w.buildingDetailsID = @buildingDetailsID
+            AND W.LastActionTypeID IN (59))
+            
+            END
+
+
 
 
                 
@@ -2581,6 +2630,8 @@ FROM Housing.CalculteElectrictyBills_ByNewReadValue_ForInsert(@meterID, @NewMete
                 , buildingActionParentID
                 , AssignPeriodID_FK
                 , buildingActionDate
+                , OccupentDate
+                , ExitDate
                 , IdaraId_FK
                 , entryData
                 , hostName
@@ -2600,6 +2651,8 @@ FROM Housing.CalculteElectrictyBills_ByNewReadValue_ForInsert(@meterID, @NewMete
                 , @LastActionID
                 , @AssignPeriodID
                 , GETDATE()
+                , @occupantDate
+                , @ExitDate_
                 , @IdaraID_INT
                 , @entryData
                 , @hostName

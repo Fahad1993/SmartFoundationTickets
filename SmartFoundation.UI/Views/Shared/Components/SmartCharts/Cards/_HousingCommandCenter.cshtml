@@ -1,0 +1,256 @@
+﻿@model SmartFoundation.UI.ViewModels.SmartCharts.ChartCardConfig
+@using System.Text.Json
+@using System.Text.Encodings.Web
+@using SmartFoundation.UI.ViewModels.SmartCharts
+
+@{
+    var hostId = $"hccm_{Model.Id}";
+    var cfgId = $"hccm_cfg_{Model.Id}";
+
+    string Nz(string? value, string fallback)
+        => string.IsNullOrWhiteSpace(value) ? fallback : value;
+
+    var boardOptions = Model.HousingCommandCenterBoardOptions;
+
+    var json = JsonSerializer.Serialize(new
+    {
+        id = Model.Id,
+        title = Nz(Model.Title, "لوحة قيادة الإدارات"),
+        subtitle = Nz(Model.Subtitle, "متابعة المعايير ونسب الإنجاز حسب الإدارات"),
+
+        boardOptions = new
+        {
+            titleText = Nz(boardOptions?.TitleText, Nz(Model.Title, "لوحة قيادة الإدارات")),
+            subtitleText = Nz(boardOptions?.SubtitleText, Nz(Model.Subtitle, "متابعة المعايير ونسب الإنجاز حسب الإدارات")),
+
+            showHeader = boardOptions?.ShowHeader ?? true,
+            showSummaryRow = boardOptions?.ShowSummaryRow ?? true,
+            showDepartmentRanking = boardOptions?.ShowDepartmentRanking ?? false,
+            showMetricProgressBar = boardOptions?.ShowMetricProgressBar ?? true,
+            showMetricTargetActual = boardOptions?.ShowMetricTargetActual ?? true,
+            autoCalculatePercentages = boardOptions?.AutoCalculatePercentages ?? true,
+
+            preferredCardsPerRow = boardOptions?.PreferredCardsPerRow ?? 5,
+            percentFormat = boardOptions?.PercentFormat ?? "0.0",
+            numberFormat = boardOptions?.NumberFormat ?? "0.##"
+        },
+
+        metrics = (Model.HousingCommandCenterMetrics ?? new List<HousingCommandCenterMetric>())
+            .OrderBy(x => x.SortOrder)
+            .Select(x => new
+            {
+                key = x.Key,
+                title = x.Title,
+                shortTitle = x.ShortTitle,
+                subtitle = x.Subtitle,
+
+                target = x.Target,
+                actual = x.Actual,
+                completionPercent = x.CompletionPercent,
+
+                unit = x.Unit,
+                icon = x.Icon,
+                emoji = x.Emoji,
+
+                tone = x.Tone,
+                color = x.Color,
+
+                hint = x.Hint,
+                href = x.Href,
+                sortOrder = x.SortOrder
+            }),
+
+        departments = (Model.HousingCommandCenterDepartments ?? new List<HousingCommandCenterDepartment>())
+            .OrderBy(x => x.SortOrder)
+            .Select(d => new
+            {
+                key = d.Key,
+                name = d.Name,
+                shortName = d.ShortName,
+
+                icon = d.Icon,
+                emoji = d.Emoji,
+                tone = d.Tone,
+                color = d.Color,
+
+                overallCompletionPercent = d.OverallCompletionPercent,
+                hint = (string?)null,
+                href = d.Href,
+                sortOrder = d.SortOrder,
+
+                metrics = (d.Metrics ?? new List<HousingCommandCenterDepartmentMetric>())
+                    .Select(m => new
+                    {
+                        metricKey = m.MetricKey,
+                        target = m.Target,
+                        actual = m.Actual,
+                        completionPercent = m.CompletionPercent,
+                        displayText = m.DisplayText,
+                        note = m.Note,
+                        tone = m.Tone,
+                        color = m.Color,
+                        href = m.Href
+                    })
+            }),
+
+        summaryRow = Model.HousingCommandCenterSummaryRow == null ? null : new
+        {
+            label = Nz(Model.HousingCommandCenterSummaryRow.Label, "الإجمالي"),
+            metrics = (Model.HousingCommandCenterSummaryRow.Metrics ?? new List<HousingCommandCenterDepartmentMetric>())
+                .Select(m => new
+                {
+                    metricKey = m.MetricKey,
+                    target = m.Target,
+                    actual = m.Actual,
+                    completionPercent = m.CompletionPercent,
+                    displayText = m.DisplayText,
+                    note = m.Note,
+                    tone = m.Tone,
+                    color = m.Color,
+                    href = m.Href
+                })
+        }
+    },
+    new JsonSerializerOptions
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    });
+}
+
+<div id="@hostId" class="sf-hccm" dir="@Model.Dir">
+    <div class="sf-hccm-shell">
+
+        <section class="sf-hccm-header" data-hccm-header>
+            <div class="sf-hccm-header-main">
+                <div class="sf-hccm-header-icon">
+                    <svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:36px;height:36px">
+                        <rect x="16" y="40" width="8" height="14" rx="4" fill="rgba(255,255,255,0.45)" />
+                        <rect x="28" y="32" width="8" height="22" rx="4" fill="rgba(255,255,255,0.7)" />
+                        <rect x="40" y="22" width="8" height="32" rx="4" fill="rgba(255,255,255,0.95)" />
+                        <line x1="12" y1="54" x2="60" y2="54" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" />
+                        <polyline points="16,16 28,10 40,16 54,10" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <polygon points="54,10 46,12 48,18" fill="white" />
+                    </svg>
+                </div>
+
+                <div class="sf-hccm-header-copy">
+                    <h3 class="sf-hccm-title" data-hccm-title>
+                        @Nz(boardOptions?.TitleText, Nz(Model.Title, "لوحة قيادة الإدارات"))
+                    </h3>
+
+                    <div class="sf-hccm-subtitle" data-hccm-subtitle>
+                        @Nz(boardOptions?.SubtitleText, Nz(Model.Subtitle, "متابعة المعايير ونسب الإنجاز حسب الإدارات"))
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="sf-hccm-metrics-strip" data-hccm-metrics>
+            <div class="sf-hccm-empty">جارٍ تحميل المعايير...</div>
+        </section>
+
+        <section class="sf-hccm-matrix-panel">
+            <div class="sf-hccm-matrix-head">
+                <div class="sf-hccm-matrix-head-copy">
+                    <div class="sf-hccm-matrix-title-wrap">
+                        <svg class="sf-hccm-matrix-title-svg" viewBox="0 0 36 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            
+                            <!-- عمود 1 -->
+                            <rect x="1" y="14" width="9" height="15" rx="4.5" fill="#0f766e" opacity="0.92" />
+                            <!-- عمود 2 -->
+                            <rect x="13" y="6" width="9" height="23" rx="4.5" fill="#2563eb" opacity="0.92" />
+                            <!-- عمود 3 -->
+                            <rect x="25" y="0" width="9" height="29" rx="4.5" fill="#d97706" opacity="0.92" />
+                        </svg>
+                        <div class="sf-hccm-matrix-title">الأداء التنفيذي للإدارات</div>
+                    </div>
+                    <div class="sf-hccm-matrix-note">
+                        @* قراءة موحدة للإدارات حسب المعايير مع النسب والرسوم المختصرة والمستهدف والمنجز والمتبقي *@
+                        ملاحظة : جميع الارقام والاحصائيات غير حقيقية ولغرض الايجاز فقط
+                    </div>
+                </div>
+            </div>
+
+            <div class="sf-hccm-matrix-wrap">
+                <table class="sf-hccm-matrix-table" data-hccm-matrix-table>
+                    <thead data-hccm-matrix-head>
+                        <tr>
+                            <th class="is-sticky-col is-department-col">
+                                <div class="sf-hccm-th-main">
+                                    <i class="fa-solid fa-building-columns" style="margin-left:5px;font-size:.7rem"></i>
+                                    الإدارة
+                                </div>
+                                <div class="sf-hccm-th-sub">اسم الإدارة والإجمالي العام</div>
+                            </th>
+
+                            <th>
+                                <div class="sf-hccm-th-main">جاهزية السكن والأصول</div>
+                                <div class="sf-hccm-th-sub">الوحدات، الأصول، المرافق</div>
+                            </th>
+
+                            <th>
+                                <div class="sf-hccm-th-main">الإشغال وقوائم الانتظار</div>
+                                <div class="sf-hccm-th-sub">التوزيع، الفئات، الشاغر</div>
+                            </th>
+
+                            <th>
+                                <div class="sf-hccm-th-main">الطلبات وSLA</div>
+                                <div class="sf-hccm-th-sub">الإمهال، الإخلاء، التسكين</div>
+                            </th>
+
+                            <th>
+                                <div class="sf-hccm-th-main">الماليات والاستهلاك</div>
+                                <div class="sf-hccm-th-sub">الإيجارات، المطالبات، الكهرباء، الماء</div>
+                            </th>
+
+                            <th>
+                                <div class="sf-hccm-th-main">الصيانة والجودة</div>
+                                <div class="sf-hccm-th-sub">الوقائية، المركبات، الجودة</div>
+                            </th>
+
+                            <th class="is-summary-col">
+                                <div class="sf-hccm-th-main">
+                                    <i class="fa-solid fa-gauge-high" style="margin-left:5px;font-size:.7rem"></i>
+                                    الإجمالي
+                                </div>
+                                <div class="sf-hccm-th-sub">متوسط أداء الإدارة</div>
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody data-hccm-summary-row hidden>
+                        <tr class="sf-hccm-summary-row">
+                            <td class="is-sticky-col">
+                                <div class="sf-hccm-summary-label">إجمالي جميع الإدارات</div>
+                            </td>
+
+                            <td colspan="6">
+                                <div class="sf-hccm-empty">جارٍ تحميل صف الإجمالي...</div>
+                            </td>
+                        </tr>
+                    </tbody>
+
+                    <tbody data-hccm-matrix-body>
+                        <tr>
+                            <td colspan="7">
+                                <div class="sf-hccm-empty">جارٍ تحميل بيانات الإدارات...</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+
+    <script id="@cfgId" type="application/json">@Html.Raw(json)</script>
+</div>
+
+<script>
+    (function () {
+    window.SmartCharts = window.SmartCharts || {};
+    if (typeof window.SmartCharts.renderHousingCommandCenter === 'function') {
+    window.SmartCharts.renderHousingCommandCenter('@hostId', '@cfgId');
+    }
+    })();
+</script>

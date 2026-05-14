@@ -22,6 +22,8 @@ CREATE PROCEDURE [Housing].[HousingExitSP]
     , @PenaltyPrice                         NVARCHAR(1000)  = NULL
     , @PenaltyReason                        NVARCHAR(4000)  = NULL
     , @BillsID                              NVARCHAR(4000)  = NULL
+    , @OccupentDate                         NVARCHAR(4000)  = NULL
+    , @FinalExitDate                        NVARCHAR(4000)  = NULL
     , @idaraID_FK                           NVARCHAR(10)    = NULL
     , @entryData                            NVARCHAR(20)    = NULL
     , @hostName                             NVARCHAR(200)   = NULL
@@ -158,6 +160,7 @@ DECLARE @PenaltyPriceDecimal DECIMAL(18,2) =
             END
             from Housing.V_WaitingList w
             where w.residentInfoID = @residentInfoID
+            and w.ActionID = @ActionID
 
             IF 
             (
@@ -183,6 +186,8 @@ DECLARE @PenaltyPriceDecimal DECIMAL(18,2) =
                 , buildingActionNote
                 , buildingActionParentID
                 , buildingActionDate
+                , OccupentDate
+                , ExitDate
                 , IdaraId_FK
                 , entryData
                 , hostName
@@ -199,6 +204,8 @@ DECLARE @PenaltyPriceDecimal DECIMAL(18,2) =
                 , @Notes
                 , @LastActionID
                 , @ExitDate  
+                , @OccupentDate
+                , @ExitDate 
                 , @IdaraID_INT
                 , @entryData
                 , @hostName
@@ -304,6 +311,8 @@ DECLARE @PenaltyPriceDecimal DECIMAL(18,2) =
                 , buildingActionNote
                 , buildingActionParentID
                 , buildingActionDate
+                , OccupentDate
+                , ExitDate
                 , IdaraId_FK
                 , entryData
                 , hostName
@@ -320,6 +329,8 @@ DECLARE @PenaltyPriceDecimal DECIMAL(18,2) =
                 , @Notes
                 , @LastActionID
                 , @ExitDate
+                , @OccupentDate
+                , @ExitDate 
                 , @IdaraID_INT
                 , @entryData
                 , @hostName
@@ -348,6 +359,8 @@ DECLARE @PenaltyPriceDecimal DECIMAL(18,2) =
                 , buildingActionNote
                 , buildingActionParentID
                 , buildingActionDate
+                , OccupentDate
+                , ExitDate
                 , IdaraId_FK
                 , entryData
                 , hostName
@@ -364,6 +377,8 @@ DECLARE @PenaltyPriceDecimal DECIMAL(18,2) =
                 , @Notes
                 , @NewID
                 , @ExitDate  
+                , @OccupentDate
+                , @ExitDate
                 , @IdaraID_INT
                 , @entryData
                 , @hostName
@@ -477,6 +492,8 @@ DECLARE @PenaltyPriceDecimal DECIMAL(18,2) =
                 , buildingActionNote
                 , buildingActionParentID
                 , buildingActionDate
+                , OccupentDate
+                , ExitDate
                 , IdaraId_FK
                 , entryData
                 , hostName
@@ -493,6 +510,8 @@ DECLARE @PenaltyPriceDecimal DECIMAL(18,2) =
                 , @Notes
                 , @LastActionID
                 , @ExitDate  
+                , @OccupentDate
+                , @ExitDate
                 , @IdaraID_INT
                 , @entryData
                 , @hostName
@@ -516,7 +535,7 @@ DECLARE @PenaltyPriceDecimal DECIMAL(18,2) =
                buildingActionToDate, buildingActionDate, buildingActionDate2, buildingActionDecisionNo, buildingActionDecisionDate, fromDSD_FK, toDSD_FK, buildingActionFromSourceID_FK, buildingActionToSourceID_FK, 
                buildingActionNote, buildingActionExtraText1, buildingActionExtraText2, buildingActionExtraText3, buildingActionExtraText4, buildingActionExtraDate1, buildingActionExtraDate2, buildingActionExtraDate3, 
                buildingActionExtraFloat1, buildingActionExtraFloat2, buildingActionExtraInt1, buildingActionExtraInt2, buildingActionExtraInt3, buildingActionExtraInt4, buildingActionExtraType1, buildingActionExtraType2, 
-               buildingActionExtraType3, buildingActionActive, buildingActionParentID, CustdyRecord, AssignPeriodID_FK, IdaraId_FK, entryData, hostName
+               buildingActionExtraType3, buildingActionActive, buildingActionParentID, CustdyRecord, AssignPeriodID_FK,OccupentDate,ExitDate, IdaraId_FK, entryData, hostName
 
             )
             
@@ -527,7 +546,7 @@ DECLARE @PenaltyPriceDecimal DECIMAL(18,2) =
                buildingActionToDate, buildingActionDate, buildingActionDate2, buildingActionDecisionNo, buildingActionDecisionDate, fromDSD_FK, toDSD_FK, buildingActionFromSourceID_FK, buildingActionToSourceID_FK, 
                buildingActionNote, buildingActionExtraText1, buildingActionExtraText2, buildingActionExtraText3, buildingActionExtraText4, buildingActionExtraDate1, buildingActionExtraDate2, buildingActionExtraDate3, 
                buildingActionExtraFloat1, buildingActionExtraFloat2, buildingActionExtraInt1, buildingActionExtraInt2, buildingActionExtraInt3, buildingActionExtraInt4, buildingActionExtraType1, buildingActionExtraType2, 
-               buildingActionExtraType3, buildingActionActive, @NewID, CustdyRecord, AssignPeriodID_FK, @idaraID_FK, @entryData, @hostName
+               buildingActionExtraType3, buildingActionActive, @NewID, CustdyRecord, AssignPeriodID_FK,@OccupentDate,null, @idaraID_FK, @entryData, @hostName
             FROM Housing.fn_BuildingAction_ChainToRoot(@NewID) r
             WHERE R.residentInfoID_FK = @residentInfoID and r.buildingActionTypeID_FK in(2,24)
             ORDER BY buildingActionID desc;
@@ -636,6 +655,8 @@ DECLARE @PenaltyPriceDecimal DECIMAL(18,2) =
                 , buildingActionNote
                 , buildingActionParentID
                 , buildingActionDate
+                , OccupentDate
+                , ExitDate
                 , IdaraId_FK
                 , entryData
                 , hostName
@@ -652,6 +673,8 @@ DECLARE @PenaltyPriceDecimal DECIMAL(18,2) =
                 , @Notes
                 , @LastActionID
                 , @ExitDate  
+                , @OccupentDate
+                , @ExitDate
                 , @IdaraID_INT
                 , @entryData
                 , @hostName
@@ -757,6 +780,8 @@ DECLARE @PenaltyPriceDecimal DECIMAL(18,2) =
                 , buildingActionNote
                 , buildingActionParentID
                 , buildingActionDate
+                , OccupentDate
+                , ExitDate
                 , IdaraId_FK
                 , entryData
                 , hostName
@@ -773,6 +798,8 @@ DECLARE @PenaltyPriceDecimal DECIMAL(18,2) =
                 , @Notes
                 , @LastActionID
                 , @ExitDate  
+                , @OccupentDate
+                , @ExitDate
                 , @IdaraID_INT
                 , @entryData
                 , @hostName
@@ -902,6 +929,8 @@ DECLARE @PenaltyPriceDecimal DECIMAL(18,2) =
                 , buildingActionNote
                 , buildingActionParentID
                 , buildingActionDate
+                , OccupentDate
+                , ExitDate
                 , IdaraId_FK
                 , entryData
                 , hostName
@@ -917,6 +946,8 @@ DECLARE @PenaltyPriceDecimal DECIMAL(18,2) =
                 , 1
                 , @Notes
                 , @LastActionID
+                , @ExitDate
+                , @OccupentDate
                 , @ExitDate
                 , @IdaraID_INT
                 , @entryData
