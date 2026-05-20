@@ -44,7 +44,7 @@ BEGIN
             IF @@ROWCOUNT = 0 THROW 50001, N'لم يتم العثور على فئة التذكرة', 1;
             SELECT 1 AS IsSuccessful, N'تم تعديل فئة التذكرة بنجاح' AS Message_;
         END
-        ELSE IF @Action = N'DELETETICKETCLASS'
+        ELSE IF @Action = N'DELETE_TICKETCLASS'
         BEGIN
             UPDATE [Tickets].[TicketClass] SET [ticketClassActive] = 0 WHERE [ticketClassID] = @lookupID;
             IF @@ROWCOUNT = 0 THROW 50001, N'لم يتم العثور على فئة التذكرة', 1;
