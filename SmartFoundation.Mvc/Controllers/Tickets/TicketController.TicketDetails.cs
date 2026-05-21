@@ -109,11 +109,13 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                 });
             }
 
-            var ticketTable = ResolveUsableTable(ds, "ticketID", "ticketNo", "title");
-            if (ticketTable == null || ticketTable.Rows.Count == 0)
-            {
-                ticketTable = await LoadTicketDetailsFallbackAsync(id.Value);
-            }
+            var ticketId = id.Value;
+            var safeIdaraId = IdaraId ?? string.Empty;
+            var safeEntryData = usersId ?? string.Empty;
+            var safeHostName = HostName ?? string.Empty;
+            var ticketDetailsRedirectUrl = Url.Action(nameof(TicketDetails), "Ticket", new { id = ticketId }) ?? string.Empty;
+
+            var ticketTable = ResolveUsableTable(ds, "ticketID", "ticketNo");
 
             if (ticketTable == null || ticketTable.Rows.Count == 0)
             {
@@ -128,8 +130,40 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             }
 
             var ticketRow = new Dictionary<string, object?>();
-            foreach (DataColumn col in ticketTable.Columns)
-                ticketRow[col.ColumnName] = ticketTable.Rows[0][col] == DBNull.Value ? null : ticketTable.Rows[0][col];
+            if (ticketTable != null && ticketTable.Rows.Count > 0)
+            {
+                foreach (DataColumn col in ticketTable.Columns)
+                    ticketRow[col.ColumnName] = ticketTable.Rows[0][col] == DBNull.Value ? null : ticketTable.Rows[0][col];
+            }
+
+            // Ensure critical fields exist even if null
+            if (!ticketRow.ContainsKey("ticketID")) ticketRow["ticketID"] = id?.ToString();
+            if (!ticketRow.ContainsKey("ticketNo") || string.IsNullOrEmpty(ticketRow.GetValueOrDefault("ticketNo")?.ToString())) ticketRow["ticketNo"] = $"#{id}";
+            if (!ticketRow.ContainsKey("title")) ticketRow["title"] = "بدون عنوان";
+            if (!ticketRow.ContainsKey("ticketStatusCode") || string.IsNullOrEmpty(ticketRow.GetValueOrDefault("ticketStatusCode")?.ToString())) ticketRow["ticketStatusCode"] = "NEW";
+            if (!ticketRow.ContainsKey("ticketStatusName_A") || string.IsNullOrEmpty(ticketRow.GetValueOrDefault("ticketStatusName_A")?.ToString())) ticketRow["ticketStatusName_A"] = "جديد";
+            if (!ticketRow.ContainsKey("priorityCode") || string.IsNullOrEmpty(ticketRow.GetValueOrDefault("priorityCode")?.ToString())) ticketRow["priorityCode"] = "MEDIUM";
+            if (!ticketRow.ContainsKey("priorityName_A") || string.IsNullOrEmpty(ticketRow.GetValueOrDefault("priorityName_A")?.ToString())) ticketRow["priorityName_A"] = "متوسط";
+            if (!ticketRow.ContainsKey("ticketClassName_A")) ticketRow["ticketClassName_A"] = "عام";
+            if (!ticketRow.ContainsKey("assignedUserName") || string.IsNullOrEmpty(ticketRow.GetValueOrDefault("assignedUserName")?.ToString())) ticketRow["assignedUserName"] = "--";
+            if (!ticketRow.ContainsKey("isParentBlocked")) ticketRow["isParentBlocked"] = "False";
+            if (!ticketRow.ContainsKey("currentDSDID_FK")) ticketRow["currentDSDID_FK"] = null;
+            if (!ticketRow.ContainsKey("locationBuildingNo")) ticketRow["locationBuildingNo"] = null;
+            if (!ticketRow.ContainsKey("locationUnitNo")) ticketRow["locationUnitNo"] = null;
+            if (!ticketRow.ContainsKey("locationArea")) ticketRow["locationArea"] = null;
+            if (!ticketRow.ContainsKey("entryDate") || string.IsNullOrEmpty(ticketRow.GetValueOrDefault("entryDate")?.ToString())) ticketRow["entryDate"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+            if (!ticketRow.ContainsKey("slaElapsedMinutes")) ticketRow["slaElapsedMinutes"] = null;
+            if (!ticketRow.ContainsKey("slaTargetMinutes")) ticketRow["slaTargetMinutes"] = null;
+            if (!ticketRow.ContainsKey("slaIsBreached")) ticketRow["slaIsBreached"] = "False";
+            if (!ticketRow.ContainsKey("slaTypeCode")) ticketRow["slaTypeCode"] = null;
+            if (!ticketRow.ContainsKey("serviceName_A")) ticketRow["serviceName_A"] = "غير محدد";
+            if (!ticketRow.ContainsKey("requesterName")) ticketRow["requesterName"] = "غير محدد";
+            if (!ticketRow.ContainsKey("requesterTypeName_A")) ticketRow["requesterTypeName_A"] = "غير محدد";
+            if (!ticketRow.ContainsKey("requiresQualityReview")) ticketRow["requiresQualityReview"] = "False";
+            if (!ticketRow.ContainsKey("operationalResolutionDate")) ticketRow["operationalResolutionDate"] = null;
+            if (!ticketRow.ContainsKey("finalClosureDate")) ticketRow["finalClosureDate"] = null;
+            if (!ticketRow.ContainsKey("serviceID_FK")) ticketRow["serviceID_FK"] = null;
+            if (!ticketRow.ContainsKey("allowsChildTickets")) ticketRow["allowsChildTickets"] = "0";
 
             string statusCode = ticketRow.GetValueOrDefault("ticketStatusCode")?.ToString() ?? "";
 
@@ -168,14 +202,13 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
 
             var historyTable = await LoadTicketDataTableAsync(
                 "TicketHistory",
-                id.Value,
-                LoadTicketHistoryFallbackAsync,
+                ticketId,
                 "actionTypeCode",
                 "actionDate");
 
             // ---- Audit trail (raw list for timeline rendering) ----
             var historyList = ConvertTableToDictionaryList(historyTable);
-            ViewBag.AuditTrail = historyList;
+            ViewBag.TicketAuditTrail = historyList;
 
             // Compute last-updated date from latest history entry
             if (historyList.Count > 0)
@@ -192,8 +225,7 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             // ---- Child tickets (raw list) ----
             var childTable = await LoadTicketDataTableAsync(
                 "ChildTickets",
-                id.Value,
-                LoadChildTicketsFallbackAsync,
+                ticketId,
                 "ticketID",
                 "ticketNo");
             var childList = ConvertTableToDictionaryList(childTable);
@@ -202,8 +234,7 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             // ---- Pause sessions (raw list) ----
             var pauseTable = await LoadTicketDataTableAsync(
                 "PauseSessions",
-                id.Value,
-                LoadPauseSessionsFallbackAsync,
+                ticketId,
                 "ticketPauseSessionID",
                 "pauseStart");
             var pauseList = ConvertTableToDictionaryList(pauseTable);
@@ -211,8 +242,7 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
 
             var qualityReviewTable = await LoadTicketDataTableAsync(
                 "QualityReviews",
-                id.Value,
-                LoadQualityReviewsFallbackAsync,
+                ticketId,
                 "qualityReviewID",
                 "entryDate");
             ViewBag.QualityReviews = ConvertTableToDictionaryList(qualityReviewTable);
@@ -262,14 +292,14 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                 clarificationTargetDsdOptions = await GetServiceCatalogueDsdOptionsAsync();
             }
 
-            var clarificationRequestsTable = await LoadClarificationRequestsFallbackAsync(id.Value);
+            var clarificationRequestsTable = await LoadClarificationRequestsFallbackAsync(ticketId);
             ViewBag.ClarificationRequests = ConvertTableToDictionaryList(clarificationRequestsTable);
 
             long? openClarificationRequestId = null;
             if (canRespondClarification)
             {
-                var openClarificationMap = await GetOpenClarificationRequestMapAsync(new[] { (long)id.Value });
-                if (openClarificationMap.TryGetValue(id.Value, out var clarificationRequestId))
+                var openClarificationMap = await GetOpenClarificationRequestMapAsync(new[] { (long)ticketId });
+                if (openClarificationMap.TryGetValue(ticketId, out var clarificationRequestId))
                     openClarificationRequestId = clarificationRequestId;
             }
 
@@ -289,59 +319,762 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             ViewBag.ActionClassOptions = actionClassOptions;
             ViewBag.ClarificationReasonOptions = clarificationReasonOptions;
             ViewBag.ClarificationTargetDsdOptions = clarificationTargetDsdOptions;
-            ViewBag.CrudIdaraId = IdaraId;
-            ViewBag.CrudEntryData = usersId;
-            ViewBag.CrudHostName = HostName;
-            ViewBag.TicketDetailsRedirectUrl = Url.Action(nameof(TicketDetails), "Ticket", new { id = id.Value });
+            // CRUD context for modals
+            ViewBag.TicketDetailsRedirectUrl = ticketDetailsRedirectUrl;
+            ViewBag.CrudIdaraId = safeIdaraId;
+            ViewBag.CrudEntryData = safeEntryData;
+            ViewBag.CrudHostName = safeHostName;
+            // Compute last-updated date from latest history entry
+            if (historyList.Count > 0)
+            {
+                var lastEntry = historyList[^1];
+                var lastUpdated = lastEntry.GetValueOrDefault("actionDate")?.ToString();
+                if (!string.IsNullOrWhiteSpace(lastUpdated))
+                {
+                    ticketRow["lastUpdated"] = lastUpdated;
+                }
+            }
+
+            // Build TicketDetails data
+            var ticketDetailsData = BuildTicketDetailsData(
+                ticketRow,
+                statusCode,
+                childList,
+                pauseList,
+                ConvertTableToDictionaryList(qualityReviewTable),
+                ConvertTableToDictionaryList(clarificationRequestsTable));
+
+            // Build action forms
+            var actions = BuildTicketActions(
+                statusCode,
+                pauseReasonOptions,
+                arbitrationReasonOptions,
+                actionPriorityOptions,
+                actionClassOptions,
+                clarificationReasonOptions,
+                clarificationTargetDsdOptions,
+                canAssignTicket,
+                canStartWork,
+                canResolveTicket,
+                canPauseTicket,
+                canResumeTicket,
+                canRaiseArbitration,
+                canCreateChildTicket,
+                canRequestClarification,
+                canRespondClarification,
+                openClarificationRequestId?.ToString(),
+                ticketId.ToString(),
+                safeIdaraId,
+                safeEntryData,
+                safeHostName,
+                ticketDetailsRedirectUrl,
+                ticketRow);
 
             var page = new SmartPageViewModel
             {
                 PageTitle = "تفاصيل التذكرة",
                 PanelTitle = "تفاصيل التذكرة",
-                PanelIcon = "fa fa-ticket"
+                PanelIcon = "fa fa-ticket",
+                Form = searchForm,
+                // SLA Panel
+                SlaPanel = BuildSlaPanelConfig(ticketRow),
+                // Ticket Timeline
+                TicketTimeline = BuildTicketTimelineConfig(historyList),
+                // Ticket Details Data
+                TicketDetails = ticketDetailsData,
+                // Ticket Actions
+                TicketActions = actions
             };
 
             return View("TicketDetails", page);
         }
 
-        private async Task<int?> TryGetLatestTicketIdAsync()
-        {
-            const string sql = @"
-SELECT TOP 1 [ticketID]
-FROM [Tickets].[Ticket] t
-OUTER APPLY (
-        SELECT COUNT(1) AS [historyCount]
-        FROM [Tickets].[TicketHistory] th
-        WHERE th.[ticketID_FK] = t.[ticketID]
-) historyAgg
-OUTER APPLY (
-        SELECT COUNT(1) AS [reviewCount]
-        FROM [Tickets].[QualityReview] qr
-        WHERE qr.[ticketID_FK] = t.[ticketID]
-            AND qr.[qualityReviewActive] = 1
-) reviewAgg
-WHERE t.[ticketActive] = 1
-    AND (t.[idaraID_FK] = @idaraID OR @idaraID IS NULL)
-ORDER BY
-            historyAgg.[historyCount] DESC
-        , reviewAgg.[reviewCount] DESC
-        , CASE WHEN t.[assignedUserID_FK] IS NULL THEN 0 ELSE 1 END DESC
-        , CASE WHEN t.[operationalResolutionDate] IS NULL THEN 0 ELSE 1 END DESC
-        , t.[ticketID] DESC;";
+        #region TicketDetails Component Builders
 
-            var table = await ExecuteTicketDetailsQueryAsync(sql, ("@idaraID", ParseTicketDetailsNullableInt(IdaraId)));
-            if (table.Rows.Count == 0)
+        private SlaPanelConfig? BuildSlaPanelConfig(Dictionary<string, object?> ticketRow)
+        {
+            var elapsedMinutes = ticketRow.GetValueOrDefault("slaElapsedMinutes")?.ToString();
+            var targetMinutes = ticketRow.GetValueOrDefault("slaTargetMinutes")?.ToString();
+            var isBreached = ticketRow.GetValueOrDefault("slaIsBreached")?.ToString();
+
+            if (string.IsNullOrWhiteSpace(elapsedMinutes) || string.IsNullOrWhiteSpace(targetMinutes))
                 return null;
 
-            return int.TryParse(table.Rows[0]["ticketID"]?.ToString(), out var ticketId)
-                ? ticketId
-                : null;
+            int elapsed = int.TryParse(elapsedMinutes, out var el) ? el : 0;
+            int target = int.TryParse(targetMinutes, out var tg) ? tg : 0;
+            bool breached = isBreached == "True" || isBreached == "1";
+
+            return new SlaPanelConfig
+            {
+                Title = "حالة مستوى الخدمة",
+                Icon = "fa-clock",
+                ResponseTimeMinutes = target / 60,
+                ResolutionTimeMinutes = target / 60,
+                AchievedPercentage = target > 0 ? Math.Min(100, Math.Round((decimal)elapsed / target * 100, 1)) : 0m,
+                ShowDetails = true,
+                ColorScheme = breached ? "red" : "green"
+            };
+        }
+
+        private TicketTimelineConfig BuildTicketTimelineConfig(List<Dictionary<string, object?>> historyList)
+        {
+            var events = new List<TimelineEvent>();
+            foreach (var h in historyList)
+            {
+                events.Add(new TimelineEvent
+                {
+                    ActionCode = h.GetValueOrDefault("actionTypeCode")?.ToString(),
+                    ActionNameAr = h.GetValueOrDefault("actionNameAr")?.ToString(),
+                    NewStatusCode = h.GetValueOrDefault("newStatusCode")?.ToString(),
+                    NewStatusName_A = h.GetValueOrDefault("newStatusName_A")?.ToString(),
+                    Notes = h.GetValueOrDefault("notes")?.ToString(),
+                    PerformerName = h.GetValueOrDefault("performerName")?.ToString(),
+                    ActionDate = h.GetValueOrDefault("actionDate")?.ToString() is { Length: > 0 } ad
+                        ? DateTime.Parse(ad)
+                        : (DateTime?)null
+                });
+            }
+
+            return new TicketTimelineConfig
+            {
+                Title = "سجل المتابعة",
+                Events = events,
+                ShowEmptyState = true,
+                EmptyStateText = "لا توجد سجلات متابعة متاحة لهذه التذكرة."
+            };
+        }
+
+        private TicketDetailsData BuildTicketDetailsData(
+            Dictionary<string, object?> ticketRow,
+            string statusCode,
+            List<Dictionary<string, object?>> childList,
+            List<Dictionary<string, object?>> pauseList,
+            List<Dictionary<string, object?>> qualityReviews,
+            List<Dictionary<string, object?>> clarificationRequests)
+        {
+            var data = new TicketDetailsData
+            {
+                TicketId = GetStringValue(ticketRow, "ticketID"),
+                TicketNo = GetStringValue(ticketRow, "ticketNo"),
+                Title = GetStringValue(ticketRow, "title"),
+                Description = GetStringValue(ticketRow, "description_", "description"),
+                StatusCode = statusCode,
+                StatusName = GetStringValue(ticketRow, "ticketStatusName_A", "ticketStatusName_E", "statusName"),
+                PriorityCode = GetStringValue(ticketRow, "priorityCode"),
+                PriorityName = GetStringValue(ticketRow, "priorityName_A", "priorityName_E", "priorityName"),
+                IsBlocked = ToBoolean(ticketRow.GetValueOrDefault("isParentBlocked")),
+                ServiceName = GetStringValue(ticketRow, "serviceName_A", "serviceName_E", "serviceName"),
+                RequesterName = GetStringValue(ticketRow, "requesterName"),
+                RequesterTypeName = GetStringValue(ticketRow, "requesterTypeName_A", "requesterTypeName_E", "requesterTypeName"),
+                AssignedUserName = GetStringValue(ticketRow, "assignedUserName") ?? "--",
+                TicketClassName = GetStringValue(ticketRow, "ticketClassName_A", "ticketClassName_E", "ticketClassName"),
+                CurrentDsdId = GetStringValue(ticketRow, "currentDSDID_FK"),
+                EntryDate = GetStringValue(ticketRow, "entryDate"),
+                LastUpdated = GetStringValue(ticketRow, "lastUpdated"),
+                OperationalResolutionDate = GetStringValue(ticketRow, "operationalResolutionDate"),
+                FinalClosureDate = GetStringValue(ticketRow, "finalClosureDate"),
+                BackLinkUrl = Url.Action("TicketList", "Ticket"),
+                RequiresQualityReview = ToBoolean(ticketRow.GetValueOrDefault("requiresQualityReview")),
+                LocationBuildingNo = GetStringValue(ticketRow, "locationBuildingNo"),
+                LocationUnitNo = GetStringValue(ticketRow, "locationUnitNo"),
+                LocationArea = GetStringValue(ticketRow, "locationArea"),
+                SlaElapsedMinutes = int.TryParse(ticketRow.GetValueOrDefault("slaElapsedMinutes")?.ToString(), out var slaEl) ? slaEl : null,
+                SlaTargetMinutes = int.TryParse(ticketRow.GetValueOrDefault("slaTargetMinutes")?.ToString(), out var slaTarget) ? slaTarget : null,
+                SlaIsBreached = ToBoolean(ticketRow.GetValueOrDefault("slaIsBreached"))
+            };
+
+            // Related Tickets
+            data.RelatedTickets = childList.Select(c => new TicketRelatedItem
+            {
+                TicketId = GetStringValue(c, "ticketID"),
+                TicketNo = GetStringValue(c, "ticketNo"),
+                Title = GetStringValue(c, "title"),
+                StatusCode = GetStringValue(c, "statusCode", "ticketStatusCode"),
+                StatusName = GetStringValue(c, "statusName", "ticketStatusName_A", "ticketStatusName_E"),
+                PriorityName = GetStringValue(c, "priorityName", "priorityName_A", "priorityName_E")
+            }).ToList();
+
+            // Pause Sessions
+            data.PauseSessions = pauseList.Select(p => new TicketPauseItem
+            {
+                ReasonName = GetStringValue(p, "pauseReasonName", "pauseReasonName_A", "pauseReasonName_E"),
+                Notes = GetStringValue(p, "pauseNotes"),
+                Start = GetStringValue(p, "pauseStart"),
+                End = GetStringValue(p, "pauseEnd"),
+                IsActive = !string.Equals(GetStringValue(p, "ticketPauseSessionActive"), "0", StringComparison.Ordinal)
+            }).ToList();
+
+            // Quality Reviews
+            data.QualityReviews = qualityReviews.Select(q => new TicketQualityItem
+            {
+                ResultName = GetStringValue(q, "qualityReviewResultName", "qualityReviewResultName_A", "qualityReviewResultName_E"),
+                ResultCode = GetStringValue(q, "qualityReviewResultCode"),
+                Notes = GetStringValue(q, "reviewNotes"),
+                ReviewerName = GetStringValue(q, "reviewerName"),
+                Finalized = ToBoolean(q.GetValueOrDefault("finalized")),
+                ReviewDate = GetStringValue(q, "entryDate")
+            }).ToList();
+
+            // Clarification Requests
+            data.ClarificationRequests = clarificationRequests.Select(c => new TicketClarificationItem
+            {
+                RequestId = GetStringValue(c, "clarificationRequestID", "clarificationRequestId"),
+                ReasonName = GetStringValue(c, "clarificationReasonName_A", "clarificationReasonName_E", "clarificationReasonName"),
+                RequestNotes = GetStringValue(c, "requestNotes"),
+                RequestDate = GetStringValue(c, "entryDate", "requestDate"),
+                Status = GetStringValue(c, "clarificationStatus"),
+                TargetDsdName = GetStringValue(c, "targetDSDName_A", "targetDSDName_E")
+            }).ToList();
+
+            // Ticket Info
+            data.TicketInfo = new List<TicketInfoItem>
+            {
+                new() { Label = "الخدمة", Value = data.ServiceName },
+                new() { Label = "مقدم الطلب", Value = data.RequesterName },
+                new() { Label = "نوع مقدم الطلب", Value = data.RequesterTypeName },
+                new() { Label = "المكلف بالعمل", Value = string.IsNullOrWhiteSpace(data.AssignedUserName) || data.AssignedUserName == "--" ? "غير معين" : data.AssignedUserName, Icon = data.AssignedUserName != "--" ? "fa-solid fa-user" : null },
+                new() { Label = "التصنيف", Value = data.TicketClassName },
+                new() { Label = "القسم", Value = string.IsNullOrWhiteSpace(data.CurrentDsdId) ? null : $"قسم #{data.CurrentDsdId}" },
+                new() { Label = "الفرع", Value = data.LocationBuildingNo },
+                new() { Label = "الوحدة", Value = data.LocationUnitNo },
+                new() { Label = "الطابور الحالي", Value = data.ServiceName },
+                new() { Label = "تاريخ الإنشاء", Value = data.EntryDate }
+            };
+
+            return data;
+        }
+
+        private static string? GetStringValue(Dictionary<string, object?> row, params string[] keys)
+        {
+            foreach (var key in keys)
+            {
+                if (!row.TryGetValue(key, out var value) || value == null)
+                    continue;
+
+                var text = value.ToString();
+                if (!string.IsNullOrWhiteSpace(text))
+                    return text;
+            }
+
+            return null;
+        }
+
+        private static bool ToBoolean(object? value)
+        {
+            var text = value?.ToString();
+            return string.Equals(text, "1", StringComparison.Ordinal)
+                || string.Equals(text, "true", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private List<TicketAction> BuildTicketActions(
+            string statusCode,
+            List<OptionItem> pauseReasonOptions,
+            List<OptionItem> arbitrationReasonOptions,
+            List<OptionItem> actionPriorityOptions,
+            List<OptionItem> actionClassOptions,
+            List<OptionItem> clarificationReasonOptions,
+            List<OptionItem> clarificationTargetDsdOptions,
+            bool canAssignTicket,
+            bool canStartWork,
+            bool canResolveTicket,
+            bool canPauseTicket,
+            bool canResumeTicket,
+            bool canRaiseArbitration,
+            bool canCreateChildTicket,
+            bool canRequestClarification,
+            bool canRespondClarification,
+            string? openClarificationRequestId,
+            string ticketId,
+            string crudIdaraId,
+            string crudEntryData,
+            string crudHostName,
+            string redirectUrl,
+            Dictionary<string, object?> header)
+        {
+            var actions = new List<TicketAction>();
+
+            // PAUSE - IN_PROGRESS or CLARIFICATION
+            if (canPauseTicket && (statusCode == "IN_PROGRESS" || statusCode == "CLARIFICATION"))
+            {
+                var pauseFields = new List<FieldConfig>
+                {
+                    new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
+                    new() { Name = "ActionType", Type = "hidden", Value = "PAUSE_TICKET" },
+                    new() { Name = "idaraID", Type = "hidden", Value = crudIdaraId },
+                    new() { Name = "entrydata", Type = "hidden", Value = crudEntryData },
+                    new() { Name = "hostname", Type = "hidden", Value = crudHostName },
+                    new() { Name = "redirectUrl", Type = "hidden", Value = redirectUrl },
+                    new() { Name = "p01", Type = "hidden", Value = ticketId }
+                };
+
+                if (pauseReasonOptions.Count > 0)
+                {
+                    pauseFields.Add(new FieldConfig
+                    {
+                        Label = "السبب",
+                        Name = "p02",
+                        Type = "select",
+                        Options = pauseReasonOptions,
+                        ColCss = "12",
+                        Select2 = true
+                    });
+                }
+
+                pauseFields.Add(new FieldConfig
+                {
+                    Label = "ملاحظات",
+                    Name = "p03",
+                    Type = "text",
+                    ColCss = "12",
+                    Placeholder = "ملاحظات اختيارية"
+                });
+
+                actions.Add(new TicketAction
+                {
+                    Code = "PAUSE_TICKET",
+                    Label = "إيقاف مؤقت",
+                    Icon = "fa-solid fa-pause",
+                    Color = "warning",
+                    Title = "إيقاف مؤقت",
+                    ShowForStatuses = new() { "IN_PROGRESS", "CLARIFICATION" },
+                    Form = new FormConfig
+                    {
+                        FormId = "pauseTicketForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
+                        Fields = pauseFields,
+                        Buttons = new List<FormButtonConfig>
+                        {
+                            new() { Text = "إلغاء", Type = "button", Color = "secondary", OnClickJs = "this.closest('.sf-modal').__x.$data.closeModal();" },
+                            new() { Text = "إيقاف", Type = "submit", Color = "warning", Icon = "fa-solid fa-pause" }
+                        }
+                    }
+                });
+            }
+
+            // RESUME - PAUSED
+            if (canResumeTicket && statusCode == "PAUSED")
+            {
+                actions.Add(new TicketAction
+                {
+                    Code = "RESUME_TICKET",
+                    Label = "استئناف",
+                    Icon = "fa-solid fa-play",
+                    Color = "success",
+                    Title = "استئناف العمل",
+                    ShowForStatuses = new() { "PAUSED" },
+                    Form = new FormConfig
+                    {
+                        FormId = "resumeTicketForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
+                        Fields = new List<FieldConfig>
+                        {
+                            new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
+                            new() { Name = "ActionType", Type = "hidden", Value = "RESUME_TICKET" },
+                            new() { Name = "idaraID", Type = "hidden", Value = crudIdaraId },
+                            new() { Name = "entrydata", Type = "hidden", Value = crudEntryData },
+                            new() { Name = "hostname", Type = "hidden", Value = crudHostName },
+                            new() { Name = "redirectUrl", Type = "hidden", Value = redirectUrl },
+                            new() { Name = "p01", Type = "hidden", Value = ticketId },
+                            new() { Label = "ملاحظات", Name = "p02", Type = "text", ColCss = "12", Placeholder = "ملاحظات اختيارية" }
+                        },
+                        Buttons = new List<FormButtonConfig>
+                        {
+                            new() { Text = "إلغاء", Type = "button", Color = "secondary", OnClickJs = "this.closest('.sf-modal').__x.$data.closeModal();" },
+                            new() { Text = "استئناف", Type = "submit", Color = "success", Icon = "fa-solid fa-play" }
+                        }
+                    }
+                });
+            }
+
+            // ASSIGN - NEW
+            if (canAssignTicket && statusCode == "NEW")
+            {
+                actions.Add(new TicketAction
+                {
+                    Code = "ASSIGN_TICKET",
+                    Label = "تعيين",
+                    Icon = "fa-solid fa-user-plus",
+                    Color = "primary",
+                    Title = "تعيين التذكرة",
+                    ShowForStatuses = new() { "NEW" },
+                    Form = new FormConfig
+                    {
+                        FormId = "assignTicketForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
+                        Fields = new List<FieldConfig>
+                        {
+                            new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
+                            new() { Name = "ActionType", Type = "hidden", Value = "ASSIGN_TICKET" },
+                            new() { Name = "idaraID", Type = "hidden", Value = crudIdaraId },
+                            new() { Name = "entrydata", Type = "hidden", Value = crudEntryData },
+                            new() { Name = "hostname", Type = "hidden", Value = crudHostName },
+                            new() { Name = "redirectUrl", Type = "hidden", Value = redirectUrl },
+                            new() { Name = "p01", Type = "hidden", Value = ticketId },
+                            new() { Label = "المستخدم", Name = "p02", Type = "text", ColCss = "12", Placeholder = "اسم المستخدم أو رقمه" }
+                        },
+                        Buttons = new List<FormButtonConfig>
+                        {
+                            new() { Text = "إلغاء", Type = "button", Color = "secondary", OnClickJs = "this.closest('.sf-modal').__x.$data.closeModal();" },
+                            new() { Text = "تعيين", Type = "submit", Color = "primary", Icon = "fa-solid fa-user-plus" }
+                        }
+                    }
+                });
+            }
+
+            // START WORK - ASSIGNED or REOPENED
+            if (canStartWork && (statusCode == "ASSIGNED" || statusCode == "REOPENED"))
+            {
+                actions.Add(new TicketAction
+                {
+                    Code = "START_WORK",
+                    Label = "بدء العمل",
+                    Icon = "fa-solid fa-play",
+                    Color = "success",
+                    Title = "بدء العمل",
+                    ShowForStatuses = new() { "ASSIGNED", "REOPENED" },
+                    Form = new FormConfig
+                    {
+                        FormId = "startWorkForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
+                        Fields = new List<FieldConfig>
+                        {
+                            new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
+                            new() { Name = "ActionType", Type = "hidden", Value = "START_WORK" },
+                            new() { Name = "idaraID", Type = "hidden", Value = crudIdaraId },
+                            new() { Name = "entrydata", Type = "hidden", Value = crudEntryData },
+                            new() { Name = "hostname", Type = "hidden", Value = crudHostName },
+                            new() { Name = "redirectUrl", Type = "hidden", Value = redirectUrl },
+                            new() { Name = "p01", Type = "hidden", Value = ticketId },
+                            new() { Label = "ملاحظات", Name = "p02", Type = "text", ColCss = "12", Placeholder = "ملاحظات اختيارية" }
+                        },
+                        Buttons = new List<FormButtonConfig>
+                        {
+                            new() { Text = "إلغاء", Type = "button", Color = "secondary", OnClickJs = "this.closest('.sf-modal').__x.$data.closeModal();" },
+                            new() { Text = "بدء العمل", Type = "submit", Color = "success", Icon = "fa-solid fa-play" }
+                        }
+                    }
+                });
+            }
+
+            // RESOLVE - IN_PROGRESS or CLARIFICATION
+            if (canResolveTicket && (statusCode == "IN_PROGRESS" || statusCode == "CLARIFICATION"))
+            {
+                actions.Add(new TicketAction
+                {
+                    Code = "RESOLVE_TICKET",
+                    Label = "حل",
+                    Icon = "fa-solid fa-check",
+                    Color = "success",
+                    Title = "حل التذكرة",
+                    ShowForStatuses = new() { "IN_PROGRESS", "CLARIFICATION" },
+                    Form = new FormConfig
+                    {
+                        FormId = "resolveTicketForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
+                        Fields = new List<FieldConfig>
+                        {
+                            new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
+                            new() { Name = "ActionType", Type = "hidden", Value = "RESOLVE_TICKET" },
+                            new() { Name = "idaraID", Type = "hidden", Value = crudIdaraId },
+                            new() { Name = "entrydata", Type = "hidden", Value = crudEntryData },
+                            new() { Name = "hostname", Type = "hidden", Value = crudHostName },
+                            new() { Name = "redirectUrl", Type = "hidden", Value = redirectUrl },
+                            new() { Name = "p01", Type = "hidden", Value = ticketId },
+                            new() { Label = "ملاحظات", Name = "p02", Type = "textarea", ColCss = "12", 
+                                //Rows = 3,
+                                Placeholder = "ملاحظات الحل" }
+                        },
+                        Buttons = new List<FormButtonConfig>
+                        {
+                            new() { Text = "إلغاء", Type = "button", Color = "secondary", OnClickJs = "this.closest('.sf-modal').__x.$data.closeModal();" },
+                            new() { Text = "حل", Type = "submit", Color = "success", Icon = "fa-solid fa-check" }
+                        }
+                    }
+                });
+            }
+
+            // CREATE CHILD TICKET - IN_PROGRESS or CLARIFICATION
+            if (canCreateChildTicket && (statusCode == "IN_PROGRESS" || statusCode == "CLARIFICATION"))
+            {
+                var childFields = new List<FieldConfig>
+                {
+                    new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
+                    new() { Name = "ActionType", Type = "hidden", Value = "CREATE_CHILD_TICKET" },
+                    new() { Name = "idaraID", Type = "hidden", Value = crudIdaraId },
+                    new() { Name = "entrydata", Type = "hidden", Value = crudEntryData },
+                    new() { Name = "hostname", Type = "hidden", Value = crudHostName },
+                    new() { Name = "redirectUrl", Type = "hidden", Value = redirectUrl },
+                    new() { Name = "p01", Type = "hidden", Value = ticketId },
+                    new() { Name = "p02", Type = "hidden", Value = header.GetValueOrDefault("serviceID_FK")?.ToString() ?? "" },
+                    new() { Name = "p04", Type = "hidden", Value = "2" },
+                    new() { Name = "p10", Type = "hidden", Value = header.GetValueOrDefault("currentDSDID_FK")?.ToString() ?? "" },
+                    new() { Label = "العنوان", Name = "p07", Type = "text", Required = true, ColCss = "12", Placeholder = "عنوان التذكرة الفرعية" },
+                    new() { Label = "الوصف", Name = "p08", Type = "text", ColCss = "12", Placeholder = "وصف اختياري" }
+                };
+
+                if (actionPriorityOptions.Count > 0)
+                {
+                    childFields.Add(new FieldConfig
+                    {
+                        Label = "الأولوية",
+                        Name = "p09",
+                        Type = "select",
+                        Options = actionPriorityOptions,
+                        ColCss = "6",
+                        Select2 = true
+                    });
+                }
+
+                if (actionClassOptions.Count > 0)
+                {
+                    childFields.Add(new FieldConfig
+                    {
+                        Label = "الفئة",
+                        Name = "p03",
+                        Type = "select",
+                        Options = actionClassOptions,
+                        ColCss = "6",
+                        Select2 = true
+                    });
+                }
+
+                actions.Add(new TicketAction
+                {
+                    Code = "CREATE_CHILD_TICKET",
+                    Label = "إنشاء تذكرة فرعية",
+                    Icon = "fa-solid fa-plus",
+                    Color = "secondary",
+                    Title = "إنشاء تذكرة فرعية",
+                    ShowForStatuses = new() { "IN_PROGRESS", "CLARIFICATION" },
+                    Form = new FormConfig
+                    {
+                        FormId = "childTicketForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
+                        Fields = childFields,
+                        Buttons = new List<FormButtonConfig>
+                        {
+                            new() { Text = "إلغاء", Type = "button", Color = "secondary", OnClickJs = "this.closest('.sf-modal').__x.$data.closeModal();" },
+                            new() { Text = "إنشاء", Type = "submit", Color = "secondary", Icon = "fa-solid fa-plus" }
+                        }
+                    }
+                });
+            }
+
+            // REQUEST CLARIFICATION - NOT PAUSED, CLARIFICATION, RESOLVED, CLOSED, REJECTED
+            if (canRequestClarification && statusCode != "PAUSED" && statusCode != "CLARIFICATION" && statusCode != "RESOLVED" && statusCode != "CLOSED" && statusCode != "REJECTED")
+            {
+                var clarificationFields = new List<FieldConfig>
+                {
+                    new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
+                    new() { Name = "ActionType", Type = "hidden", Value = "REQUEST_CLARIFICATION" },
+                    new() { Name = "idaraID", Type = "hidden", Value = crudIdaraId },
+                    new() { Name = "entrydata", Type = "hidden", Value = crudEntryData },
+                    new() { Name = "hostname", Type = "hidden", Value = crudHostName },
+                    new() { Name = "redirectUrl", Type = "hidden", Value = redirectUrl },
+                    new() { Name = "p01", Type = "hidden", Value = ticketId },
+                    new() { Name = "p02", Type = "hidden", Value = "" }
+                };
+
+                if (clarificationTargetDsdOptions.Count > 0)
+                {
+                    clarificationFields.Add(new FieldConfig
+                    {
+                        Label = "الجهة المطلوب منها التوضيح",
+                        Name = "p03",
+                        Type = "select",
+                        Options = clarificationTargetDsdOptions,
+                        Required = true,
+                        ColCss = "12",
+                        Select2 = true
+                    });
+                }
+
+                if (clarificationReasonOptions.Count > 0)
+                {
+                    clarificationFields.Add(new FieldConfig
+                    {
+                        Label = "سبب طلب التوضيح",
+                        Name = "p04",
+                        Type = "select",
+                        Options = clarificationReasonOptions,
+                        Required = true,
+                        ColCss = "12",
+                        Select2 = true
+                    });
+                }
+
+                clarificationFields.Add(new FieldConfig
+                {
+                    Label = "ملاحظات الطلب",
+                    Name = "p05",
+                    Type = "textarea",
+                    Required = true,
+                    ColCss = "12",
+                    //Rows = 3,
+                    Placeholder = "اكتب تفاصيل التوضيح المطلوب"
+                });
+
+                actions.Add(new TicketAction
+                {
+                    Code = "REQUEST_CLARIFICATION",
+                    Label = "طلب توضيح",
+                    Icon = "fa-solid fa-circle-question",
+                    Color = "warning",
+                    Title = "طلب توضيح",
+                    Form = new FormConfig
+                    {
+                        FormId = "requestClarificationForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
+                        Fields = clarificationFields,
+                        Buttons = new List<FormButtonConfig>
+                        {
+                            new() { Text = "إلغاء", Type = "button", Color = "secondary", OnClickJs = "this.closest('.sf-modal').__x.$data.closeModal();" },
+                            new() { Text = "إرسال طلب", Type = "submit", Color = "warning", Icon = "fa-solid fa-question" }
+                        }
+                    }
+                });
+            }
+
+            // RESPOND CLARIFICATION - whenever an open request exists
+            if (canRespondClarification && !string.IsNullOrEmpty(openClarificationRequestId))
+            {
+                actions.Add(new TicketAction
+                {
+                    Code = "RESPOND_CLARIFICATION",
+                    Label = "الرد على التوضيح",
+                    Icon = "fa-solid fa-reply",
+                    Color = "primary",
+                    Title = "الرد على التوضيح",
+                    Form = new FormConfig
+                    {
+                        FormId = "respondClarificationForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
+                        Fields = new List<FieldConfig>
+                        {
+                            new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
+                            new() { Name = "ActionType", Type = "hidden", Value = "RESPOND_CLARIFICATION" },
+                            new() { Name = "idaraID", Type = "hidden", Value = crudIdaraId },
+                            new() { Name = "entrydata", Type = "hidden", Value = crudEntryData },
+                            new() { Name = "hostname", Type = "hidden", Value = crudHostName },
+                            new() { Name = "redirectUrl", Type = "hidden", Value = redirectUrl },
+                            new() { Name = "p01", Type = "hidden", Value = openClarificationRequestId },
+                            new() { Label = "الرد", Name = "p02", Type = "textarea", Required = true, ColCss = "12",
+                                Placeholder = "اكتب الرد على طلب التوضيح" }
+                        },
+                        Buttons = new List<FormButtonConfig>
+                        {
+                            new() { Text = "إلغاء", Type = "button", Color = "secondary", OnClickJs = "this.closest('.sf-modal').__x.$data.closeModal();" },
+                            new() { Text = "إرسال الرد", Type = "submit", Color = "primary", Icon = "fa-solid fa-reply" }
+                        }
+                    }
+                });
+            }
+
+            // RAISE ARBITRATION - IN_PROGRESS or CLARIFICATION
+            if (canRaiseArbitration && (statusCode == "IN_PROGRESS" || statusCode == "CLARIFICATION"))
+            {
+                var arbitrationFields = new List<FieldConfig>
+                {
+                    new() { Name = "pageName_", Type = "hidden", Value = "TicketDetails" },
+                    new() { Name = "ActionType", Type = "hidden", Value = "RAISE_ARBITRATION" },
+                    new() { Name = "idaraID", Type = "hidden", Value = crudIdaraId },
+                    new() { Name = "entrydata", Type = "hidden", Value = crudEntryData },
+                    new() { Name = "hostname", Type = "hidden", Value = crudHostName },
+                    new() { Name = "redirectUrl", Type = "hidden", Value = redirectUrl },
+                    new() { Name = "p01", Type = "hidden", Value = ticketId }
+                };
+
+                if (arbitrationReasonOptions.Count > 0)
+                {
+                    arbitrationFields.Add(new FieldConfig
+                    {
+                        Label = "السبب",
+                        Name = "p02",
+                        Type = "select",
+                        Options = arbitrationReasonOptions,
+                        ColCss = "12",
+                        Select2 = true
+                    });
+                }
+
+                arbitrationFields.Add(new FieldConfig
+                {
+                    Label = "ملاحظات",
+                    Name = "p04",
+                    Type = "text",
+                    ColCss = "12",
+                    Placeholder = "ملاحظات اختيارية"
+                });
+
+                actions.Add(new TicketAction
+                {
+                    Code = "RAISE_ARBITRATION",
+                    Label = "رفع تحكيم",
+                    Icon = "fa-solid fa-gavel",
+                    Color = "danger",
+                    Title = "رفع تحكيم",
+                    ShowForStatuses = new() { "IN_PROGRESS", "CLARIFICATION" },
+                    Form = new FormConfig
+                    {
+                        FormId = "arbitrationForm",
+                        Method = "post",
+                        ActionUrl = "/crud/insert",
+                        Fields = arbitrationFields,
+                        Buttons = new List<FormButtonConfig>
+                        {
+                            new() { Text = "إلغاء", Type = "button", Color = "secondary", OnClickJs = "this.closest('.sf-modal').__x.$data.closeModal();" },
+                            new() { Text = "رفع تحكيم", Type = "submit", Color = "danger", Icon = "fa-solid fa-gavel" }
+                        }
+                    }
+                });
+            }
+
+            return actions;
+        }
+
+        #endregion
+
+        private async Task<int?> TryGetLatestTicketIdAsync()
+        {
+            try
+            {
+                DataSet dataSet = await _mastersServies.GetDataLoadDataSetAsync(
+                    "TicketList",
+                    IdaraId,
+                    usersId,
+                    HostName,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null);
+
+                var table = ResolveUsableTable(dataSet, "ticketID", "ticketNo");
+                if (table == null || table.Rows.Count == 0)
+                    return null;
+
+                return int.TryParse(table.Rows[0]["ticketID"]?.ToString(), out var ticketId)
+                    ? ticketId
+                    : null;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private async Task<DataTable?> LoadTicketDataTableAsync(
             string pageName,
             int ticketId,
-            Func<int, Task<DataTable>> fallbackLoader,
             params string[] expectedColumns)
         {
             try
@@ -349,225 +1082,12 @@ ORDER BY
                 DataSet dataSet = await _mastersServies.GetDataLoadDataSetAsync(
                     pageName, IdaraId, usersId, HostName, ticketId.ToString());
 
-                var gatewayTable = ResolveUsableTable(dataSet, expectedColumns);
-                if (gatewayTable != null && gatewayTable.Rows.Count > 0)
-                    return gatewayTable;
+                return ResolveUsableTable(dataSet, expectedColumns);
             }
             catch
             {
-                // Direct SQL fallback is used when the live gateway route is missing or broken.
+                return null;
             }
-
-            var fallbackTable = await fallbackLoader(ticketId);
-            return ResolveUsableTable(fallbackTable, expectedColumns);
-        }
-
-        private async Task<DataTable> LoadTicketDetailsFallbackAsync(int ticketId)
-        {
-            const string sql = @"
-SELECT TOP 1
-      t.[ticketID]
-    , t.[ticketNo]
-        , t.[serviceID_FK]
-    , COALESCE(NULLIF(svc.[serviceName_A], N''), svc.[serviceName_E]) AS [serviceName_A]
-    , COALESCE(NULLIF(tc.[ticketClassName_A], N''), tc.[ticketClassName_E]) AS [ticketClassName_A]
-    , COALESCE(NULLIF(rt.[requesterTypeName_A], N''), rt.[requesterTypeName_E]) AS [requesterTypeName_A]
-    , COALESCE(NULLIF(requesterUser.[fullName], N''), NULLIF(requesterResident.[fullName], N''), N'--') AS [requesterName]
-    , COALESCE(t.[title_A], t.[title]) AS [title]
-    , COALESCE(t.[description_A], t.[description_]) AS [description_]
-    , COALESCE(NULLIF(p.[priorityName_A], N''), p.[priorityName_E]) AS [priorityName_A]
-    , p.[priorityCode]
-    , ts.[ticketStatusCode]
-    , COALESCE(NULLIF(ts.[ticketStatusName_A], N''), ts.[ticketStatusName_E]) AS [ticketStatusName_A]
-    , COALESCE(NULLIF(assignedUser.[fullName], N''), N'--') AS [assignedUserName]
-    , t.[locationBuildingNo]
-    , t.[locationUnitNo]
-    , COALESCE(t.[locationArea_A], t.[locationArea]) AS [locationArea]
-    , t.[operationalResolutionDate]
-    , t.[finalClosureDate]
-    , t.[requiresQualityReview]
-    , t.[isOtherService]
-    , t.[isParentBlocked]
-    , ISNULL(svc.[allowsChildTickets], 0) AS [allowsChildTickets]
-    , t.[currentDSDID_FK]
-    , t.[currentQueueDistributorID_FK]
-    , t.[parentTicketID_FK]
-    , t.[rootTicketID_FK]
-    , sla.[elapsedMinutes] AS [slaElapsedMinutes]
-    , sla.[targetMinutes] AS [slaTargetMinutes]
-    , sla.[isBreached] AS [slaIsBreached]
-    , sla.[slaTypeCode] AS [slaTypeCode]
-    , t.[entryDate]
-FROM [Tickets].[Ticket] t
-LEFT JOIN [Tickets].[Service] svc ON t.[serviceID_FK] = svc.[serviceID]
-LEFT JOIN [Tickets].[TicketClass] tc ON t.[ticketClassID_FK] = tc.[ticketClassID]
-LEFT JOIN [Tickets].[RequesterType] rt ON t.[requesterTypeID_FK] = rt.[requesterTypeID]
-LEFT JOIN [Tickets].[Priority] p ON t.[effectivePriorityID_FK] = p.[priorityID]
-LEFT JOIN [Tickets].[TicketStatus] ts ON t.[ticketStatusID_FK] = ts.[ticketStatusID]
-OUTER APPLY (
-    SELECT TOP 1 LTRIM(RTRIM(
-          ISNULL(CASE WHEN ud.[firstName_A] IS NULL OR ud.[firstName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[firstName_E] ELSE ud.[firstName_A] END, N'') + N' ' +
-          ISNULL(CASE WHEN ud.[secondName_A] IS NULL OR ud.[secondName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[secondName_E] ELSE ud.[secondName_A] END, N'') + N' ' +
-          ISNULL(CASE WHEN ud.[thirdName_A] IS NULL OR ud.[thirdName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[thirdName_E] ELSE ud.[thirdName_A] END, N'') + N' ' +
-          ISNULL(CASE WHEN ud.[lastName_A] IS NULL OR ud.[lastName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[lastName_E] ELSE ud.[lastName_A] END, N'')
-    )) AS [fullName]
-    FROM [dbo].[UsersDetails] ud
-    WHERE ud.[usersID_FK] = t.[requesterUserID_FK]
-    ORDER BY ud.[entryDate] DESC, ud.[usersDetailsID] DESC
-) requesterUser
-OUTER APPLY (
-    SELECT TOP 1 COALESCE(NULLIF(r.[FullName_A], N''), N'--') AS [fullName]
-    FROM [Housing].[V_GetFullResidentDetails] r
-    WHERE r.[residentInfoID] = t.[requesterResidentID_FK]
-) requesterResident
-OUTER APPLY (
-    SELECT TOP 1 LTRIM(RTRIM(
-          ISNULL(CASE WHEN ud.[firstName_A] IS NULL OR ud.[firstName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[firstName_E] ELSE ud.[firstName_A] END, N'') + N' ' +
-          ISNULL(CASE WHEN ud.[secondName_A] IS NULL OR ud.[secondName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[secondName_E] ELSE ud.[secondName_A] END, N'') + N' ' +
-          ISNULL(CASE WHEN ud.[thirdName_A] IS NULL OR ud.[thirdName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[thirdName_E] ELSE ud.[thirdName_A] END, N'') + N' ' +
-          ISNULL(CASE WHEN ud.[lastName_A] IS NULL OR ud.[lastName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[lastName_E] ELSE ud.[lastName_A] END, N'')
-    )) AS [fullName]
-    FROM [dbo].[UsersDetails] ud
-    WHERE ud.[usersID_FK] = t.[assignedUserID_FK]
-    ORDER BY ud.[entryDate] DESC, ud.[usersDetailsID] DESC
-) assignedUser
-OUTER APPLY (
-    SELECT TOP 1 sl.[elapsedMinutes], sl.[targetMinutes], sl.[isBreached], sl.[slaTypeCode]
-    FROM [Tickets].[TicketSLA] sl
-    WHERE sl.[ticketID_FK] = t.[ticketID]
-      AND sl.[slaTypeCode] = N'RESOLUTION'
-      AND sl.[ticketSLAActive] = 1
-) sla
-WHERE t.[ticketActive] = 1
-  AND t.[ticketID] = @ticketID
-  AND (t.[idaraID_FK] = @idaraID OR @idaraID IS NULL)
-ORDER BY t.[ticketID] DESC;";
-
-            return await ExecuteTicketDetailsQueryAsync(
-                sql,
-                ("@ticketID", ticketId),
-                ("@idaraID", ParseTicketDetailsNullableInt(IdaraId)));
-        }
-
-        private async Task<DataTable> LoadTicketHistoryFallbackAsync(int ticketId)
-        {
-            const string sql = @"
-SELECT
-      th.[ticketHistoryID]
-    , th.[ticketID_FK]
-    , th.[actionTypeCode]
-    , ts.[ticketStatusCode] AS [newStatusCode]
-    , COALESCE(NULLIF(ts.[ticketStatusName_A], N''), ts.[ticketStatusName_E]) AS [newStatusName_A]
-    , performerUser.[fullName] AS [performerName]
-    , COALESCE(th.[notes_A], th.[notes]) AS [notes]
-    , th.[actionDate]
-FROM [Tickets].[TicketHistory] th
-LEFT JOIN [Tickets].[TicketStatus] ts ON th.[newStatusID_FK] = ts.[ticketStatusID]
-OUTER APPLY (
-    SELECT TOP 1 LTRIM(RTRIM(
-          ISNULL(CASE WHEN ud.[firstName_A] IS NULL OR ud.[firstName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[firstName_E] ELSE ud.[firstName_A] END, N'') + N' ' +
-          ISNULL(CASE WHEN ud.[secondName_A] IS NULL OR ud.[secondName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[secondName_E] ELSE ud.[secondName_A] END, N'') + N' ' +
-          ISNULL(CASE WHEN ud.[thirdName_A] IS NULL OR ud.[thirdName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[thirdName_E] ELSE ud.[thirdName_A] END, N'') + N' ' +
-          ISNULL(CASE WHEN ud.[lastName_A] IS NULL OR ud.[lastName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[lastName_E] ELSE ud.[lastName_A] END, N'')
-      )) AS [fullName]
-    FROM [dbo].[UsersDetails] ud
-    WHERE ud.[usersID_FK] = th.[performerUserID]
-    ORDER BY ud.[entryDate] DESC, ud.[usersDetailsID] DESC
-) performerUser
-WHERE th.[ticketID_FK] = @ticketID
-ORDER BY th.[ticketHistoryID] ASC;";
-
-            return await ExecuteTicketDetailsQueryAsync(sql, ("@ticketID", ticketId));
-        }
-
-        private async Task<DataTable> LoadChildTicketsFallbackAsync(int ticketId)
-        {
-            const string sql = @"
-SELECT
-      ct.[ticketID]
-    , ct.[ticketNo]
-    , COALESCE(ct.[title_A], ct.[title]) AS [title]
-    , ts.[ticketStatusCode]
-    , COALESCE(NULLIF(ts.[ticketStatusName_A], N''), ts.[ticketStatusName_E]) AS [ticketStatusName_A]
-    , COALESCE(NULLIF(p.[priorityName_A], N''), p.[priorityName_E]) AS [priorityName_A]
-    , ct.[entryDate]
-FROM [Tickets].[Ticket] ct
-LEFT JOIN [Tickets].[TicketStatus] ts ON ct.[ticketStatusID_FK] = ts.[ticketStatusID]
-LEFT JOIN [Tickets].[Priority] p ON ct.[effectivePriorityID_FK] = p.[priorityID]
-WHERE ct.[parentTicketID_FK] = @ticketID
-  AND ct.[ticketActive] = 1
-ORDER BY ct.[ticketID] DESC;";
-
-            return await ExecuteTicketDetailsQueryAsync(sql, ("@ticketID", ticketId));
-        }
-
-        private async Task<DataTable> LoadPauseSessionsFallbackAsync(int ticketId)
-        {
-            const string sql = @"
-SELECT
-      ps.[ticketPauseSessionID]
-    , COALESCE(NULLIF(pr.[pauseReasonName_A], N''), pr.[pauseReasonName_E]) AS [pauseReasonName_A]
-    , ps.[relatedClarificationRequestID_FK]
-    , ps.[pauseStart]
-    , ps.[pauseEnd]
-    , COALESCE(ps.[pauseNotes_A], ps.[pauseNotes]) AS [pauseNotes]
-    , ps.[ticketPauseSessionActive]
-FROM [Tickets].[TicketPauseSession] ps
-LEFT JOIN [Tickets].[PauseReason] pr ON ps.[pauseReasonID_FK] = pr.[pauseReasonID]
-WHERE ps.[ticketID_FK] = @ticketID
-ORDER BY ps.[ticketPauseSessionID] DESC;";
-
-            return await ExecuteTicketDetailsQueryAsync(sql, ("@ticketID", ticketId));
-        }
-
-                private async Task<DataTable> LoadQualityReviewsFallbackAsync(int ticketId)
-                {
-                        const string sql = @"
-SELECT
-            qr.[qualityReviewID]
-        , COALESCE(NULLIF(qrr.[qualityReviewResultName_A], N''), qrr.[qualityReviewResultName_E]) AS [qualityReviewResultName_A]
-        , qrr.[qualityReviewResultCode]
-        , COALESCE(qr.[reviewNotes_A], qr.[reviewNotes]) AS [reviewNotes]
-        , qr.[finalized]
-        , qr.[entryDate]
-        , reviewerUser.[fullName] AS [reviewerName]
-FROM [Tickets].[QualityReview] qr
-LEFT JOIN [Tickets].[QualityReviewResult] qrr ON qr.[qualityReviewResultID_FK] = qrr.[qualityReviewResultID]
-OUTER APPLY (
-        SELECT TOP 1 LTRIM(RTRIM(
-                    ISNULL(CASE WHEN ud.[firstName_A] IS NULL OR ud.[firstName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[firstName_E] ELSE ud.[firstName_A] END, N'') + N' ' +
-                    ISNULL(CASE WHEN ud.[secondName_A] IS NULL OR ud.[secondName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[secondName_E] ELSE ud.[secondName_A] END, N'') + N' ' +
-                    ISNULL(CASE WHEN ud.[thirdName_A] IS NULL OR ud.[thirdName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[thirdName_E] ELSE ud.[thirdName_A] END, N'') + N' ' +
-                    ISNULL(CASE WHEN ud.[lastName_A] IS NULL OR ud.[lastName_A] NOT LIKE N'%[ء-ي]%' THEN ud.[lastName_E] ELSE ud.[lastName_A] END, N'')
-            )) AS [fullName]
-        FROM [dbo].[UsersDetails] ud
-        WHERE ud.[usersID_FK] = qr.[reviewerUserID]
-        ORDER BY ud.[entryDate] DESC, ud.[usersDetailsID] DESC
-) reviewerUser
-WHERE qr.[ticketID_FK] = @ticketID
-    AND qr.[qualityReviewActive] = 1
-ORDER BY qr.[qualityReviewID] DESC;";
-
-                        return await ExecuteTicketDetailsQueryAsync(sql, ("@ticketID", ticketId));
-                }
-
-        private async Task<DataTable> ExecuteTicketDetailsQueryAsync(string sql, params (string Name, object? Value)[] parameters)
-        {
-            var dt = new DataTable();
-            var connectionString = GetDefaultConnectionString();
-
-            using var connection = new Microsoft.Data.SqlClient.SqlConnection(connectionString);
-            await connection.OpenAsync();
-
-            using var command = new Microsoft.Data.SqlClient.SqlCommand(sql, connection);
-            foreach (var (name, value) in parameters)
-            {
-                command.Parameters.AddWithValue(name, value ?? DBNull.Value);
-            }
-
-            using var reader = await command.ExecuteReaderAsync();
-            dt.Load(reader);
-            return dt;
         }
 
         private static DataTable? ResolveUsableTable(DataSet? dataSet, params string[] expectedColumns)
@@ -623,11 +1143,6 @@ ORDER BY qr.[qualityReviewID] DESC;";
             }
 
             return items;
-        }
-
-        private static int? ParseTicketDetailsNullableInt(string? value)
-        {
-            return int.TryParse(value, out var parsed) ? parsed : null;
         }
 
         [HttpPost]
