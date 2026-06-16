@@ -10,7 +10,7 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
             return await GetTicketDdlOptionsAsync(
                 "clarificationReasonName_A",
                 "clarificationReasonID",
-                "1",
+                "0",
                 "ClarificationReasonDDL",
                 firstOption);
         }

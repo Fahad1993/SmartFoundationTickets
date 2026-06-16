@@ -510,7 +510,7 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                         new FieldConfig
                         {
                             Label = "نوع مقدم الطلب", Name = "p02", Type = "select",
-                            Options = createRequesterTypeOptions, Required = true, ColCss = "4", Select2 = true,
+                            Options = createRequesterTypeOptions, Required = true, ColCss = "4",
                             OnChangeJs = "requesterTypeToggle(this);"
                         },
 
@@ -530,13 +530,13 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                         new FieldConfig
                         {
                             Label = "المقيم", Name = "p04", Type = "select",
-                            Required = false, ColCss = "4", Select2 = true,
+                            Required = false, ColCss = "4",
                             Options = residentOptions, ExtraCss = "sf-toggle-hidden",
                             Placeholder = "اختر المقيم"
                         },
 
                         // p01 → @ticketClassID_FK
-                        new() { Label = "فئة التذكرة", Name = "p01", Type = "select", Options = createClassOptions, ColCss = "4", Select2 = true },
+                        new() { Label = "فئة التذكرة", Name = "p01", Type = "select", Options = createClassOptions, ColCss = "4" },
 
                         // p05 → @serviceID_FK
                         new()
@@ -544,12 +544,11 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                             Label = "الخدمة",
                             Name = "p05",
                             Type = "select",
-                            Options = new List<OptionItem>(), // Initial empty state
+                            Options = serviceOptions,
                             Required = true,
                             ColCss = "4",
-                            Select2 = true,
                             DependsOn = "p01",
-                            DependsUrl = "/crud/DDLFiltered?FK=ticketClassID_FK&textcol=serviceName_A&ValueCol=serviceID&PageName=ServiceDDL&TableIndex=0"
+                            DependsUrl = "/crud/DDLFiltered?FK=ticketClassID_FK&textcol=serviceName_A&ValueCol=serviceID&PageName=ServiceDDL&TableIndex=1"
                         },
                         // p06 → @title (ticket reason)
                         new()
@@ -557,12 +556,11 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                             Label = "سبب التذكرة",
                             Name = "p06",
                             Type = "select",
-                            Options = new List<OptionItem>(), // Initial empty state
+                            Options = new List<OptionItem>(),
                             Required = true,
                             ColCss = "6",
-                            Select2 = true,
                             DependsOn = "p05",
-                            DependsUrl = "/crud/DDLFiltered?FK=serviceID_FK&textcol=ticketReasonName_A&ValueCol=ticketReasonID&PageName=TicketReasonDDL&TableIndex=0"
+                            DependsUrl = "/crud/DDLFiltered?FK=serviceID_FK&textcol=ticketReasonName_A&ValueCol=ticketReasonID&PageName=TicketReasonDDL&TableIndex=1"
                         },
                         // p07 → @description_ (description template)
                         new()
@@ -570,24 +568,22 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                             Label = "وصف التذكرة",
                             Name = "p07",
                             Type = "select",
-                            Options = new List<OptionItem>(), // Initial empty state
+                            Options = new List<OptionItem>(),
                             ColCss = "6",
-                            Select2 = true,
                             DependsOn = "p05",
-                            DependsUrl = "/crud/DDLFiltered?FK=serviceID_FK&textcol=templateName_A&ValueCol=templateID&PageName=TicketDescriptionTemplateDDL&TableIndex=0"
+                            DependsUrl = "/crud/DDLFiltered?FK=serviceID_FK&textcol=templateName_A&ValueCol=templateID&PageName=TicketDescriptionTemplateDDL&TableIndex=1"
                         },
-                        // p08 → @suggestedPriorityID_FK (could be updated based on ticket reason selection)
+                        // p08 → @suggestedPriorityID_FK
                         new()
                         {
                             Label = "الأولوية",
                             Name = "p08",
                             Type = "select",
                             Options = createPriorityOptions,
-                            ColCss = "6",
-                            Select2 = true
+                            ColCss = "6"
                         },
                         // p12 → @locationBuildingNo
-                        new() { Label = "المبنى",       Name = "p12", Type = "select", Options = buildingOptions,                         ColCss = "6", Select2 = true },
+                        // new() { Label = "المبنى", Name = "p12", Type = "select", Options = buildingOptions, ColCss = "6" },
                         // p13 → @locationUnitNo
                         new() { Name = "p13", Type = "hidden", Value = "" },
                         // p14 → @locationArea
@@ -601,6 +597,7 @@ namespace SmartFoundation.Mvc.Controllers.Tickets
                     Color = "success",
                     OpenModal = true,
                     ModalTitle = "إنشاء تذكرة جديدة",
+                    OnBeforeOpenJs = "if(!window.requesterTypeToggle){window.requesterTypeToggle=function(el){var f=el.closest('form');if(!f)return;var g3=f.querySelector('[name=\"_p03display\"]')?.closest('.form-group');var g4=f.querySelector('[name=\"p04\"]')?.closest('.form-group');if(el.value==='1'){if(g3)g3.style.display='none';if(g4)g4.style.display='';}else if(el.value){if(g3)g3.style.display='';if(g4)g4.style.display='none';}else{if(g3)g3.style.display='none';if(g4)g4.style.display='none';}};}setTimeout(function(){var f=document.querySelector('#createTicketForm');if(!f)return;var g4=f.querySelector('[name=p04]');if(g4){var fg4=g4.closest('.form-group');if(fg4)fg4.style.display='none';}var g3=f.querySelector('[name=_p03display]');if(g3){var fg3=g3.closest('.form-group');if(fg3)fg3.style.display='none';}},200);",
                     OpenForm = new FormConfig
                     {
                         FormId = "createTicketForm",
